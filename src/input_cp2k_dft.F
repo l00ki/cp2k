@@ -84,14 +84,15 @@ MODULE input_cp2k_dft
         radius_single, radius_user, radius_vdw, random_guess, real_time_propagation, &
         ref_charge_atomic, ref_charge_mulliken, rel_dkh, rel_none, rel_pot_erfc, rel_pot_full, &
         rel_sczora_mp, rel_trans_atom, rel_trans_full, rel_trans_molecule, rel_zora, &
-        rel_zora_full, rel_zora_mp, restart_guess, rsdft_model, sccs_andreussi, &
-        sccs_derivative_cd3, sccs_derivative_cd5, sccs_derivative_cd7, sccs_derivative_fft, &
-        sccs_fattebert_gygi, shape_function_density, shape_function_gaussian, sic_ad, sic_eo, &
-        sic_list_all, sic_list_unpaired, sic_mauri_spz, sic_mauri_us, sic_none, slater, &
-        smear_energy_window, smear_fermi_dirac, smear_list, sparse_guess, tddfpt_davidson, &
-        tddfpt_excitations, tddfpt_lanczos, tddfpt_singlet, tddfpt_spin_cons, tddfpt_spin_flip, &
-        tddfpt_triplet, use_coulomb, use_diff, use_mom_ref_coac, use_mom_ref_com, &
-        use_mom_ref_user, use_mom_ref_zero, use_no, use_restart_wfn, use_rt_restart, use_scf_wfn, &
+        rel_zora_full, rel_zora_mp, restart_guess, rsdft_model, rtp_localize_each, &
+        rtp_localize_none, rtp_localize_once, sccs_andreussi, sccs_derivative_cd3, &
+        sccs_derivative_cd5, sccs_derivative_cd7, sccs_derivative_fft, sccs_fattebert_gygi, &
+        shape_function_density, shape_function_gaussian, sic_ad, sic_eo, sic_list_all, &
+        sic_list_unpaired, sic_mauri_spz, sic_mauri_us, sic_none, slater, smear_energy_window, &
+        smear_fermi_dirac, smear_list, sparse_guess, tddfpt_davidson, tddfpt_excitations, &
+        tddfpt_lanczos, tddfpt_singlet, tddfpt_spin_cons, tddfpt_spin_flip, tddfpt_triplet, &
+        use_coulomb, use_diff, use_mom_ref_coac, use_mom_ref_com, use_mom_ref_user, &
+        use_mom_ref_zero, use_no, use_restart_wfn, use_rt_restart, use_scf_wfn, &
         wannier_projection, weight_type_mass, weight_type_unit, wfi_aspc_nr, wfi_frozen_method_nr, &
         wfi_linear_p_method_nr, wfi_linear_ps_method_nr, wfi_linear_wf_method_nr, &
         wfi_ps_method_nr, wfi_use_guess_method_nr, wfi_use_prev_p_method_nr, &
@@ -8801,6 +8802,19 @@ CONTAINS
                           " and not for restarts (RT_RESTART).", &
                           usage="PERIODIC", &
                           default_l_val=.TRUE., lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="LOCALIZE", &
+                          description="Localise the Molecular orbitals before or during "// &
+                          "real-time propagated TDDFT", &
+                          usage="LOCALIZE", default_i_val=rtp_localize_none, &
+                          enum_c_vals=s2a("NONE", "ONCE", "EACH"), &
+                          enum_i_vals=(/rtp_localize_none, rtp_localize_once, rtp_localize_each/), &
+                          enum_desc=s2a("The MOs are not localised.", &
+                                        "The MOs are localised, then the Wannier functions are "// &
+                                        "propagated.", &
+                                        "Propagate the MOs and localise them after each step."))
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 

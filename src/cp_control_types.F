@@ -53,6 +53,7 @@ MODULE cp_control_types
       INTEGER                              :: sc_check_start
       LOGICAL                              :: apply_delta_pulse
       LOGICAL                              :: periodic
+      INTEGER                              :: localize
       LOGICAL                              :: linear_scaling
       LOGICAL                              :: write_restart
       INTEGER                              :: mcweeny_max_iter
