@@ -18,6 +18,9 @@ MODULE qs_loc_utils
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
+   USE cp_cfm_types,                    ONLY: cp_cfm_create,&
+                                              cp_cfm_p_type,&
+                                              cp_fm_to_cfm
    USE cp_dbcsr_operations,             ONLY: cp_dbcsr_sm_fm_multiply
    USE cp_files,                        ONLY: close_file,&
                                               open_file
@@ -471,6 +474,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: vecbuffer
       TYPE(cell_type), POINTER                           :: cell
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: moloc_coeff
+      TYPE(cp_cfm_p_type), DIMENSION(:), POINTER         :: complex_moloc_coeff
       TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
       TYPE(cp_fm_type), POINTER                          :: mat_ptr, mo_coeff
       TYPE(cp_para_env_type), POINTER                    :: para_env
@@ -481,7 +485,8 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-      NULLIFY (mos, matrix_s, moloc_coeff, particle_set, para_env, cell, local_molecules, occupations, mat_ptr)
+      NULLIFY (mos, matrix_s, moloc_coeff, complex_moloc_coeff, particle_set, para_env, cell, &
+               local_molecules, occupations, mat_ptr)
       IF (PRESENT(do_localize)) qs_loc_env%do_localize = do_localize
       IF (qs_loc_env%do_localize) THEN
          CALL get_qs_env(qs_env=qs_env, matrix_s=matrix_s, cell=cell, &
@@ -495,13 +500,23 @@ CONTAINS
             l_spin = myspin
          END IF
          ALLOCATE (moloc_coeff(s_spin:l_spin))
+         IF (nspins * 2 == SIZE(loc_coeff)) THEN
+            ALLOCATE(complex_moloc_coeff(s_spin:l_spin))
+         END IF
+         
          DO ispin = s_spin, l_spin
             NULLIFY (tmp_fm_struct, mo_coeff)
             CALL get_mo_set(mos(ispin)%mo_set, mo_coeff=mo_coeff, nao=nao, nmo=nmo)
             nmosub = localized_wfn_control%nloc_states(ispin)
             CALL cp_fm_struct_create(tmp_fm_struct, nrow_global=nao, &
                                      ncol_global=nmosub, para_env=para_env, context=mo_coeff%matrix_struct%context)
-            CALL cp_fm_create(moloc_coeff(ispin)%matrix, tmp_fm_struct)
+            IF (nspins * 2 == SIZE(loc_coeff)) THEN
+               CALL cp_cfm_create(complex_moloc_coeff(ispin)%matrix, tmp_fm_struct)
+               CALL cp_fm_create(moloc_coeff(2*ispin-1)%matrix, tmp_fm_struct)
+               CALL cp_fm_create(moloc_coeff(2*ispin)%matrix, tmp_fm_struct)
+            ELSE
+               CALL cp_fm_create(moloc_coeff(ispin)%matrix, tmp_fm_struct)
+            END IF
 
             CALL cp_fm_get_info(moloc_coeff(ispin)%matrix, nrow_global=naosub, &
                                 ncol_global=nmosub)
@@ -523,6 +538,9 @@ CONTAINS
             ub = localized_wfn_control%lu_bound_states(2, ispin)
 
             IF (PRESENT(loc_coeff)) THEN
+               IF (nspins * 2 == SIZE(loc_coeff)) THEN
+                  mat_ptr => loc_coeff(2*ispin-1)%matrix
+               END IF
                mat_ptr => loc_coeff(ispin)%matrix
             ELSE
                mat_ptr => mo_coeff
@@ -566,7 +584,15 @@ CONTAINS
                                    "cannot be rotated together")
                END IF
                nmosub = localized_wfn_control%nloc_states(ispin)
-               CALL cp_fm_to_fm(mat_ptr, moloc_coeff(ispin)%matrix, nmosub, lb, 1)
+               ! TODO enable submatrix selection for the complex case
+               IF (nspins * 2 == SIZE(loc_coeff)) THEN
+                  CALL cp_fm_to_fm(loc_coeff(2*ispin-1)%matrix, moloc_coeff(2*ispin-1)%matrix)
+                  CALL cp_fm_to_fm(loc_coeff(2*ispin)%matrix, moloc_coeff(2*ispin)%matrix)
+                  CALL cp_fm_to_cfm(mat_ptr, loc_coeff(2*ispin)%matrix, &
+                                    complex_moloc_coeff(ispin)%matrix)
+               ELSE
+                  CALL cp_fm_to_fm(mat_ptr, moloc_coeff(ispin)%matrix, nmosub, lb, 1)
+               END IF
             END IF
 
             ! we have the mo's to be localized now, see if we can rotate them according to the history
@@ -581,7 +607,8 @@ CONTAINS
          END DO
 
          CALL set_qs_loc_env(qs_loc_env=qs_loc_env, cell=cell, local_molecules=local_molecules, &
-                             moloc_coeff=moloc_coeff, particle_set=particle_set, para_env=para_env, &
+                             moloc_coeff=moloc_coeff, complex_moloc_coeff=complex_moloc_coeff, &
+                             particle_set=particle_set, para_env=para_env, &
                              localized_wfn_control=localized_wfn_control)
 
          ! Prepare the operators

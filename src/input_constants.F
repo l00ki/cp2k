@@ -438,7 +438,8 @@ MODULE input_constants
                                                do_loc_crazy = 2, &
                                                do_loc_direct = 3, &
                                                do_loc_l1_norm_sd = 4, &
-                                               do_loc_scdm = 5
+                                               do_loc_scdm = 5, &
+                                               do_loc_cardoso = 6
 
    INTEGER, PARAMETER, PUBLIC               :: do_loc_min = 0, &
                                                do_loc_max = 1, &

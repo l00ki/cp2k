@@ -26,6 +26,8 @@ MODULE qs_loc_types
                                               cell_retain,&
                                               cell_type
    USE cp_array_utils,                  ONLY: cp_2d_r_p_type
+   USE cp_cfm_types,                    ONLY: cp_cfm_p_type,&
+                                              cp_cfm_release
    USE cp_fm_types,                     ONLY: cp_fm_p_type,&
                                               cp_fm_release
    USE cp_para_env,                     ONLY: cp_para_env_release,&
@@ -86,6 +88,8 @@ MODULE qs_loc_types
       TYPE(cp_para_env_type), POINTER          :: para_env
       TYPE(cp_fm_p_type), DIMENSION(:), &
          POINTER                                :: moloc_coeff
+      TYPE(cp_cfm_p_type), DIMENSION(:), &
+         POINTER                                :: complex_moloc_coeff
       TYPE(cp_fm_p_type), DIMENSION(:, :), &
          POINTER                                :: op_fm_set
       TYPE(distribution_1d_type), POINTER         :: local_molecules
@@ -183,6 +187,7 @@ CONTAINS
       NULLIFY (qs_loc_env%op_fm_set)
       NULLIFY (qs_loc_env%local_molecules)
       NULLIFY (qs_loc_env%moloc_coeff)
+      NULLIFY (qs_loc_env%complex_moloc_coeff)
       NULLIFY (qs_loc_env%particle_set)
       NULLIFY (qs_loc_env%localized_wfn_control)
       qs_loc_env%weights = 0.0_dp
@@ -224,6 +229,14 @@ CONTAINS
             CALL cp_fm_release(qs_loc_env%moloc_coeff(ii)%matrix)
          END DO
          DEALLOCATE (qs_loc_env%moloc_coeff)
+      END IF
+
+      IF (ASSOCIATED(qs_loc_env%complex_moloc_coeff)) THEN
+         DO i = 1, SIZE(qs_loc_env%complex_moloc_coeff, 1)
+            ii = LBOUND(qs_loc_env%complex_moloc_coeff, 1) + i - 1
+            CALL cp_cfm_release(qs_loc_env%complex_moloc_coeff(ii)%matrix)
+         END DO
+         DEALLOCATE (qs_loc_env%complex_moloc_coeff)
       END IF
 
       IF (ASSOCIATED(qs_loc_env%op_fm_set)) THEN
@@ -392,7 +405,8 @@ CONTAINS
 !> \author MI
 ! **************************************************************************************************
    SUBROUTINE get_qs_loc_env(qs_loc_env, cell, local_molecules, localized_wfn_control, &
-                             moloc_coeff, op_sm_set, op_fm_set, para_env, particle_set, weights, dim_op)
+                             moloc_coeff, complex_moloc_coeff, op_sm_set, op_fm_set, para_env, &
+                             particle_set, weights, dim_op)
 
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
       TYPE(cell_type), OPTIONAL, POINTER                 :: cell
@@ -401,6 +415,8 @@ CONTAINS
          POINTER                                         :: localized_wfn_control
       TYPE(cp_fm_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: moloc_coeff
+      TYPE(cp_cfm_p_type), DIMENSION(:), OPTIONAL, &
+         POINTER                                         :: complex_moloc_coeff
       TYPE(dbcsr_p_type), DIMENSION(:, :), OPTIONAL, &
          POINTER                                         :: op_sm_set
       TYPE(cp_fm_p_type), DIMENSION(:, :), OPTIONAL, &
@@ -417,6 +433,7 @@ CONTAINS
 
       IF (PRESENT(cell)) cell => qs_loc_env%cell
       IF (PRESENT(moloc_coeff)) moloc_coeff => qs_loc_env%moloc_coeff
+      IF (PRESENT(complex_moloc_coeff)) complex_moloc_coeff => qs_loc_env%complex_moloc_coeff
       IF (PRESENT(local_molecules)) local_molecules => qs_loc_env%local_molecules
       IF (PRESENT(localized_wfn_control)) &
          localized_wfn_control => qs_loc_env%localized_wfn_control
@@ -449,7 +466,8 @@ CONTAINS
 !> \author MI
 ! **************************************************************************************************
    SUBROUTINE set_qs_loc_env(qs_loc_env, cell, local_molecules, localized_wfn_control, &
-                             moloc_coeff, op_sm_set, op_fm_set, para_env, particle_set, weights, dim_op)
+                             moloc_coeff, complex_moloc_coeff, op_sm_set, op_fm_set, para_env, &
+                             particle_set, weights, dim_op)
 
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
       TYPE(cell_type), OPTIONAL, POINTER                 :: cell
@@ -458,6 +476,8 @@ CONTAINS
          POINTER                                         :: localized_wfn_control
       TYPE(cp_fm_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: moloc_coeff
+      TYPE(cp_cfm_p_type), DIMENSION(:), OPTIONAL, &
+         POINTER                                         :: complex_moloc_coeff
       TYPE(dbcsr_p_type), DIMENSION(:, :), OPTIONAL, &
          POINTER                                         :: op_sm_set
       TYPE(cp_fm_p_type), DIMENSION(:, :), OPTIONAL, &
@@ -505,6 +525,15 @@ CONTAINS
             DEALLOCATE (qs_loc_env%moloc_coeff)
          END IF
          qs_loc_env%moloc_coeff => moloc_coeff
+      END IF
+      IF (PRESENT(complex_moloc_coeff)) THEN
+         IF (ASSOCIATED(qs_loc_env%complex_moloc_coeff)) THEN
+            DO i = 1, SIZE(qs_loc_env%complex_moloc_coeff, 1)
+               CALL cp_cfm_release(qs_loc_env%complex_moloc_coeff(i)%matrix)
+            END DO
+            DEALLOCATE (qs_loc_env%complex_moloc_coeff)
+         END IF
+         qs_loc_env%complex_moloc_coeff => complex_moloc_coeff
       END IF
       IF (PRESENT(op_sm_set)) THEN
          qs_loc_env%op_sm_set => op_sm_set

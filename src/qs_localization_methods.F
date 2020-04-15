@@ -26,9 +26,13 @@ MODULE qs_localization_methods
                                               cp_cfm_p_type,&
                                               cp_cfm_release,&
                                               cp_cfm_set_all,&
+                                              cp_cfm_set_element,&
                                               cp_cfm_to_cfm,&
-                                              cp_cfm_type
-   USE cp_dbcsr_operations,             ONLY: cp_dbcsr_sm_fm_multiply
+                                              cp_cfm_to_fm,&
+                                              cp_cfm_type,&
+                                              cp_fm_to_cfm
+   USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm,&
+                                              cp_dbcsr_sm_fm_multiply
    USE cp_external_control,             ONLY: external_control
    USE cp_fm_basic_linalg,              ONLY: cp_fm_frobenius_norm,&
                                               cp_fm_pdgeqpf,&
@@ -37,7 +41,8 @@ MODULE qs_localization_methods
                                               cp_fm_scale_and_add,&
                                               cp_fm_trace,&
                                               cp_fm_transpose
-   USE cp_fm_diag,                      ONLY: cp_fm_syevd
+   USE cp_fm_diag,                      ONLY: cp_fm_syevd,&
+                                              choose_eigv_solver
    USE cp_fm_struct,                    ONLY: cp_fm_struct_create,&
                                               cp_fm_struct_get,&
                                               cp_fm_struct_release,&
@@ -67,7 +72,7 @@ MODULE qs_localization_methods
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
-   PUBLIC :: initialize_weights, crazy_rotations, &
+   PUBLIC :: initialize_weights, crazy_rotations, cardoso_souloumiac, &
              direct_mini, rotate_orbitals, approx_l1_norm_sd, jacobi_rotations, scdm_qrfact, zij_matrix
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'qs_localization_methods'
@@ -1977,36 +1982,75 @@ CONTAINS
 !> \param op_sm_set ...
 !> \param zij_fm_set ...
 ! **************************************************************************************************
-   SUBROUTINE zij_matrix(vectors, op_sm_set, zij_fm_set)
+   SUBROUTINE zij_matrix(op_sm_set, zij_fm_set, vectors, complex_vectors)
 
-      TYPE(cp_fm_type), POINTER                          :: vectors
-      TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: op_sm_set
-      TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: zij_fm_set
+      TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER             :: op_sm_set
+      TYPE(cp_fm_p_type), DIMENSION(:, :), OPTIONAL, POINTER  :: zij_fm_set
+      TYPE(cp_fm_type), OPTIONAL, POINTER                     :: vectors
+      TYPE(cp_cfm_type), OPTIONAL, POINTER                    :: complex_vectors
 
       CHARACTER(len=*), PARAMETER :: routineN = 'zij_matrix', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i, j, nao, nmoloc
-      TYPE(cp_fm_type), POINTER                          :: opvec
+      TYPE(cp_fm_type), POINTER                          :: opvec, tmp_r, tmp_i
+      TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
+      TYPE(cp_cfm_type), POINTER                         :: complex_opvec, tmp_c
 
       CALL timeset(routineN, handle)
 
-      NULLIFY (opvec)
+      ! real and complex case are mutually exclusive
+      IF (PRESENT(vectors)) THEN
+         CPASSERT(.NOT. PRESENT(complex_vectors))
+      ELSE
+         CPASSERT(PRESENT(complex_vectors))
+      END IF
+      
+      NULLIFY (complex_opvec, opvec, tmp_r, tmp_i, tmp_c, tmp_fm_struct)
       ! get rows and cols of the input
-      CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
-      ! replicate the input kind of matrix
-      CALL cp_fm_create(opvec, vectors%matrix_struct)
+      IF (PRESENT(vectors)) THEN
+         CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
+         ! replicate the input kind of matrix
+         CALL cp_fm_create(opvec, vectors%matrix_struct)
+      ELSE
+         CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
+         ! replicate the input kind of matrix
+         CALL cp_cfm_create(complex_opvec, complex_vectors%matrix_struct)
+         CALL cp_fm_struct_create(tmp_fm_struct, template_fmstruct=complex_vectors%matrix_struct, &
+                                  nrow_global=nmoloc, ncol_global=nao)
+         CALL cp_fm_create(tmp_r, tmp_fm_struct)
+         CALL cp_fm_create(tmp_i, tmp_fm_struct)
+         CALL cp_cfm_create(tmp_c, complex_vectors%matrix_struct)
+      END IF
 
-      ! Compute zij here
-      DO i = 1, SIZE(zij_fm_set, 2)
-         DO j = 1, SIZE(zij_fm_set, 1)
-            CALL cp_fm_set_all(zij_fm_set(j, i)%matrix, 0.0_dp)
-            CALL cp_dbcsr_sm_fm_multiply(op_sm_set(j, i)%matrix, vectors, opvec, ncol=nmoloc)
-            CALL cp_gemm("T", "N", nmoloc, nmoloc, nao, 1.0_dp, vectors, opvec, 0.0_dp, &
-                         zij_fm_set(j, i)%matrix)
+      IF (PRESENT(vectors)) THEN
+         ! Compute zij from real coeffs
+         DO i = 1, SIZE(zij_fm_set, 2)  ! x, y, z
+            DO j = 1, SIZE(zij_fm_set, 1)  ! real, imag
+               CALL cp_fm_set_all(zij_fm_set(j, i)%matrix, 0.0_dp)
+               CALL cp_dbcsr_sm_fm_multiply(op_sm_set(j, i)%matrix, vectors, opvec, ncol=nmoloc)
+               CALL cp_gemm("T", "N", nmoloc, nmoloc, nao, 1.0_dp, vectors, opvec, 0.0_dp, &
+                            zij_fm_set(j, i)%matrix)
+            ENDDO
          ENDDO
-      ENDDO
+      ELSE
+         ALLOCATE(tmp_r, tmp_i, tmp_c)
+         ! compute zij from complex coeffs
+         DO i = 1, SIZE(zij_fm_set, 2) ! x, y, z
+            CALL cp_fm_create(tmp_r, complex_vectors%matrix_struct)
+            CALL cp_fm_create(tmp_i, complex_vectors%matrix_struct)
+            CALL cp_fm_set_all(zij_fm_set(1, i)%matrix, 0.0_dp)  ! real
+            CALL cp_fm_set_all(zij_fm_set(2, i)%matrix, 0.0_dp)  ! imag
+            CALL copy_dbcsr_to_fm(op_sm_set(1, i)%matrix, tmp_r)
+            CALL copy_dbcsr_to_fm(op_sm_set(2, i)%matrix, tmp_i)
+            CALL cp_fm_to_cfm(tmp_r, tmp_i, tmp_c)
+         END DO
+      END IF
 
+      CALL cp_cfm_release(complex_opvec)
+      CALL cp_cfm_release(tmp_c)
       CALL cp_fm_release(opvec)
+      CALL cp_fm_release(tmp_r)
+      CALL cp_fm_release(tmp_i)
       CALL timestop(handle)
 
    END SUBROUTINE zij_matrix
@@ -2071,5 +2115,319 @@ CONTAINS
       CALL timestop(handle)
 
    END SUBROUTINE scdm_qrfact
+
+! **************************************************************************************************
+!> \brief Generalisation of iterative Jacobi rotations to complex-valued vectors. Primarily used for
+!>        localising orbitals during RT-TDDFT.
+!> \par History
+!>      04/2020 created [LS]
+!> \author Lukas Schreder
+! **************************************************************************************************
+   SUBROUTINE jacobi_rotations_complex()
+
+     CPABORT("jacobi rotations for the complex case are not yet implemented")
+
+   END SUBROUTINE jacobi_rotations_complex
+
+! **************************************************************************************************
+!> \brief Achieves minimisation of the spread functional by simultaneous diagonalisation as
+!>        demonstrated in Cardoso & Souloumiac, SIAM J. Matrix Anal. Appl., 17(1), 161. A simpler
+!.        version of this algorithm exists for real vectors, which may speed things up.
+!> \par History
+!>      04/2020 created [LS]
+!> \author Lukas Schreder
+! **************************************************************************************************
+   SUBROUTINE cardoso_souloumiac(weights, zij, vectors, max_iter, eps_localization, sweeps, para_env)
+
+     REAL(KIND=dp), INTENT(IN)         :: weights(:)
+     TYPE(cp_fm_p_type), INTENT(INOUT) :: zij(:, :)
+     TYPE(cp_cfm_type), POINTER       :: vectors
+     INTEGER, INTENT(IN)             :: max_iter
+     REAL(kind=dp), INTENT(IN)       :: eps_localization
+     INTEGER                         :: sweeps
+     TYPE(cp_para_env_type), POINTER :: para_env
+
+     CHARACTER(len=*), PARAMETER :: routineN = "cardoso_souloumiac", &
+          routineP = moduleN//":"//routineN
+
+     INTEGER :: handle
+
+     CALL timeset(routineN, handle)
+
+     IF (para_env%num_pe == 1) THEN
+        CALL cardoso_souloumiac_serial(weights, zij, vectors, max_iter, eps_localization, sweeps, para_env)
+     ELSE
+        CPABORT("cardoso_souloumiac_parallel has not been implemented yet")
+     END IF
+
+     CALL timestop(handle)
+
+   END SUBROUTINE cardoso_souloumiac
+
+! **************************************************************************************************
+!> \brief serial variant
+!> \par History
+!>      04/2020 created
+!> \author Lukas Schreder [LS]
+! **************************************************************************************************
+   SUBROUTINE cardoso_souloumiac_serial(weights, zij, vectors, max_iter, eps_localization, sweeps, para_env)
+
+     REAL(KIND=dp), INTENT(IN)         :: weights(:)
+     TYPE(cp_fm_p_type), INTENT(INOUT) :: zij(:, :)
+     TYPE(cp_cfm_type), POINTER      :: vectors
+     INTEGER, INTENT(IN)             :: max_iter
+     REAL(kind=dp), INTENT(IN)       :: eps_localization
+     INTEGER                         :: sweeps
+     TYPE(cp_para_env_type), POINTER :: para_env
+
+     CHARACTER(len=*), PARAMETER :: routineN = "cardoso_souloumiac_serial", &
+          routineP = moduleN//":"//routineN
+
+     INTEGER                                    :: dim2, handle, i, idim, istate, j, k, kmax, n, nstates
+     COMPLEX(kind=dp)                           :: aii, aij, aji, ajj, &
+                                                   c, s, r, tmp_a, tmp_b, tmp_c
+     TYPE(cp_fm_struct_type), POINTER           :: N_fm_struct, h_fm_struct, &
+                                                   G_fm_struct, R_fm_struct
+     TYPE(cp_cfm_p_type), DIMENSION(:), POINTER :: U       ! total rotation
+     TYPE(cp_cfm_p_type), DIMENSION(:), POINTER :: Cx, Sx, Cy, Sy, Cz, Sz  ! spread matrices
+     TYPE(cp_cfm_type), POINTER                 :: h, htmp       ! vectors to span G
+     TYPE(cp_cfm_type), POINTER                 :: Gi_c    ! holds temporary complex data
+     TYPE(cp_fm_type), POINTER                  :: G, Gi, Gidentity  ! eigenvalue test matrix
+     REAL(kind=dp)                              :: evals(3), max_eval, x, y, z
+     TYPE(cp_fm_type), POINTER                  :: evects  ! of G
+     TYPE(cp_cfm_type), POINTER                 :: Rmat    ! one rotation step
+     REAL(kind=dp)                              :: spread_old, spread_new, spread_delta  ! spread functional
+
+     PRINT *, weights
+     CALL timeset(routineN, handle)
+
+     NULLIFY(N_fm_struct, h_fm_struct, G_fm_struct, R_fm_struct, U, Cx, Sx, Cy, Sy, Cz, Sz, h, htmp,&
+             G, Gi, Gi_c, evects, Rmat)
+
+     CALL cp_cfm_get_info(vectors, ncol_global=nstates, nrow_global=n)
+
+     ALLOCATE(U(nstates),&
+              Cx(nstates),&
+              Sx(nstates),&
+              Cy(nstates),&
+              Sy(nstates),&
+              Cz(nstates),&
+              Sz(nstates))
+
+     ! initialise matrix structures
+     CALL cp_fm_struct_create(N_fm_struct, ncol_global=n, nrow_global=n, &
+           para_env=para_env, context=vectors%matrix_struct%context)
+     CALL cp_cfm_create(Rmat, N_fm_struct)
+     CALL cp_fm_struct_create(h_fm_struct, ncol_global=3, nrow_global=1, &
+           para_env=para_env, context=vectors%matrix_struct%context)
+     CALL cp_cfm_create(h, h_fm_struct)
+     CALL cp_fm_struct_create(G_fm_struct, ncol_global=3, nrow_global=3, &
+           para_env=para_env, context=vectors%matrix_struct%context)
+     CALL cp_fm_create(G, G_fm_struct)
+     CALL cp_fm_create(Gi, G_fm_struct)
+     CALL cp_fm_create(evects, G_fm_struct)
+     CALL cp_cfm_create(Gi_c, G_fm_struct)
+     CALL cp_fm_create(Gidentity, G_fm_struct)
+     CALL cp_fm_set_all(Gidentity, 0.0_dp, 1.0_dp)
+     CALL cp_fm_struct_create(R_fm_struct, ncol_global=2, nrow_global=2, &
+           para_env=para_env, context=vectors%matrix_struct%context)
+
+     DO istate = 1, nstates
+        ! start with the identity
+        CALL cp_cfm_create(U(istate)%matrix, N_fm_struct, "total rotation")
+        CALL cp_cfm_set_all(U(istate)%matrix, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
+
+        ! Compute the initial spread matrices
+        CALL cp_cfm_create(Cx(istate)%matrix, N_fm_struct, "spread Cx")
+        CALL cp_cfm_create(Sx(istate)%matrix, N_fm_struct, "spread Sx")
+        CALL cp_cfm_create(Cy(istate)%matrix, N_fm_struct, "spread Cy")
+        CALL cp_cfm_create(Sy(istate)%matrix, N_fm_struct, "spread Sy")
+        CALL cp_cfm_create(Cz(istate)%matrix, N_fm_struct, "spread Cz")
+        CALL cp_cfm_create(Sz(istate)%matrix, N_fm_struct, "spread Sz")
+
+        ! compute spread matrices
+        DO i = 1, n
+           DO j = 1, n
+              CALL cp_cfm_get_element(vectors, i, istate, tmp_a)
+              tmp_a = CONJG(tmp_a)
+              CALL cp_cfm_get_element(vectors, j, istate, tmp_b)
+              tmp_c = tmp_a * COS(2 * pi) * tmp_b
+              CALL cp_cfm_set_element(Cx(istate)%matrix, i, j, tmp_c)
+              CALL cp_cfm_set_element(Cy(istate)%matrix, i, j, tmp_c)
+              CALL cp_cfm_set_element(Cz(istate)%matrix, i, j, tmp_c)
+              tmp_c = tmp_a * SIN(2 * pi) * tmp_b
+              CALL cp_cfm_set_element(Cx(istate)%matrix, i, j, tmp_c)
+              CALL cp_cfm_set_element(Cy(istate)%matrix, i, j, tmp_c)
+              CALL cp_cfm_set_element(Cz(istate)%matrix, i, j, tmp_c)
+           END DO
+        END DO
+
+        spread_old = 1.0e11_dp
+        spread_new = 1.0e10_dp
+        spread_delta = spread_old - spread_new
+
+        ! sweep (i, j), i < j, while the spread decreases by more than the tolerance
+        DO WHILE (spread_delta > eps_localization .AND. sweeps < max_iter)
+           sweeps = sweeps + 1
+           DO j = 1, n
+              DO i = 1, j
+                 IF (i == j) EXIT  ! diagonal is not needed
+                 ! Build G
+                 CALL cp_fm_set_all(G, 0.0_dp, 0.0_dp)
+                 CALL cp_cfm_set_all(Gi_c, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
+
+                 IF (sweeps == 1 .AND. j == 3 .AND. i == 1) PRINT *, G%local_data
+
+                 CALL cp_cfm_get_element(Cx(istate)%matrix, i, i, aii)
+                 CALL cp_cfm_get_element(Cx(istate)%matrix, i, j, aij)
+                 CALL cp_cfm_get_element(Cx(istate)%matrix, j, i, aji)
+                 CALL cp_cfm_get_element(Cx(istate)%matrix, j, j, ajj)
+                 CALL cp_cfm_set_element(h, 1, 1, aii - ajj)
+                 CALL cp_cfm_set_element(h, 2, 1, aij + aji)
+                 CALL cp_cfm_set_element(h, 3, 1, (0.0_dp, 1.0_dp) * (aji - aij))
+                 CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, h, (0.0_dp, 0.0_dp), Gi_c)
+                 CALL cp_cfm_to_fm(Gi_c, mtargetr=Gi)
+                 CALL cp_fm_scale_and_add(1.0_dp, G, 1.0_dp, Gi)
+
+                 CALL cp_cfm_get_element(Sx(istate)%matrix, i, i, aii)
+                 CALL cp_cfm_get_element(Sx(istate)%matrix, i, j, aij)
+                 CALL cp_cfm_get_element(Sx(istate)%matrix, j, i, aji)
+                 CALL cp_cfm_get_element(Sx(istate)%matrix, j, j, ajj)
+                 CALL cp_cfm_set_element(h, 1, 1, aii - ajj)
+                 CALL cp_cfm_set_element(h, 2, 1, aij + aji)
+                 CALL cp_cfm_set_element(h, 3, 1, (0.0_dp, 1.0_dp) * (aji - aij))
+                 CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, h, (0.0_dp, 0.0_dp), Gi_c)
+                 CALL cp_cfm_to_fm(Gi_c, mtargetr=Gi)
+                 CALL cp_fm_scale_and_add(1.0_dp, G, 1.0_dp, Gi)
+
+                 CALL cp_cfm_get_element(Cy(istate)%matrix, i, i, aii)
+                 CALL cp_cfm_get_element(Cy(istate)%matrix, i, j, aij)
+                 CALL cp_cfm_get_element(Cy(istate)%matrix, j, i, aji)
+                 CALL cp_cfm_get_element(Cy(istate)%matrix, j, j, ajj)
+                 CALL cp_cfm_set_element(h, 1, 1, aii - ajj)
+                 CALL cp_cfm_set_element(h, 2, 1, aij + aji)
+                 CALL cp_cfm_set_element(h, 3, 1, (0.0_dp, 1.0_dp) * (aji - aij))
+                 CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, h, (0.0_dp, 0.0_dp), Gi_c)
+                 CALL cp_cfm_to_fm(Gi_c, mtargetr=Gi)
+                 CALL cp_fm_scale_and_add(1.0_dp, G, 1.0_dp, Gi)
+
+                 CALL cp_cfm_get_element(Sy(istate)%matrix, i, i, aii)
+                 CALL cp_cfm_get_element(Sy(istate)%matrix, i, j, aij)
+                 CALL cp_cfm_get_element(Sy(istate)%matrix, j, i, aji)
+                 CALL cp_cfm_get_element(Sy(istate)%matrix, j, j, ajj)
+                 CALL cp_cfm_set_element(h, 1, 1, aii - ajj)
+                 CALL cp_cfm_set_element(h, 2, 1, aij + aji)
+                 CALL cp_cfm_set_element(h, 3, 1, (0.0_dp, 1.0_dp) * (aji - aij))
+                 CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, h, (0.0_dp, 0.0_dp), Gi_c)
+                 CALL cp_cfm_to_fm(Gi_c, mtargetr=Gi)
+                 CALL cp_fm_scale_and_add(1.0_dp, G, 1.0_dp, Gi)
+
+                 CALL cp_cfm_get_element(Cz(istate)%matrix, i, i, aii)
+                 CALL cp_cfm_get_element(Cz(istate)%matrix, i, j, aij)
+                 CALL cp_cfm_get_element(Cz(istate)%matrix, j, i, aji)
+                 CALL cp_cfm_get_element(Cz(istate)%matrix, j, j, ajj)
+                 CALL cp_cfm_set_element(h, 1, 1, aii - ajj)
+                 CALL cp_cfm_set_element(h, 2, 1, aij + aji)
+                 CALL cp_cfm_set_element(h, 3, 1, (0.0_dp, 1.0_dp) * (aji - aij))
+                 CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, h, (0.0_dp, 0.0_dp), Gi_c)
+                 CALL cp_cfm_to_fm(Gi_c, mtargetr=Gi)
+                 CALL cp_fm_scale_and_add(1.0_dp, G, 1.0_dp, Gi)
+
+                 CALL cp_cfm_get_element(Sz(istate)%matrix, i, i, aii)
+                 CALL cp_cfm_get_element(Sz(istate)%matrix, i, j, aij)
+                 CALL cp_cfm_get_element(Sz(istate)%matrix, j, i, aji)
+                 CALL cp_cfm_get_element(Sz(istate)%matrix, j, j, ajj)
+                 CALL cp_cfm_set_element(h, 1, 1, aii - ajj)
+                 CALL cp_cfm_set_element(h, 2, 1, aij + aji)
+                 CALL cp_cfm_set_element(h, 3, 1, (0.0_dp, 1.0_dp) * (aji - aij))
+                 CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, h, (0.0_dp, 0.0_dp), Gi_c)
+                 CALL cp_cfm_to_fm(Gi_c, mtargetr=Gi)
+                 CALL cp_fm_scale_and_add(1.0_dp, G, 1.0_dp, Gi)
+
+                 ! Compute eigenvalues and eigenvectors of G
+                 CALL choose_eigv_solver(G, evects, evals)
+
+                 ! [x, y, z]^T is the eigenvector to the largest eignvalue so that x >= 0
+                 max_eval = 0
+                 kmax = 0
+                 DO k = 1, 3
+                    PRINT *, evals(k)
+                    PRINT *, evects%local_data(:,k)
+                    IF (evals(k) > max_eval .AND. evects%local_data(1, k) > 0) THEN
+                       max_eval = evals(k)
+                       kmax = k
+                    END IF
+                 END DO
+                 x = evects%local_data(1, kmax)
+                 y = evects%local_data(2, kmax)
+                 z = evects%local_data(3, kmax)
+
+                 ! Compute this step's rotation matrix
+                 r = SQRT(x**2 + y**2 + z**2)
+                 c = SQRT((x + r) / (2 * r))
+                 s = (y - (0.0_dp, 1.0_dp) * z) / SQRT(2 * r * (x + r))
+
+                 CALL cp_cfm_set_all(Rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
+                 CALL cp_cfm_set_element(Rmat, i, i, c)
+                 CALL cp_cfm_set_element(Rmat, j, i, -s)
+                 CALL cp_cfm_set_element(Rmat, i, j, CONJG(s))
+                 CALL cp_cfm_set_element(Rmat, j, j, CONJG(c))
+
+                 PRINT *, Rmat%local_data
+                 PRINT *, c, s, r
+
+                 ! apply the rotation to rows and columns (i, j) of the spread matrices {A}
+                 CALL cp_cfm_gemm("N", "N", n, n, n, (1.0_dp, 1.0_dp), Rmat, Cx(istate)%matrix, &
+                                  (0.0_dp, 0.0_dp), Cx(istate)%matrix)
+                 CALL cp_cfm_gemm("N", "N", n, n, n, (1.0_dp, 1.0_dp), Rmat, Sx(istate)%matrix, &
+                                  (0.0_dp, 0.0_dp), Sx(istate)%matrix)
+                 CALL cp_cfm_gemm("N", "N", n, n, n, (1.0_dp, 1.0_dp), Rmat, Cy(istate)%matrix, &
+                                  (0.0_dp, 0.0_dp), Cy(istate)%matrix)
+                 CALL cp_cfm_gemm("N", "N", n, n, n, (1.0_dp, 1.0_dp), Rmat, Sy(istate)%matrix, &
+                                  (0.0_dp, 0.0_dp), Sy(istate)%matrix)
+                 CALL cp_cfm_gemm("N", "N", n, n, n, (1.0_dp, 1.0_dp), Rmat, Cz(istate)%matrix, &
+                                  (0.0_dp, 0.0_dp), Cz(istate)%matrix)
+                 CALL cp_cfm_gemm("N", "N", n, n, n, (1.0_dp, 1.0_dp), Rmat, Sz(istate)%matrix, &
+                                  (0.0_dp, 0.0_dp), Sz(istate)%matrix)
+
+                 ! accumulate the rotations into the total rotation U
+                 CALL cp_cfm_gemm("N", "N", n, n, n, (1.0_dp, 1.0_dp), Rmat, U(istate)%matrix, &
+                                  (0.0_dp, 0.0_dp), U(istate)%matrix)
+              END DO
+           END DO
+
+           ! compute the total spread
+           spread_old = spread_new
+           spread_delta = spread_old - spread_new
+        END DO
+     END DO
+
+     dim2 = SIZE(zij, 2)
+     ! convert U to zij format
+     DO idim = 1, dim2
+         zij(1, idim)%matrix%local_data = REAL(U(idim)%matrix%local_data, dp)
+         zij(2, idim)%matrix%local_data = AIMAG(U(idim)%matrix%local_data)
+     END DO
+
+     DO istate = 1, nstates
+        CALL cp_cfm_release(U(istate)%matrix)
+        CALL cp_cfm_release(Cx(istate)%matrix)
+        CALL cp_cfm_release(Sx(istate)%matrix)
+        CALL cp_cfm_release(Cy(istate)%matrix)
+        CALL cp_cfm_release(Sy(istate)%matrix)
+        CALL cp_cfm_release(Cz(istate)%matrix)
+        CALL cp_cfm_release(Sz(istate)%matrix)
+     END DO
+     CALL cp_fm_struct_release(N_fm_struct)
+     CALL cp_fm_struct_release(G_fm_struct)
+     CALL cp_fm_struct_release(R_fm_struct)
+     CALL cp_fm_release(G)
+     CALL cp_cfm_release(Rmat)
+     CALL cp_cfm_release(h)
+     DEALLOCATE(U, Cx, Sx, Cy, Sy, Cz, Sz)
+
+     CALL timestop(handle)
+
+   END SUBROUTINE cardoso_souloumiac_serial
 
 END MODULE qs_localization_methods

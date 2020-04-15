@@ -22,6 +22,11 @@ MODULE qs_loc_methods
                                               set_atomic_kind
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
+   USE cp_cfm_types,                    ONLY: cp_cfm_create,&
+                                              cp_cfm_get_info,&
+                                              cp_cfm_p_type,&
+                                              cp_cfm_type,&
+                                              cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm
    USE cp_fm_pool_types,                ONLY: cp_fm_pool_p_type,&
@@ -46,7 +51,7 @@ MODULE qs_loc_methods
    USE cp_units,                        ONLY: cp_unit_from_cp2k
    USE dbcsr_api,                       ONLY: dbcsr_p_type
    USE input_constants,                 ONLY: &
-        do_loc_crazy, do_loc_direct, do_loc_jacobi, do_loc_l1_norm_sd, do_loc_none, do_loc_scdm, &
+        do_loc_cardoso, do_loc_crazy, do_loc_direct, do_loc_jacobi, do_loc_l1_norm_sd, do_loc_none, do_loc_scdm, &
         dump_dcd, dump_dcd_aligned_cell, dump_xmol, op_loc_berry, op_loc_boys, op_loc_pipek, &
         state_loc_list
    USE input_section_types,             ONLY: section_get_ival,&
@@ -89,6 +94,7 @@ MODULE qs_loc_methods
                                               qs_loc_env_new_type
    USE qs_loc_utils,                    ONLY: jacobi_rotation_pipek
    USE qs_localization_methods,         ONLY: approx_l1_norm_sd,&
+                                              cardoso_souloumiac,&
                                               crazy_rotations,&
                                               direct_mini,&
                                               jacobi_rotations,&
@@ -141,12 +147,12 @@ CONTAINS
 !>       optimization routines are specific for this case
 !>       The file for the centers and the spreads have a xyz format
 ! **************************************************************************************************
-   SUBROUTINE optimize_loc_berry(method, qs_loc_env, vectors, op_sm_set, &
-                                 zij_fm_set, para_env, cell, weights, ispin, print_loc_section)
+   SUBROUTINE optimize_loc_berry(method, qs_loc_env, op_sm_set, &
+                                 zij_fm_set, para_env, cell, weights, ispin, print_loc_section, &
+                                 vectors, complex_vectors)
 
       INTEGER, INTENT(IN)                                :: method
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
-      TYPE(cp_fm_type), POINTER                          :: vectors
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: op_sm_set
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: zij_fm_set
       TYPE(cp_para_env_type), POINTER                    :: para_env
@@ -154,6 +160,8 @@ CONTAINS
       REAL(dp), DIMENSION(:)                             :: weights
       INTEGER, INTENT(IN)                                :: ispin
       TYPE(section_vals_type), POINTER                   :: print_loc_section
+      TYPE(cp_fm_type), OPTIONAL, POINTER                :: vectors
+      TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_vectors
 
       CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_berry', &
          routineP = moduleN//':'//routineN
@@ -174,10 +182,17 @@ CONTAINS
       output_unit = cp_print_key_unit_nr(logger, print_loc_section, "PROGRAM_RUN_INFO", &
                                          extension=".locInfo")
 
-      ! get rows and cols of the input
-      CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
-
-      CALL zij_matrix(vectors, op_sm_set, zij_fm_set)
+      ! real and complex case are mutually exclusive
+      IF (PRESENT(vectors)) THEN
+         CPASSERT(.NOT. PRESENT(complex_vectors))
+         ! get rows and cols of the input
+         CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
+         CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
+      ELSE
+         CPASSERT(PRESENT(complex_vectors))
+         CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
+         CALL zij_matrix(op_sm_set, zij_fm_set, complex_vectors=complex_vectors)
+      END IF
 
       max_iter = qs_loc_env%localized_wfn_control%max_iter
       max_crazy_angle = qs_loc_env%localized_wfn_control%max_crazy_angle
@@ -199,7 +214,7 @@ CONTAINS
          ! Decomposition
          CALL scdm_qrfact(vectors)
          ! Calculation of Zij
-         CALL zij_matrix(vectors, op_sm_set, zij_fm_set)
+         CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          IF (do_jacobi_refinement) THEN
             ! Intermediate spread and centers
             CALL centers_spreads_berry(qs_loc_env, zij_fm_set, nmoloc, cell, weights, &
@@ -236,8 +251,11 @@ CONTAINS
          ELSE
             CALL approx_l1_norm_sd(vectors, max_iter, eps_localization, converged, sweeps)
             ! here we need to set zij for the computation of the centers and spreads
-            CALL zij_matrix(vectors, op_sm_set, zij_fm_set)
+            CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
+      CASE (do_loc_cardoso)
+         CALL cardoso_souloumiac(weights, zij_fm_set, complex_vectors, max_iter, eps_localization, &
+                                 sweeps, para_env)
       CASE (do_loc_none)
          IF (output_unit > 0) THEN
             WRITE (output_unit, '(T4,A,I6,A)') " No MOS localization applied "
@@ -591,18 +609,20 @@ CONTAINS
 !> \param print_loc_section ...
 !> \param myspin ...
 !> \param ext_mo_coeff ...
+!> \param complex_mo_coeff ...   
 !> \par History
 !>      04.2005 created [MI]
 !> \author MI
 ! **************************************************************************************************
    SUBROUTINE qs_loc_driver(qs_env, qs_loc_env, print_loc_section, myspin, &
-                            ext_mo_coeff)
+                            ext_mo_coeff, complex_mo_coeff)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
       TYPE(section_vals_type), POINTER                   :: print_loc_section
       INTEGER, INTENT(IN), OPTIONAL                      :: myspin
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: ext_mo_coeff
+      TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_mo_coeff
 
       CHARACTER(len=*), PARAMETER :: routineN = 'qs_loc_driver', routineP = moduleN//':'//routineN
 
@@ -618,6 +638,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: centers, vecbuffer
       TYPE(cell_type), POINTER                           :: cell
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: moloc_coeff
+      TYPE(cp_cfm_p_type), DIMENSION(:), POINTER         :: complex_moloc_coeff
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: op_fm_set
       TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
       TYPE(cp_fm_type), POINTER                          :: mo_coeff
@@ -630,15 +651,16 @@ CONTAINS
 
       CALL timeset(routineN, handle)
       NULLIFY (para_env, mos, dft_control, list_cubes)
-      NULLIFY (cell, localized_wfn_control, moloc_coeff, op_sm_set, op_fm_set)
+      NULLIFY (cell, localized_wfn_control, moloc_coeff, complex_moloc_coeff, op_sm_set, op_fm_set)
       qs_loc_env%first_time = first_time
       qs_loc_env%target_time = qs_env%target_time
       qs_loc_env%start_time = qs_env%start_time
 
       CALL get_qs_loc_env(qs_loc_env=qs_loc_env, &
                           localized_wfn_control=localized_wfn_control, &
-                          moloc_coeff=moloc_coeff, op_sm_set=op_sm_set, op_fm_set=op_fm_set, cell=cell, &
-                          weights=weights, dim_op=dim_op)
+                          complex_moloc_coeff=complex_moloc_coeff, moloc_coeff=moloc_coeff, &
+                          op_sm_set=op_sm_set, op_fm_set=op_fm_set, cell=cell, weights=weights, &
+                          dim_op=dim_op)
 
       CALL get_qs_env(qs_env=qs_env, dft_control=dft_control, &
                       para_env=para_env, mos=mos)
@@ -648,6 +670,13 @@ CONTAINS
       IF (PRESENT(myspin)) THEN
          s_spin = myspin
          l_spin = myspin
+      END IF
+
+      ! real and complex cases are mutually exclusive
+      IF (PRESENT(ext_mo_coeff)) THEN
+         CPASSERT(.NOT. PRESENT(complex_mo_coeff))
+      ELSE
+         CPASSERT(.NOT. PRESENT(ext_mo_coeff))
       END IF
 
       DO ispin = s_spin, l_spin
@@ -663,7 +692,12 @@ CONTAINS
             nmosub = localized_wfn_control%nloc_states(ispin)
             IF (PRESENT(ext_mo_coeff)) THEN
                CALL cp_fm_struct_create(tmp_fm_struct, nrow_global=nmosub, &
-                                        ncol_global=nmosub, para_env=para_env, context=ext_mo_coeff%matrix_struct%context)
+                                        ncol_global=nmosub, para_env=para_env, &
+                                        context=ext_mo_coeff%matrix_struct%context)
+            ELSE IF (PRESENT(complex_mo_coeff)) THEN
+               CALL cp_fm_struct_create(tmp_fm_struct, nrow_global=nmosub, &
+                                        ncol_global=nmosub, para_env=para_env, &
+                                        context=complex_mo_coeff%matrix_struct%context)
             ELSE
                CALL get_mo_set(mo_set=mos(ispin)%mo_set, mo_coeff=mo_coeff)
                CALL cp_fm_struct_create(tmp_fm_struct, nrow_global=nmosub, &
@@ -682,8 +716,15 @@ CONTAINS
             END DO
             CALL cp_fm_struct_release(tmp_fm_struct)
 
-            CALL optimize_loc_berry(loc_method, qs_loc_env, moloc_coeff(ispin)%matrix, op_sm_set, &
-                                    op_fm_set, para_env, cell, weights, ispin, print_loc_section)
+            IF (.NOT. PRESENT(complex_mo_coeff)) THEN
+               CALL optimize_loc_berry(loc_method, qs_loc_env, op_sm_set, &
+                                       op_fm_set, para_env, cell, weights, ispin, print_loc_section, &
+                                       vectors=moloc_coeff(ispin)%matrix)
+            ELSE
+               CALL optimize_loc_berry(loc_method, qs_loc_env, op_sm_set, &
+                                       op_fm_set, para_env, cell, weights, ispin, print_loc_section, &
+                                       complex_vectors=complex_moloc_coeff(ispin)%matrix)
+            END IF
 
             ! Here we dealloctate op_fm_set
             IF (ASSOCIATED(op_fm_set)) THEN
@@ -700,6 +741,7 @@ CONTAINS
 
          CASE (op_loc_pipek)
 
+            CPASSERT(.NOT. PRESENT(complex_mo_coeff))
             CALL optimize_loc_pipek(qs_env, loc_method, qs_loc_env, moloc_coeff(ispin)%matrix, &
                                     op_fm_set, ispin, print_loc_section)
 

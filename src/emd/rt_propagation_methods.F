@@ -1,22 +1,19 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
 !   Copyright (C) 2000 - 2020  CP2K developers group                                               !
-!--------------------------------------------------------------------------------------------------!
-
-! **************************************************************************************************
-!> \brief Routines for propagating the orbitals
-!> \author Florian Schiffmann (02.09)
-! **************************************************************************************************
+!-----------------------------------------*****************************************************************************
 MODULE rt_propagation_methods
    USE bibliography,                    ONLY: Kolafa2004,&
                                               cite_reference
+   USE cp_array_utils,                  ONLY: cp_1d_r_p_type
    USE cp_cfm_basic_linalg,             ONLY: cp_cfm_cholesky_decompose,&
                                               cp_cfm_gemm,&
                                               cp_cfm_triangular_multiply
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
                                               cp_cfm_release,&
                                               cp_cfm_type
-   USE cp_control_types,                ONLY: rtp_control_type
+   USE cp_control_types,                ONLY: dft_control_type,&
+                                              rtp_control_type
    USE cp_dbcsr_cholesky,               ONLY: cp_dbcsr_cholesky_decompose,&
                                               cp_dbcsr_cholesky_invert
    USE cp_dbcsr_operations,             ONLY: cp_dbcsr_sm_fm_multiply,&
@@ -35,9 +32,12 @@ MODULE rt_propagation_methods
                                               cp_fm_type
    USE cp_fm_vect,                      ONLY: cp_fm_vect_dealloc
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
+                                              cp_logger_get_default_io_unit,&
                                               cp_logger_get_default_unit_nr,&
                                               cp_logger_type,&
                                               cp_to_string
+   USE cp_output_handling,              ONLY: cp_p_file,&
+                                              cp_print_key_should_output
    USE dbcsr_api,                       ONLY: &
         dbcsr_add, dbcsr_copy, dbcsr_create, dbcsr_deallocate_matrix, dbcsr_desymmetrize, &
         dbcsr_filter, dbcsr_frobenius_norm, dbcsr_get_block_p, dbcsr_init_p, &
@@ -47,17 +47,40 @@ MODULE rt_propagation_methods
    USE input_constants,                 ONLY: do_arnoldi,&
                                               do_bch,&
                                               do_em,&
+                                              do_loc_both,&
+                                              do_loc_homo,&
+                                              do_loc_lumo,&
                                               do_pade,&
                                               do_taylor
+   USE input_section_types,             ONLY: section_get_ival,&
+                                              section_vals_get_subs_vals,&
+                                              section_vals_type
    USE iterate_matrix,                  ONLY: matrix_sqrt_Newton_Schulz
    USE kinds,                           ONLY: dp
    USE ls_matrix_exp,                   ONLY: cp_complex_dbcsr_gemm_3
    USE mathlib,                         ONLY: binomial
+   USE particle_list_types,             ONLY: particle_list_type
+   USE pw_env_types,                    ONLY: pw_env_get,&
+                                              pw_env_type
+   USE pw_pool_types,                   ONLY: pw_pool_create_pw,&
+                                              pw_pool_p_type,&
+                                              pw_pool_type
+   USE pw_types,                        ONLY: COMPLEXDATA1D,&
+                                              pw_p_type,&
+                                              REALDATA3D,&
+                                              REALSPACE,&
+                                              RECIPROCALSPACE
    USE qs_energy_init,                  ONLY: qs_energies_init
    USE qs_energy_types,                 ONLY: qs_energy_type
    USE qs_environment_types,            ONLY: get_qs_env,&
                                               qs_environment_type
    USE qs_ks_methods,                   ONLY: qs_ks_update_qs_env
+   USE qs_loc_dipole,                   ONLY: loc_dipole
+   USE qs_loc_states,                   ONLY: get_localization_info
+   USE qs_loc_types,                    ONLY: qs_loc_env_create,&
+                                              qs_loc_env_new_type
+   USE qs_loc_utils,                    ONLY: qs_loc_control_init,&
+                                              qs_loc_init
    USE rt_make_propagators,             ONLY: propagate_arnoldi,&
                                               propagate_bch,&
                                               propagate_exp,&
@@ -81,7 +104,8 @@ MODULE rt_propagation_methods
    PUBLIC :: propagation_step, &
              s_matrices_create, &
              calc_sinvH, &
-             put_data_to_history
+             put_data_to_history, &
+             rtp_localize
 
 CONTAINS
 
@@ -829,5 +853,157 @@ CONTAINS
       END IF
 
    END SUBROUTINE put_data_to_history
+
+! **************************************************************************************************
+!> \brief Computes Maximally localised Wannier functions and print properties according to
+!>        FORCE_EVAL%DFT%LOCALIZE, adapted from qs_scf_post_gpw::scf_post_calculation_gpw
+!> \param qs_env QuickStep environment
+!> \param rtp Real time propagation environment
+!> \par History 03/2020 created [LS]
+!> \author Lukas Schreder
+! **************************************************************************************************
+   SUBROUTINE rtp_localize(qs_env, rtp)
+
+     TYPE(qs_environment_type), POINTER, INTENT(IN)    :: qs_env
+     TYPE(rt_prop_type), POINTER, INTENT(IN), OPTIONAL :: rtp
+
+     CHARACTER(len=*), PARAMETER :: routineN = "rtp_localize", &
+        routineP = moduleN//":"//routineN
+
+     INTEGER                                     :: handle, ispin, n_rep, nhomo, nlumo, output_unit
+     LOGICAL                                     :: do_homo, do_mo_cubes, do_wannier_cubes, &
+                                                    loc_explicit, loc_print_explicit, p_loc, &
+                                                    p_loc_homo, p_loc_lumo
+     TYPE(pw_p_type)                             :: wf_g, wf_r
+     INTEGER, DIMENSION(:, :, :), POINTER        :: marked_states
+     TYPE(cp_1d_r_p_type), DIMENSION(:), POINTER :: occupied_evals
+     TYPE(cp_fm_p_type), DIMENSION(:), POINTER   :: homo_localized, mo_coeff, occupied_orbs
+     TYPE(cp_logger_type), POINTER               :: logger
+     TYPE(dft_control_type), POINTER             :: dft_control
+     TYPE(particle_list_type), POINTER           :: particles
+     TYPE(pw_env_type), POINTER                  :: pw_env
+     TYPE(pw_pool_p_type), DIMENSION(:), POINTER :: pw_pools
+     TYPE(pw_pool_type), POINTER                 :: auxbas_pw_pool
+     TYPE(qs_loc_env_new_type), POINTER          :: qs_loc_env_homo
+     TYPE(section_vals_type), POINTER            :: dft_section, input, loc_print_section, &
+                                                    loc_section, print_key
+
+     CALL timeset(routineN, handle)
+
+     NULLIFY(auxbas_pw_pool, dft_control, dft_section, homo_localized, input, loc_print_section, &
+             loc_section, logger, marked_states, mo_coeff, occupied_evals, &
+             occupied_orbs, particles, print_key, pw_env, pw_pools, qs_loc_env_homo)
+
+     logger => cp_get_default_logger()
+     output_unit = cp_logger_get_default_io_unit(logger)
+
+     loc_explicit = .TRUE.
+     loc_print_explicit = .TRUE.
+
+     PRINT *, "LOCALIZE| Localising propagated orbitals"
+
+     ! get section properties
+     CALL get_qs_env(qs_env, dft_control=dft_control, input=input, pw_env=pw_env)
+     ! get propagated MO coeffs
+     CALL get_rtp(rtp, mos_new=mo_coeff)
+     dft_section => section_vals_get_subs_vals(input, "DFT")
+     loc_section => section_vals_get_subs_vals(dft_section, "LOCALIZE")
+     loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
+
+     ! what properties to print out
+     print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_DIPOLES")
+     p_loc = BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+     print_key => section_vals_get_subs_vals(loc_print_section, "TOTAL_DIPOLE")
+     p_loc = p_loc &
+             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_CENTERS")
+     p_loc = p_loc &
+             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_SPREADS")
+     p_loc = p_loc &
+             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_CUBES")
+     p_loc = p_loc &
+             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+     print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_STATES")
+     p_loc = p_loc &
+             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+     print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_MOMENTS")
+     p_loc = p_loc &
+             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+
+     ! localize occupied or unoccupied orbitals, or both
+     IF (loc_explicit) THEN
+        p_loc_homo = (section_get_ival(loc_section, "STATES") == do_loc_homo .OR. &
+                      section_get_ival(loc_section, "STATES") == do_loc_both) .AND. p_loc
+        p_loc_lumo = (section_get_ival(loc_section, "STATES") == do_loc_lumo .OR. &
+                      section_get_ival(loc_section, "STATES") == do_loc_both) .AND. p_loc
+        ! CALL section_vals_val_get(loc_section, "LIST_UNOCCUPIED", n_rep_val=n_rep)
+     ELSE
+        p_loc_homo = .FALSE.
+        p_loc_lumo = .FALSE.
+        n_rep = 0
+     END IF
+
+     IF (n_rep == 0 .AND. p_loc_lumo) THEN
+        CALL cp_abort(__LOCATION__, "Specify LIST_UNOCCUPIED to localise unoccupied orbitals")
+        p_loc_lumo = .FALSE.
+     END IF
+     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_STATES")
+     p_loc = p_loc .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+
+     ! write Wannier cubes?
+     IF (loc_print_explicit) THEN
+        do_wannier_cubes = BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+                                 "WANNIER_CUBES"), cp_p_file)
+     ELSE
+        do_wannier_cubes = .FALSE.
+     END IF
+     nhomo = section_get_ival(dft_section, "PRINT%MO_CUBES%NHOMO")
+     nlumo = section_get_ival(dft_section, "PRINT%MO_CUBES%NLUMO")
+
+     ! Setup grids to compute wavefunctions
+     CALL pw_env_get(pw_env, auxbas_pw_pool=auxbas_pw_pool, pw_pools=pw_pools)
+     CALL pw_pool_create_pw(auxbas_pw_pool, wf_r%pw, use_data=REALDATA3D, in_space=REALSPACE)
+     CALL pw_pool_create_pw(auxbas_pw_pool, wf_g%pw, use_data=COMPLEXDATA1D, &
+                            in_space=RECIPROCALSPACE)
+
+     IF (p_loc) THEN
+        ! localise occupied orbitals
+        IF (p_loc_homo) THEN
+           ALLOCATE(occupied_orbs(SIZE(mo_coeff)))
+           ALLOCATE(occupied_evals(dft_control%nspins))
+           ALLOCATE(homo_localized(SIZE(mo_coeff)))
+
+           CALL get_rtp(rtp, mos_new=mo_coeff)
+           DO ispin = 1, SIZE(mo_coeff)
+              occupied_orbs(ispin)%matrix => mo_coeff(ispin)%matrix
+              CALL cp_fm_create(homo_localized(ispin)%matrix, &
+                                occupied_orbs(ispin)%matrix%matrix_struct)
+              CALL cp_fm_to_fm(occupied_orbs(ispin)%matrix, homo_localized(ispin)%matrix)
+           END DO
+
+           ! perform localization
+           do_homo = .TRUE.
+           CALL qs_loc_env_create(qs_loc_env_homo)
+           CALL qs_loc_control_init(qs_loc_env_homo, loc_section, do_homo=do_homo)
+           CALL qs_loc_init(qs_env, qs_loc_env_homo, loc_section, homo_localized, do_homo, &
+                            do_mo_cubes)
+           CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, wf_r, &
+                                      wf_g, particles, occupied_orbs, occupied_evals, marked_states)
+
+           ! memory cleanup
+           CALL cp_fm_vect_dealloc(homo_localized)
+           DEALLOCATE(occupied_orbs)
+           DEALLOCATE(occupied_evals)
+
+           ! print total dipole
+           ! CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
+        END IF
+     END IF
+
+     CALL timestop(handle)
+
+   END SUBROUTINE rtp_localize
 
 END MODULE rt_propagation_methods

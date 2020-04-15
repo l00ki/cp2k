@@ -33,6 +33,7 @@ MODULE rt_propagation
                                               force_env_type
    USE global_types,                    ONLY: global_environment_type
    USE input_constants,                 ONLY: real_time_propagation,&
+                                              rtp_localize_each,&
                                               use_restart_wfn,&
                                               use_rt_restart,&
                                               use_scf_wfn
@@ -55,6 +56,9 @@ MODULE rt_propagation
                                               external_e_potential
    USE qs_ks_methods,                   ONLY: qs_ks_update_qs_env
    USE qs_ks_types,                     ONLY: qs_ks_did_change
+   USE qs_loc_states,                   ONLY: get_localization_info
+   USE qs_loc_types,                    ONLY: qs_loc_env_create
+   USE qs_loc_utils,                    ONLY: qs_loc_init
    USE qs_matrix_pools,                 ONLY: mpools_get
    USE qs_mo_types,                     ONLY: get_mo_set,&
                                               init_mo_set,&
@@ -62,7 +66,8 @@ MODULE rt_propagation
    USE rt_delta_pulse,                  ONLY: apply_delta_pulse,&
                                               apply_delta_pulse_periodic
    USE rt_hfx_utils,                    ONLY: rtp_hfx_rebuild
-   USE rt_propagation_methods,          ONLY: propagation_step
+   USE rt_propagation_methods,          ONLY: propagation_step,&
+                                              rtp_localize
    USE rt_propagation_output,           ONLY: rt_prop_output
    USE rt_propagation_types,            ONLY: get_rtp,&
                                               rt_prop_create,&
@@ -217,8 +222,8 @@ CONTAINS
                ENDIF
             ELSE
                DO i = 1, SIZE(mos)
-                  CALL cp_fm_to_fm(mos(i)%mo_set%mo_coeff, mos_old(2*i - 1)%matrix)
-                  CALL cp_fm_set_all(mos_old(2*i)%matrix, zero, zero)
+                  CALL cp_fm_to_fm(mos(i)%mo_set%mo_coeff, mos_old(2*i - 1)%matrix)  ! real parts
+                  CALL cp_fm_set_all(mos_old(2*i)%matrix, zero, zero)  ! imaginary parts
                END DO
             ENDIF
          END IF
@@ -270,8 +275,8 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'run_propagation', &
          routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: aspc_order, handle, i_iter, i_step, &
-                                                            max_iter, max_steps
+      INTEGER                                            :: aspc_order, handle, i_iter, &
+                                                            i_step, max_iter, max_steps
       LOGICAL                                            :: should_stop
       REAL(Kind=dp)                                      :: eps_ener, time_iter_start, &
                                                             time_iter_stop, used_time
@@ -335,6 +340,9 @@ CONTAINS
             time_iter_start = time_iter_stop
             CALL rt_prop_output(qs_env, real_time_propagation, delta_iter=rtp%delta_iter, used_time=used_time)
             CALL rt_write_input_restart(force_env=force_env)
+            IF (rtp_control%localize == rtp_localize_each) THEN
+               CALL rtp_localize(qs_env, rtp)
+            END IF
             IF (should_stop) EXIT
          ELSE
             EXIT

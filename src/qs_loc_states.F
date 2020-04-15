@@ -8,6 +8,10 @@
 ! **************************************************************************************************
 MODULE qs_loc_states
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
+   USE cp_cfm_types,                    ONLY: cp_cfm_create,&
+                                              cp_cfm_to_fm,&
+                                              cp_cfm_type,&
+                                              cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_fm_types,                     ONLY: cp_fm_p_type
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
@@ -78,8 +82,9 @@ CONTAINS
 
       INTEGER                                            :: handle, ispin, mystate, ns, output_unit
       INTEGER, DIMENSION(:), POINTER                     :: lstates, marked_states_spin
-      LOGICAL                                            :: do_homo
+      LOGICAL                                            :: do_homo, mos_are_complex
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: scenter
+      TYPE(cp_cfm_type), POINTER                         :: tmp_complex_coeffs
       TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: ks_rmpv, matrix_s
       TYPE(dft_control_type), POINTER                    :: dft_control
@@ -90,13 +95,16 @@ CONTAINS
 
       CALL timeset(routineN, handle)
       NULLIFY (mos, ks_rmpv, dft_control, loc_print_section, marked_states_spin, &
-               matrix_s, scenter, wc)
+           matrix_s, scenter, wc, tmp_complex_coeffs)
       CALL get_qs_env(qs_env, mos=mos, matrix_ks=ks_rmpv, molecule_set=molecule_set, &
                       dft_control=dft_control, matrix_s=matrix_s)
       logger => cp_get_default_logger()
       output_unit = cp_logger_get_default_io_unit(logger)
       loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
       do_homo = qs_loc_env%localized_wfn_control%do_homo
+      PRINT *, dft_control%nspins, SIZE(mo_local)
+      ! check whether the coeffs are given as alternating real/imaginary matrices
+      mos_are_complex = (dft_control%nspins * 2 == SIZE(mo_local))
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
                                            "WANNIER_STATES"), cp_p_file)) THEN
          CALL get_qs_env(qs_env=qs_env, WannierCentres=wc)
@@ -104,6 +112,10 @@ CONTAINS
             ALLOCATE (wc(dft_control%nspins))
          ENDIF
       ENDIF
+      !
+      IF (output_unit > 0 .AND. do_homo .AND. mos_are_complex) THEN
+         WRITE (output_unit, "(/T2,A)") "LOCALIZATION| Localizing complex orbitals"
+      END IF
       !
       DO ispin = 1, dft_control%nspins
          !
@@ -124,8 +136,29 @@ CONTAINS
 
             scenter => qs_loc_env%localized_wfn_control%centers_set(ispin)%array
 
-            CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
-                               myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
+            PRINT *, mos_are_complex
+            IF (.NOT. mos_are_complex) THEN
+               ! purely real coefficients, e.g. from SCF runs
+               PRINT *, qs_loc_env%moloc_coeff(ispin)%matrix%local_data
+               CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
+                                  myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
+               PRINT *, qs_loc_env%moloc_coeff(ispin)%matrix%local_data
+            ELSE
+               ! complex coefficients, e.g. from RTP runs
+               CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix%matrix_struct)
+               CALL cp_fm_to_cfm(mo_local(2*ispin-1)%matrix, mo_local(2*ispin)%matrix, &
+                                 tmp_complex_coeffs)
+               PRINT *, qs_loc_env%complex_moloc_coeff(ispin)%matrix%local_data
+               PRINT *, qs_loc_env%moloc_coeff(2*ispin-1)%matrix%local_data
+               PRINT *, qs_loc_env%moloc_coeff(2*ispin)%matrix%local_data
+               CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
+                                  myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
+               PRINT *, qs_loc_env%complex_moloc_coeff(ispin)%matrix%local_data
+               PRINT *, qs_loc_env%moloc_coeff(2*ispin-1)%matrix%local_data
+               PRINT *, qs_loc_env%moloc_coeff(2*ispin)%matrix%local_data
+               CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
+                                 mo_local(2*ispin)%matrix)
+            END IF
 
             ! maps wfc to molecules, and compute the molecular dipoles if required
             IF ((BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
