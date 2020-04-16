@@ -1993,8 +1993,8 @@ CONTAINS
 
       INTEGER                                            :: handle, i, j, nao, nmoloc
       TYPE(cp_fm_type), POINTER                          :: opvec, tmp_r, tmp_i
-      TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
-      TYPE(cp_cfm_type), POINTER                         :: complex_opvec, tmp_c
+      TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct_nao, tmp_fm_struct_nmoloc
+      TYPE(cp_cfm_type), POINTER                         :: complex_opvec, tmp_c, tmp_z
 
       CALL timeset(routineN, handle)
 
@@ -2005,7 +2005,7 @@ CONTAINS
          CPASSERT(PRESENT(complex_vectors))
       END IF
       
-      NULLIFY (complex_opvec, opvec, tmp_r, tmp_i, tmp_c, tmp_fm_struct)
+      NULLIFY (complex_opvec, opvec, tmp_r, tmp_i, tmp_c, tmp_z, tmp_fm_struct_nao, tmp_fm_struct_nmoloc)
       ! get rows and cols of the input
       IF (PRESENT(vectors)) THEN
          CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
@@ -2015,11 +2015,13 @@ CONTAINS
          CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
          ! replicate the input kind of matrix
          CALL cp_cfm_create(complex_opvec, complex_vectors%matrix_struct)
-         CALL cp_fm_struct_create(tmp_fm_struct, template_fmstruct=complex_vectors%matrix_struct, &
-                                  nrow_global=nmoloc, ncol_global=nao)
-         CALL cp_fm_create(tmp_r, tmp_fm_struct)
-         CALL cp_fm_create(tmp_i, tmp_fm_struct)
-         CALL cp_cfm_create(tmp_c, complex_vectors%matrix_struct)
+         CALL cp_fm_struct_create(tmp_fm_struct_nao, template_fmstruct=complex_vectors%matrix_struct, &
+                                  nrow_global=nao, ncol_global=nao)
+         CALL cp_fm_struct_create(tmp_fm_struct_nmoloc, template_fmstruct=complex_vectors%matrix_struct, &
+                                  nrow_global=nmoloc, ncol_global=nmoloc)
+         ALLOCATE(tmp_r, tmp_i, tmp_c, tmp_z)
+         CALL cp_cfm_create(tmp_c, tmp_fm_struct_nao)
+         CALL cp_cfm_create(tmp_z, zij_fm_set(1,1)%matrix%matrix_struct)
       END IF
 
       IF (PRESENT(vectors)) THEN
@@ -2033,24 +2035,36 @@ CONTAINS
             ENDDO
          ENDDO
       ELSE
-         ALLOCATE(tmp_r, tmp_i, tmp_c)
          ! compute zij from complex coeffs
-         DO i = 1, SIZE(zij_fm_set, 2) ! x, y, z
-            CALL cp_fm_create(tmp_r, complex_vectors%matrix_struct)
-            CALL cp_fm_create(tmp_i, complex_vectors%matrix_struct)
-            CALL cp_fm_set_all(zij_fm_set(1, i)%matrix, 0.0_dp)  ! real
-            CALL cp_fm_set_all(zij_fm_set(2, i)%matrix, 0.0_dp)  ! imag
+         CALL cp_fm_struct_release(tmp_fm_struct_nao)
+         DO i = 1, SIZE(zij_fm_set, 2)  ! x, y, z
+            PRINT *, i
+            CALL cp_fm_struct_create(tmp_fm_struct_nao, template_fmstruct=complex_vectors%matrix_struct, &
+                                     nrow_global=nao, ncol_global=nao)
+            CALL cp_fm_create(tmp_r, tmp_fm_struct_nao)
+            CALL cp_fm_create(tmp_i, tmp_fm_struct_nao)
             CALL copy_dbcsr_to_fm(op_sm_set(1, i)%matrix, tmp_r)
             CALL copy_dbcsr_to_fm(op_sm_set(2, i)%matrix, tmp_i)
             CALL cp_fm_to_cfm(tmp_r, tmp_i, tmp_c)
+            ! A|u>
+            CALL cp_cfm_gemm("N", "N", nmoloc, nao, nmoloc, (1.0_dp, 0.0_dp), tmp_c, &
+                             complex_vectors, (0.0_dp, 0.0_dp), complex_opvec)
+            ! <u|A|u>
+            CALL cp_cfm_gemm("C", "N", nmoloc, nmoloc, nao, (1.0_dp, 0.0_dp), complex_vectors, &
+                             complex_opvec, (0.0_dp, 0.0_dp), tmp_z)
+            ! split into real and imaginary components
+            CALL cp_cfm_to_fm(tmp_z, zij_fm_set(1, i)%matrix, zij_fm_set(2, i)%matrix)
+            CALL cp_fm_release(tmp_r)
+            CALL cp_fm_release(tmp_i)
          END DO
+         CALL cp_cfm_release(tmp_c)
+         CALL cp_cfm_release(tmp_z)
+         CALL cp_cfm_release(complex_opvec)
+         CALL cp_fm_struct_release(tmp_fm_struct_nao)
+         CALL cp_fm_struct_release(tmp_fm_struct_nmoloc)
       END IF
 
-      CALL cp_cfm_release(complex_opvec)
-      CALL cp_cfm_release(tmp_c)
       CALL cp_fm_release(opvec)
-      CALL cp_fm_release(tmp_r)
-      CALL cp_fm_release(tmp_i)
       CALL timestop(handle)
 
    END SUBROUTINE zij_matrix

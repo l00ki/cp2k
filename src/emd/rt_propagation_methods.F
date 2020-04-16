@@ -998,7 +998,7 @@ CONTAINS
            DEALLOCATE(occupied_evals)
 
            ! print total dipole
-           ! CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
+           CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
         END IF
      END IF
 
