@@ -499,11 +499,13 @@ CONTAINS
             s_spin = myspin
             l_spin = myspin
          END IF
-         ALLOCATE (moloc_coeff(s_spin:l_spin))
          IF (nspins * 2 == SIZE(loc_coeff)) THEN
             ALLOCATE(complex_moloc_coeff(s_spin:l_spin))
+            ALLOCATE(moloc_coeff(s_spin:s_spin+2*(l_spin-s_spin)+1))
+         ELSE
+            ALLOCATE(moloc_coeff(s_spin:l_spin))
          END IF
-         
+            
          DO ispin = s_spin, l_spin
             NULLIFY (tmp_fm_struct, mo_coeff)
             CALL get_mo_set(mos(ispin)%mo_set, mo_coeff=mo_coeff, nao=nao, nmo=nmo)

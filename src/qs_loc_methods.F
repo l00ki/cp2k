@@ -25,7 +25,9 @@ MODULE qs_loc_methods
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
                                               cp_cfm_get_info,&
                                               cp_cfm_p_type,&
+                                              cp_cfm_release,&
                                               cp_cfm_type,&
+                                              cp_cfm_to_fm,&
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm
@@ -151,7 +153,7 @@ CONTAINS
                                  zij_fm_set, para_env, cell, weights, ispin, print_loc_section, &
                                  vectors, complex_vectors)
 
-      INTEGER, INTENT(IN)                                :: method
+      INTEGER, INTENT(INOUT)                             :: method
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: op_sm_set
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: zij_fm_set
@@ -169,11 +171,14 @@ CONTAINS
       INTEGER                                            :: handle, max_iter, nao, nmoloc, out_each, &
                                                             output_unit, sweeps
       LOGICAL                                            :: converged, crazy_use_diag, &
-                                                            do_jacobi_refinement
+                                                            do_jacobi_refinement, &
+                                                            vectors_are_complex
       REAL(dp)                                           :: crazy_scale, eps_localization, &
                                                             max_crazy_angle, start_time, &
                                                             target_time
       TYPE(cp_logger_type), POINTER                      :: logger
+      TYPE(cp_cfm_type), POINTER                         :: tmp_complex_vectors
+      TYPE(cp_fm_type), POINTER                          :: nullmat
 
 !      INTEGER :: i,j
 
@@ -185,11 +190,14 @@ CONTAINS
       ! real and complex case are mutually exclusive
       IF (PRESENT(vectors)) THEN
          CPASSERT(.NOT. PRESENT(complex_vectors))
+         vectors_are_complex = .FALSE.
          ! get rows and cols of the input
          CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
          CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
       ELSE
          CPASSERT(PRESENT(complex_vectors))
+         vectors_are_complex = .TRUE.
+         method = do_loc_cardoso  ! reference implementation for complex MOs
          CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
          CALL zij_matrix(op_sm_set, zij_fm_set, complex_vectors=complex_vectors)
       END IF
@@ -207,9 +215,12 @@ CONTAINS
                                  ispin, print_loc_section, only_initial_out=.TRUE.)
       SELECT CASE (method)
       CASE (do_loc_jacobi)
-         CALL jacobi_rotations(weights, zij_fm_set, vectors, para_env, max_iter=max_iter, &
+         PRINT *, "MOs before: ", vectors%local_data
+         CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                eps_localization=eps_localization, sweeps=sweeps, &
-                               out_each=out_each, target_time=target_time, start_time=start_time)
+                               out_each=out_each, target_time=target_time, start_time=start_time, &
+                               vectors=vectors)
+         PRINT *, "MOs after: ", vectors%local_data
       CASE (do_loc_scdm)
          ! Decomposition
          CALL scdm_qrfact(vectors)
@@ -219,9 +230,10 @@ CONTAINS
             ! Intermediate spread and centers
             CALL centers_spreads_berry(qs_loc_env, zij_fm_set, nmoloc, cell, weights, &
                                        ispin, print_loc_section, only_initial_out=.TRUE.)
-            CALL jacobi_rotations(weights, zij_fm_set, vectors, para_env, max_iter=max_iter, &
+            CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                   eps_localization=eps_localization, sweeps=sweeps, &
-                                  out_each=out_each, target_time=target_time, start_time=start_time)
+                                  out_each=out_each, target_time=target_time, start_time=start_time, &
+                                  vectors=vectors)
          END IF
       CASE (do_loc_crazy)
          CALL crazy_rotations(weights, zij_fm_set, vectors, max_iter=max_iter, max_crazy_angle=max_crazy_angle, &
@@ -233,9 +245,10 @@ CONTAINS
                IF (output_unit > 0) WRITE (output_unit, "(T4,A,I6,/,T4,A)") &
                   " Crazy Wannier localization not converged after ", sweeps, &
                   " iterations, switching to jacobi rotations"
-               CALL jacobi_rotations(weights, zij_fm_set, vectors, para_env, max_iter=max_iter, &
+               CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                      eps_localization=eps_localization, sweeps=sweeps, &
-                                     out_each=out_each, target_time=target_time, start_time=start_time)
+                                     out_each=out_each, target_time=target_time, start_time=start_time, &
+                                     vectors=vectors)
             ELSE
                IF (output_unit > 0) WRITE (output_unit, "(T4,A,I6,/,T4,A)") &
                   " Crazy Wannier localization not converged after ", sweeps, &
@@ -254,8 +267,26 @@ CONTAINS
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
       CASE (do_loc_cardoso)
-         CALL cardoso_souloumiac(weights, zij_fm_set, complex_vectors, max_iter, eps_localization, &
-                                 sweeps, para_env)
+         IF (PRESENT(vectors)) THEN
+            CALL cp_fm_create(nullmat, vectors%matrix_struct)
+            CALL cp_fm_set_all(nullmat, 0.0_dp, 0.0_dp)
+            CALL cp_cfm_create(tmp_complex_vectors, vectors%matrix_struct)
+            CALL cp_fm_to_cfm(vectors, nullmat, tmp_complex_vectors)
+            PRINT *, "MOs before: ", vectors%local_data
+         ELSE
+            tmp_complex_vectors => complex_vectors
+         END IF
+         
+         CALL cardoso_souloumiac(weights, zij_fm_set, para_env, max_iter, eps_localization, &
+                                 sweeps, out_each, target_time, start_time, tmp_complex_vectors)
+
+         IF (PRESENT(vectors)) THEN
+            CALL cp_cfm_to_fm(tmp_complex_vectors, vectors, nullmat)
+            PRINT *, "MOs after: ", vectors%local_data
+            CALL cp_fm_release(nullmat)
+            CALL cp_cfm_release(tmp_complex_vectors)
+         END IF
+         
       CASE (do_loc_none)
          IF (output_unit > 0) THEN
             WRITE (output_unit, '(T4,A,I6,A)') " No MOS localization applied "
@@ -680,6 +711,9 @@ CONTAINS
       END IF
 
       DO ispin = s_spin, l_spin
+         IF (PRESENT(ext_mo_coeff)) PRINT *, "moloc_coeff ", ispin, moloc_coeff(ispin)%matrix%local_data
+         IF (PRESENT(complex_mo_coeff)) PRINT *, "complex_moloc_coeff", ispin, &
+               complex_moloc_coeff(ispin)%matrix%local_data
 
          CALL get_mo_set(mo_set=mos(ispin)%mo_set, nao=nao, nmo=nmo)
          loc_method = localized_wfn_control%localization_method
@@ -725,6 +759,11 @@ CONTAINS
                                        op_fm_set, para_env, cell, weights, ispin, print_loc_section, &
                                        complex_vectors=complex_moloc_coeff(ispin)%matrix)
             END IF
+
+            IF (PRESENT(ext_mo_coeff)) PRINT *, "moloc_coeff ", ispin, &
+                 moloc_coeff(ispin)%matrix%local_data
+            IF (PRESENT(complex_mo_coeff)) PRINT *, "complex_moloc_coeff", ispin, &
+                 complex_moloc_coeff(ispin)%matrix%local_data
 
             ! Here we dealloctate op_fm_set
             IF (ASSOCIATED(op_fm_set)) THEN
@@ -863,6 +902,7 @@ CONTAINS
             DEALLOCATE (centers)
             DEALLOCATE (list_cubes)
          END IF
+
       END DO ! ispin
       first_time = .FALSE.
       CALL timestop(handle)
