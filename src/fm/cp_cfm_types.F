@@ -51,6 +51,7 @@ MODULE cp_cfm_types
              cp_cfm_start_copy_general, &
              cp_cfm_to_cfm, &
              cp_cfm_to_fm, &
+             cp_cfm_write_formatted, &
              cp_fm_to_cfm
 
    INTERFACE cp_cfm_to_cfm
@@ -1408,4 +1409,84 @@ CONTAINS
 
       CALL timestop(handle)
    END SUBROUTINE cp_cfm_cleanup_copy_general
+
+! **************************************************************************************************
+!> \brief ...
+!> \param fm ...
+!> \param unit ...
+! **************************************************************************************************
+   SUBROUTINE cp_cfm_write_unformatted(fm, unit)
+      TYPE(cp_cfm_type), POINTER               :: fm
+      INTEGER                                  :: unit
+
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_write_unformatted', &
+                                     routineP = moduleN//':'//routineN
+
+      INTEGER                                  :: handle, j, max_block, &
+                                                  ncol_global, nrow_global
+      TYPE(cp_para_env_type), POINTER          :: para_env
+
+      CALL timeset(routineN, handle)
+      CALL cp_cfm_get_info(fm, nrow_global=nrow_global, ncol_global=ncol_global, ncol_block=max_block, &
+                           para_env=para_env)
+
+      IF (unit > 0) THEN
+         DO j = 1, ncol_global
+            WRITE (unit) fm%local_data(:, j)
+         END DO
+      END IF
+
+      CALL timestop(handle)
+
+   END SUBROUTINE cp_cfm_write_unformatted
+   
+! **************************************************************************************************
+!> \brief Write out a complex full matrix in plain text.
+!> \param fm the matrix to be outputted
+!> \param unit the unit number for I/O
+!> \param header optional header
+!> \param value_format ...
+! **************************************************************************************************
+   SUBROUTINE cp_cfm_write_formatted(fm, unit, header, value_format)
+      TYPE(cp_cfm_type), POINTER               :: fm
+      INTEGER                                  :: unit
+      CHARACTER(LEN=*), OPTIONAL               :: header, value_format
+
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_write_formatted', &
+                                     routineP = moduleN//':'//routineN
+
+      CHARACTER(LEN=32)                        :: my_value_format
+      INTEGER                                  :: handle, i, j, max_block, &
+                                                  ncol_global, nrow_global, &
+                                                  nrow_block
+      TYPE(cp_para_env_type), POINTER          :: para_env
+
+      CALL timeset(routineN, handle)
+      CALL cp_cfm_get_info(fm, nrow_global=nrow_global, ncol_global=ncol_global, ncol_block=max_block, &
+                           nrow_block=nrow_block, para_env=para_env)
+
+      IF (PRESENT(value_format)) THEN
+         CPASSERT(LEN_TRIM(ADJUSTL(value_format)) < 11)
+         my_value_format = "(A2, I10, I10, "//TRIM(ADJUSTL(value_format))//", "//TRIM(ADJUSTL(value_format))//")"
+      ELSE
+         my_value_format = "(A2, I10, I10, ES24.12, ES24.12)"
+      END IF
+
+      IF (unit > 0) THEN
+         IF (PRESENT(header)) WRITE (unit, *) header
+         WRITE (unit, "(A2, A10, A10, A24, A24)") "#", "Row", "Column", ADJUSTL("Real"), ADJUSTL("Imag")
+      END IF
+
+      IF (unit > 0) THEN
+         DO j = 1, ncol_global
+            DO i = 1, nrow_global
+               WRITE (UNIT=unit, FMT=my_value_format) "  ", i, j, REAL(fm%local_data(i, j)), AIMAG(fm%local_data(i, j))
+            END DO
+         END DO
+      END IF
+
+      CALL timestop(handle)
+
+   END SUBROUTINE cp_cfm_write_formatted
+   
 END MODULE cp_cfm_types
