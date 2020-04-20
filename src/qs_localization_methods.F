@@ -30,6 +30,7 @@ MODULE qs_localization_methods
                                               cp_cfm_to_cfm,&
                                               cp_cfm_to_fm,&
                                               cp_cfm_type,&
+                                              cp_cfm_write_formatted,&
                                               cp_fm_to_cfm
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm,&
                                               cp_dbcsr_sm_fm_multiply
@@ -50,7 +51,7 @@ MODULE qs_localization_methods
    USE cp_fm_types,                     ONLY: &
         cp_fm_create, cp_fm_get_element, cp_fm_get_info, cp_fm_get_submatrix, cp_fm_maxabsrownorm, &
         cp_fm_maxabsval, cp_fm_p_type, cp_fm_release, cp_fm_set_all, cp_fm_set_submatrix, &
-        cp_fm_to_fm, cp_fm_to_fm_submat, cp_fm_type
+        cp_fm_to_fm, cp_fm_to_fm_submat, cp_fm_type, cp_fm_write_formatted
    USE cp_fm_vect,                      ONLY: cp_fm_vect_dealloc
    USE cp_gemm_interface,               ONLY: cp_gemm
    USE cp_log_handling,                 ONLY: cp_logger_get_default_io_unit,&
@@ -2088,8 +2089,6 @@ CONTAINS
                CALL cp_dbcsr_sm_fm_multiply(op_sm_set(j, i)%matrix, vectors, opvec, ncol=nmoloc)
                CALL cp_gemm("T", "N", nmoloc, nmoloc, nao, 1.0_dp, vectors, opvec, 0.0_dp, &
                             zij_fm_set(j, i)%matrix)
-               !PRINT *, i, j
-               !PRINT *, zij_fm_set(j,i)%matrix%local_data
             ENDDO
          ENDDO
       ELSE
@@ -2098,18 +2097,13 @@ CONTAINS
             CALL copy_dbcsr_to_fm(op_sm_set(1, i)%matrix, tmp_r(i)%matrix)
             CALL copy_dbcsr_to_fm(op_sm_set(2, i)%matrix, tmp_i(i)%matrix)
             CALL cp_fm_to_cfm(tmp_r(i)%matrix, tmp_i(i)%matrix, tmp_c)
-            ! A|u>
-            CALL cp_cfm_gemm("N", "N", nmoloc, nao, nmoloc, (1.0_dp, 0.0_dp), tmp_c, &
-                             complex_vectors, (0.0_dp, 0.0_dp), complex_opvec)
-            ! <u|A|u>
-            CALL cp_cfm_gemm("C", "N", nmoloc, nmoloc, nao, (1.0_dp, 0.0_dp), complex_vectors, &
+            ! A|w>
+            complex_opvec%local_data = MATMUL(tmp_c%local_data, complex_vectors%local_data)
+            ! <w|A|w>
+            CALL cp_cfm_gemm("T", "N", nmoloc, nmoloc, nao, (1.0_dp, 0.0_dp), complex_vectors, &
                              complex_opvec, (0.0_dp, 0.0_dp), tmp_z)
-            ! split into real and imaginary components
+            ! save into real and imaginary components
             CALL cp_cfm_to_fm(tmp_z, zij_fm_set(1, i)%matrix, zij_fm_set(2, i)%matrix)
-            !PRINT *, i, 1
-            !PRINT *, zij_fm_set(1, i)%matrix%local_data
-            !PRINT *, i, 2
-            !PRINT *, zij_fm_set(2, i)%matrix%local_data
          END DO
          CALL cp_fm_vect_dealloc(tmp_r)
          CALL cp_fm_vect_dealloc(tmp_i)
@@ -2187,9 +2181,9 @@ CONTAINS
    END SUBROUTINE scdm_qrfact
 
 ! **************************************************************************************************
-!> \brief Achieves minimisation of the spread functional by simultaneous diagonalisation as
-!>        demonstrated in Cardoso & Souloumiac, SIAM J. Matrix Anal. Appl., 17(1), 161. A simpler
-!>        version of this algorithm exists for real vectors, which may speed things up.
+!> \brief Achieves minimisation of the spread functional by simultaneous diagonalisation with Jacobi
+!>        rotations as presented in Cardoso & Souloumiac, SIAM J. Matrix Anal. Appl., 17(1), 161. A
+!>        simpler version of this algorithm exists for real vectors, which may speed things up.
 !> \param weights ...
 !> \param zij ...
 !> \param para_env ...
@@ -2286,10 +2280,6 @@ CONTAINS
         NULLIFY(c_zij(idim)%matrix)
         CALL cp_cfm_create(c_zij(idim)%matrix, zij(1, 1)%matrix%matrix_struct)
         CALL cp_fm_to_cfm(zij(1, idim)%matrix, zij(2, idim)%matrix, c_zij(idim)%matrix)
-        !PRINT *, idim, 1
-        !PRINT *, zij(1, idim)%matrix%local_data
-        !PRINT *, idim, 2
-        !PRINT *, zij(2, idim)%matrix%local_data
      END DO
 
      CALL cp_cfm_get_info(c_rmat, nrow_global=nstate)
@@ -2307,6 +2297,15 @@ CONTAINS
         t1 = m_walltime()
         DO istate = 1, nstate
            DO jstate = istate+1, nstate
+              !CALL cp_fm_write_formatted(zij(1, 1)%matrix, unit_nr, "zij 1r")
+              !CALL cp_fm_write_formatted(zij(2, 1)%matrix, unit_nr, "zij 1i")
+              !CALL cp_fm_write_formatted(zij(1, 2)%matrix, unit_nr, "zij 2r")
+              !CALL cp_fm_write_formatted(zij(2, 2)%matrix, unit_nr, "zij 2i")
+              !CALL cp_fm_write_formatted(zij(1, 3)%matrix, unit_nr, "zij 3r")
+              !CALL cp_fm_write_formatted(zij(2, 3)%matrix, unit_nr, "zij 3i")
+              !CALL cp_cfm_write_formatted(c_zij(1)%matrix, unit_nr, "c_zij 1")
+              !CALL cp_cfm_write_formatted(c_zij(2)%matrix, unit_nr, "c_zij 2")
+              !CALL cp_cfm_write_formatted(c_zij(3)%matrix, unit_nr, "c_zij 3")
               DO idim = 1, dim2
                  CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, istate, mii(idim))
                  CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, jstate, mij(idim))
@@ -2390,8 +2389,12 @@ CONTAINS
          target_time >= 0 .AND. &
          start_time >= 0 .AND. &
          ASSOCIATED(vectors)) THEN
-        CPABORT(moduleN//"is not yet implemented")
+        PRINT *, "dummy call"
      END IF
+
+     CPWARN("Cardoso-Souloumiac Jacobi rotations not yet parallelised, falling back to serial")
+     CALL cardoso_souloumiac_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
+                                    vectors)
 
      CALL timestop(handle)
 
@@ -2418,11 +2421,10 @@ CONTAINS
 
       INTEGER                           :: dim_m, i, i_max
       REAL(KIND=dp), DIMENSION(3)       :: evals
-      REAL(KIND=dp)                     :: eval_max
       COMPLEX(KIND=dp)                  :: r, x, y, z
       TYPE(cp_fm_struct_type), POINTER  :: h_fm_struct, G_fm_struct
       TYPE(cp_cfm_type), POINTER        :: hmat, c_Gmat
-      TYPE(cp_fm_type), POINTER         :: Gmat, i_Gmat, evects
+      TYPE(cp_fm_type), POINTER         :: Gmat, Gmat_T, i_Gmat, evects
 
       dim_m = SIZE(mii)
       
@@ -2433,34 +2435,45 @@ CONTAINS
       CALL cp_cfm_create(hmat, h_fm_struct)
       CALL cp_cfm_create(c_Gmat, G_fm_struct)
       CALL cp_cfm_set_all(c_Gmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
+      CALL cp_fm_create(Gmat_T, G_fm_struct)
       CALL cp_fm_create(Gmat, G_fm_struct)
       CALL cp_fm_create(i_Gmat, G_fm_struct)
       CALL cp_fm_create(evects, G_fm_struct)
 
       DO i = 1, dim_m
+         CALL cp_cfm_set_all(hmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
          CALL cp_cfm_set_element(hmat, 1, 1, (mii(i) - mjj(i)))
          CALL cp_cfm_set_element(hmat, 1, 2, (mij(i) + mji(i)))
          CALL cp_cfm_set_element(hmat, 1, 3, (0.0_dp, 1.0_dp)*(mji(i) - mij(i)))
+         !CALL cp_cfm_write_formatted(hmat, unit, "hmat")
          CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), hmat, hmat, (1.0_dp, 0.0_dp), c_Gmat)
       END DO
+      !PRINT *, "mii", mii
+      !PRINT *, "mij", mij
+      !PRINT *, "mji", mji
+      !PRINT *, "mjj", mjj
       CALL cp_cfm_to_fm(c_Gmat, Gmat, i_Gmat)
 
+      !CALL cp_cfm_write_formatted(hmat, unit, "hmat before")
+      !CALL cp_cfm_write_formatted(c_Gmat, unit, "c_Gmat before")
+      !CALL cp_fm_write_formatted(Gmat, unit, "Gmat before")
+
       CALL choose_eigv_solver(Gmat, evects, evals)
-      !PRINT *, "evects", evects%local_data
+
+      !CALL cp_fm_write_formatted(Gmat, unit, "Gmat after")
+      !CALL cp_fm_write_formatted(evects, unit, "evects after")
+      !PRINT *, "evals ", evals
 
       ! find eigenvector with highest eigenvalue
-      i_max = 0
-      eval_max = 0
-      x = (0.0_dp, 0.0_dp)
-      y = (0.0_dp, 0.0_dp)
-      z = (0.0_dp, 0.0_dp)
-      DO i = 1, 3
-         IF (evals(i) > eval_max) THEN
-            x = evects%local_data(1, i)
-            y = evects%local_data(2, i)
-            z = evects%local_data(3, i)
-         END IF
-      END DO
+      i_max = MAXLOC(evals, 1)
+      x = CMPLX(evects%local_data(1, i_max), 0.0_dp, KIND=dp)
+      y = CMPLX(evects%local_data(2, i_max), 0.0_dp, KIND=dp)
+      z = CMPLX(evects%local_data(3, i_max), 0.0_dp, KIND=dp)
+      IF (REAL(x) < 0) THEN
+         x = -x
+         y = -y
+         z = -z
+      END IF
       !PRINT *, "xyz", x, y, z
 
       ! calculate the angles
@@ -2496,26 +2509,33 @@ CONTAINS
      COMPLEX(kind=dp), INTENT(INOUT)             :: c, s
      TYPE(cp_cfm_p_type), DIMENSION(:)           :: zij
 
-     INTEGER                                     :: i, nstate
-     TYPE(cp_cfm_type), POINTER                  :: Jmat
+     INTEGER                                     :: i, nstate, stride
+     TYPE(cp_cfm_type), POINTER                  :: Jmat, zij_old
 
      CALL cp_cfm_get_info(zij(1)%matrix, nrow_global=nstate)
      CALL cp_cfm_create(Jmat, zij(1)%matrix%matrix_struct)
+     CALL cp_cfm_create(zij_old, zij(1)%matrix%matrix_struct)
      CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
+     !PRINT *, "c, s ", c, s
      CALL cp_cfm_set_element(Jmat, istate, istate, c)
      CALL cp_cfm_set_element(Jmat, istate, jstate, CONJG(s))
      CALL cp_cfm_set_element(Jmat, jstate, istate, -s)
      CALL cp_cfm_set_element(Jmat, istate, istate, CONJG(c))
+     !CALL cp_cfm_write_formatted(Jmat, unit_nr, "Jmat zij")
 
-     !PRINT *, "Jmat", Jmat%local_data
      DO i = 1, SIZE(zij, 1)
-        !PRINT *, "Jmat ", Jmat%local_data
-        !PRINT *, "zij ", i, zij(i)%matrix%local_data
-        zij(i)%matrix%local_data = MATMUL(Jmat%local_data, zij(i)%matrix%local_data)
-        !CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, &
-        !                 zij(i)%matrix, (0.0_dp, 0.0_dp), zij(i)%matrix)
-        !PRINT *, "zij ", i, zij(i)%matrix%local_data
+        CALL cp_cfm_to_cfm(zij(i)%matrix, zij_old)
+        !CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, zij_old, &
+        !                 (0.0_dp, 0.0_dp), zij(i)%matrix)
+        CALL zrot(nstate, zij(i)%matrix%local_data(1, istate), 1, &
+                  zij(i)%matrix%local_data(1, jstate), 1, REAL(c), s)
+        stride = SIZE(zij(i)%matrix%local_data, 1)
+        CALL zrot(nstate, zij(i)%matrix%local_data(istate, 1), stride, &
+                  zij(i)%matrix%local_data(jstate, 1), 1, REAL(c), s)
      END DO
+
+     CALL cp_cfm_release(Jmat)
+     CALL cp_cfm_release(zij_old)
      
    END SUBROUTINE rotate_cardoso_zij
 
@@ -2536,20 +2556,27 @@ CONTAINS
      TYPE(cp_cfm_type), POINTER         :: rmat
 
      INTEGER                            :: nrow
-     TYPE(cp_cfm_type), POINTER         :: Jmat
+     TYPE(cp_cfm_type), POINTER         :: Jmat, rmat_old
 
      CALL cp_cfm_get_info(rmat, nrow_global=nrow)
+     CALL cp_cfm_create(rmat_old, rmat%matrix_struct)
      CALL cp_cfm_create(Jmat, rmat%matrix_struct)
+     CALL cp_cfm_to_cfm(rmat, rmat_old)
      CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
      CALL cp_cfm_set_element(Jmat, istate, istate, c)
      CALL cp_cfm_set_element(Jmat, istate, jstate, CONJG(s))
      CALL cp_cfm_set_element(Jmat, jstate, istate, -s)
      CALL cp_cfm_set_element(Jmat, istate, istate, CONJG(c))
+     !CALL cp_cfm_write_formatted(Jmat, unit_nr, "Jmat rmat")
      
-     !PRINT *, "Jmat", Jmat%local_data
-     CALL cp_cfm_gemm("N", "N", nrow, nrow, nrow, (1.0_dp, 0.0_dp), Jmat, &
-                      rmat, (0.0_dp, 0.0_dp), rmat)
+     CALL zrot(nrow, rmat%local_data(1, istate), 1, &
+               rmat%local_data(1, jstate), 1, REAL(c), s)
+     !CALL cp_cfm_gemm("N", "N", nrow, nrow, nrow, (1.0_dp, 0.0_dp), Jmat, &
+     !                 rmat_old, (0.0_dp, 0.0_dp), rmat)
 
+     CALL cp_cfm_release(Jmat)
+     CALL cp_cfm_release(rmat_old)
+     
    END SUBROUTINE rotate_cardoso_rmat
 
 END MODULE qs_localization_methods

@@ -139,23 +139,15 @@ CONTAINS
             PRINT *, mos_are_complex
             IF (.NOT. mos_are_complex) THEN
                ! purely real coefficients, e.g. from SCF runs
-               !PRINT *, qs_loc_env%moloc_coeff(ispin)%matrix%local_data
                CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                   myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
-               !PRINT *, qs_loc_env%moloc_coeff(ispin)%matrix%local_data
             ELSE
                ! complex coefficients, e.g. from RTP runs
                CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix%matrix_struct)
                CALL cp_fm_to_cfm(mo_local(2*ispin-1)%matrix, mo_local(2*ispin)%matrix, &
                                  tmp_complex_coeffs)
-               !PRINT *, qs_loc_env%complex_moloc_coeff(ispin)%matrix%local_data
-               !PRINT *, qs_loc_env%moloc_coeff(2*ispin-1)%matrix%local_data
-               !PRINT *, qs_loc_env%moloc_coeff(2*ispin)%matrix%local_data
                CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                   myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
-               !PRINT *, qs_loc_env%complex_moloc_coeff(ispin)%matrix%local_data
-               !PRINT *, qs_loc_env%moloc_coeff(2*ispin-1)%matrix%local_data
-               !PRINT *, qs_loc_env%moloc_coeff(2*ispin)%matrix%local_data
                CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
                                  mo_local(2*ispin)%matrix)
             END IF

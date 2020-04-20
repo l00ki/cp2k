@@ -28,6 +28,7 @@ MODULE qs_loc_methods
                                               cp_cfm_release,&
                                               cp_cfm_type,&
                                               cp_cfm_to_fm,&
+                                              cp_cfm_write_formatted,&
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm
@@ -38,7 +39,8 @@ MODULE qs_loc_methods
                                               cp_fm_struct_type
    USE cp_fm_types,                     ONLY: &
         cp_fm_create, cp_fm_get_element, cp_fm_get_info, cp_fm_get_submatrix, cp_fm_p_type, &
-        cp_fm_release, cp_fm_set_all, cp_fm_set_submatrix, cp_fm_to_fm, cp_fm_type
+        cp_fm_release, cp_fm_set_all, cp_fm_set_submatrix, cp_fm_to_fm, cp_fm_type, &
+        cp_fm_write_formatted
    USE cp_gemm_interface,               ONLY: cp_gemm
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_type,&
@@ -193,7 +195,17 @@ CONTAINS
          vectors_are_complex = .FALSE.
          ! get rows and cols of the input
          CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
-         CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
+         IF (method == do_loc_cardoso) THEN
+            ! current implementation of Cardoso-Souloumiac angles requires complex imput
+            CALL cp_fm_create(nullmat, vectors%matrix_struct)
+            CALL cp_fm_set_all(nullmat, 0.0_dp, 0.0_dp)
+            CALL cp_cfm_create(tmp_complex_vectors, vectors%matrix_struct)
+            CALL cp_fm_to_cfm(vectors, nullmat, tmp_complex_vectors)
+            CALL zij_matrix(op_sm_set, zij_fm_set, complex_vectors=tmp_complex_vectors)
+         ELSE
+            CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
+         END IF
+         !CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
       ELSE
          CPASSERT(PRESENT(complex_vectors))
          vectors_are_complex = .TRUE.
@@ -215,12 +227,12 @@ CONTAINS
                                  ispin, print_loc_section, only_initial_out=.TRUE.)
       SELECT CASE (method)
       CASE (do_loc_jacobi)
-         PRINT *, "MOs before: ", vectors%local_data
+         CALL cp_fm_write_formatted(vectors, output_unit, "MOs before")
          CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                eps_localization=eps_localization, sweeps=sweeps, &
                                out_each=out_each, target_time=target_time, start_time=start_time, &
                                vectors=vectors)
-         PRINT *, "MOs after: ", vectors%local_data
+         CALL cp_fm_write_formatted(vectors, output_unit, "MOs after")
       CASE (do_loc_scdm)
          ! Decomposition
          CALL scdm_qrfact(vectors)
@@ -267,22 +279,13 @@ CONTAINS
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
       CASE (do_loc_cardoso)
-         IF (PRESENT(vectors)) THEN
-            CALL cp_fm_create(nullmat, vectors%matrix_struct)
-            CALL cp_fm_set_all(nullmat, 0.0_dp, 0.0_dp)
-            CALL cp_cfm_create(tmp_complex_vectors, vectors%matrix_struct)
-            CALL cp_fm_to_cfm(vectors, nullmat, tmp_complex_vectors)
-            PRINT *, "MOs before: ", vectors%local_data
-         ELSE
-            tmp_complex_vectors => complex_vectors
-         END IF
-         
+         CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs before")
          CALL cardoso_souloumiac(weights, zij_fm_set, para_env, max_iter, eps_localization, &
                                  sweeps, out_each, target_time, start_time, tmp_complex_vectors)
 
          IF (PRESENT(vectors)) THEN
+            CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs after")
             CALL cp_cfm_to_fm(tmp_complex_vectors, vectors, nullmat)
-            PRINT *, "MOs after: ", vectors%local_data
             CALL cp_fm_release(nullmat)
             CALL cp_cfm_release(tmp_complex_vectors)
          END IF
@@ -711,10 +714,6 @@ CONTAINS
       END IF
 
       DO ispin = s_spin, l_spin
-         IF (PRESENT(ext_mo_coeff)) PRINT *, "moloc_coeff ", ispin, moloc_coeff(ispin)%matrix%local_data
-         IF (PRESENT(complex_mo_coeff)) PRINT *, "complex_moloc_coeff", ispin, &
-               complex_moloc_coeff(ispin)%matrix%local_data
-
          CALL get_mo_set(mo_set=mos(ispin)%mo_set, nao=nao, nmo=nmo)
          loc_method = localized_wfn_control%localization_method
 
@@ -759,11 +758,6 @@ CONTAINS
                                        op_fm_set, para_env, cell, weights, ispin, print_loc_section, &
                                        complex_vectors=complex_moloc_coeff(ispin)%matrix)
             END IF
-
-            IF (PRESENT(ext_mo_coeff)) PRINT *, "moloc_coeff ", ispin, &
-                 moloc_coeff(ispin)%matrix%local_data
-            IF (PRESENT(complex_mo_coeff)) PRINT *, "complex_moloc_coeff", ispin, &
-                 complex_moloc_coeff(ispin)%matrix%local_data
 
             ! Here we dealloctate op_fm_set
             IF (ASSOCIATED(op_fm_set)) THEN
