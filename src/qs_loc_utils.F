@@ -473,8 +473,8 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: occupations
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: vecbuffer
       TYPE(cell_type), POINTER                           :: cell
-      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: moloc_coeff
       TYPE(cp_cfm_p_type), DIMENSION(:), POINTER         :: complex_moloc_coeff
+      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: moloc_coeff
       TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
       TYPE(cp_fm_type), POINTER                          :: mat_ptr, mo_coeff
       TYPE(cp_para_env_type), POINTER                    :: para_env
@@ -499,22 +499,22 @@ CONTAINS
             s_spin = myspin
             l_spin = myspin
          END IF
-         IF (nspins * 2 == SIZE(loc_coeff)) THEN
-            ALLOCATE(complex_moloc_coeff(s_spin:l_spin))
-            ALLOCATE(moloc_coeff(s_spin:s_spin+2*(l_spin-s_spin)+1))
+         IF (nspins*2 == SIZE(loc_coeff)) THEN
+            ALLOCATE (complex_moloc_coeff(s_spin:l_spin))
+            ALLOCATE (moloc_coeff(s_spin:s_spin + 2*(l_spin - s_spin) + 1))
          ELSE
-            ALLOCATE(moloc_coeff(s_spin:l_spin))
+            ALLOCATE (moloc_coeff(s_spin:l_spin))
          END IF
-            
+
          DO ispin = s_spin, l_spin
             NULLIFY (tmp_fm_struct, mo_coeff)
             CALL get_mo_set(mos(ispin)%mo_set, mo_coeff=mo_coeff, nao=nao, nmo=nmo)
             nmosub = localized_wfn_control%nloc_states(ispin)
             CALL cp_fm_struct_create(tmp_fm_struct, nrow_global=nao, &
                                      ncol_global=nmosub, para_env=para_env, context=mo_coeff%matrix_struct%context)
-            IF (nspins * 2 == SIZE(loc_coeff)) THEN
+            IF (nspins*2 == SIZE(loc_coeff)) THEN
                CALL cp_cfm_create(complex_moloc_coeff(ispin)%matrix, tmp_fm_struct)
-               CALL cp_fm_create(moloc_coeff(2*ispin-1)%matrix, tmp_fm_struct)
+               CALL cp_fm_create(moloc_coeff(2*ispin - 1)%matrix, tmp_fm_struct)
                CALL cp_fm_create(moloc_coeff(2*ispin)%matrix, tmp_fm_struct)
             ELSE
                CALL cp_fm_create(moloc_coeff(ispin)%matrix, tmp_fm_struct)
@@ -540,8 +540,8 @@ CONTAINS
             ub = localized_wfn_control%lu_bound_states(2, ispin)
 
             IF (PRESENT(loc_coeff)) THEN
-               IF (nspins * 2 == SIZE(loc_coeff)) THEN
-                  mat_ptr => loc_coeff(2*ispin-1)%matrix
+               IF (nspins*2 == SIZE(loc_coeff)) THEN
+                  mat_ptr => loc_coeff(2*ispin - 1)%matrix
                END IF
                mat_ptr => loc_coeff(ispin)%matrix
             ELSE
@@ -587,8 +587,8 @@ CONTAINS
                END IF
                nmosub = localized_wfn_control%nloc_states(ispin)
                ! TODO enable submatrix selection for the complex case
-               IF (nspins * 2 == SIZE(loc_coeff)) THEN
-                  CALL cp_fm_to_fm(loc_coeff(2*ispin-1)%matrix, moloc_coeff(2*ispin-1)%matrix)
+               IF (nspins*2 == SIZE(loc_coeff)) THEN
+                  CALL cp_fm_to_fm(loc_coeff(2*ispin - 1)%matrix, moloc_coeff(2*ispin - 1)%matrix)
                   CALL cp_fm_to_fm(loc_coeff(2*ispin)%matrix, moloc_coeff(2*ispin)%matrix)
                   CALL cp_fm_to_cfm(mat_ptr, loc_coeff(2*ispin)%matrix, &
                                     complex_moloc_coeff(ispin)%matrix)

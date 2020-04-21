@@ -1418,18 +1418,17 @@ CONTAINS
 !> \param value_format format string for printing floats
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_write_formatted(fm, unit, header, value_format)
-      TYPE(cp_cfm_type), POINTER               :: fm
-      INTEGER                                  :: unit
-      CHARACTER(LEN=*), OPTIONAL               :: header, value_format
+      TYPE(cp_cfm_type), POINTER                         :: fm
+      INTEGER                                            :: unit
+      CHARACTER(LEN=*), OPTIONAL                         :: header, value_format
 
       CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_write_formatted', &
-                                     routineP = moduleN//':'//routineN
+         routineP = moduleN//':'//routineN
 
-      CHARACTER(LEN=32)                        :: my_value_format
-      INTEGER                                  :: handle, i, j, max_block, &
-                                                  ncol_global, nrow_global, &
-                                                  nrow_block
-      TYPE(cp_para_env_type), POINTER          :: para_env
+      CHARACTER(LEN=32)                                  :: my_value_format
+      INTEGER                                            :: handle, i, j, max_block, ncol_global, &
+                                                            nrow_block, nrow_global
+      TYPE(cp_para_env_type), POINTER                    :: para_env
 
       CALL timeset(routineN, handle)
       CALL cp_cfm_get_info(fm, nrow_global=nrow_global, ncol_global=ncol_global, ncol_block=max_block, &
@@ -1458,5 +1457,5 @@ CONTAINS
       CALL timestop(handle)
 
    END SUBROUTINE cp_cfm_write_formatted
-   
+
 END MODULE cp_cfm_types

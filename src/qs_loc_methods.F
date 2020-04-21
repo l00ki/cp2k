@@ -26,9 +26,8 @@ MODULE qs_loc_methods
                                               cp_cfm_get_info,&
                                               cp_cfm_p_type,&
                                               cp_cfm_release,&
-                                              cp_cfm_type,&
                                               cp_cfm_to_fm,&
-                                              cp_cfm_write_formatted,&
+                                              cp_cfm_type,&
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm
@@ -39,8 +38,7 @@ MODULE qs_loc_methods
                                               cp_fm_struct_type
    USE cp_fm_types,                     ONLY: &
         cp_fm_create, cp_fm_get_element, cp_fm_get_info, cp_fm_get_submatrix, cp_fm_p_type, &
-        cp_fm_release, cp_fm_set_all, cp_fm_set_submatrix, cp_fm_to_fm, cp_fm_type, &
-        cp_fm_write_formatted
+        cp_fm_release, cp_fm_set_all, cp_fm_set_submatrix, cp_fm_to_fm, cp_fm_type
    USE cp_gemm_interface,               ONLY: cp_gemm
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_type,&
@@ -55,9 +53,9 @@ MODULE qs_loc_methods
    USE cp_units,                        ONLY: cp_unit_from_cp2k
    USE dbcsr_api,                       ONLY: dbcsr_p_type
    USE input_constants,                 ONLY: &
-        do_loc_cardoso, do_loc_crazy, do_loc_direct, do_loc_jacobi, do_loc_l1_norm_sd, do_loc_none, do_loc_scdm, &
-        dump_dcd, dump_dcd_aligned_cell, dump_xmol, op_loc_berry, op_loc_boys, op_loc_pipek, &
-        state_loc_list
+        do_loc_cardoso, do_loc_crazy, do_loc_direct, do_loc_jacobi, do_loc_l1_norm_sd, &
+        do_loc_none, do_loc_scdm, dump_dcd, dump_dcd_aligned_cell, dump_xmol, op_loc_berry, &
+        op_loc_boys, op_loc_pipek, state_loc_list
    USE input_section_types,             ONLY: section_get_ival,&
                                               section_get_ivals,&
                                               section_get_lval,&
@@ -179,9 +177,9 @@ CONTAINS
       REAL(dp)                                           :: crazy_scale, eps_localization, &
                                                             max_crazy_angle, start_time, &
                                                             target_time
-      TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(cp_cfm_type), POINTER                         :: tmp_complex_vectors
       TYPE(cp_fm_type), POINTER                          :: nullmat
+      TYPE(cp_logger_type), POINTER                      :: logger
 
 !      INTEGER :: i,j
 
@@ -285,7 +283,7 @@ CONTAINS
             CALL cp_fm_release(nullmat)
             CALL cp_cfm_release(tmp_complex_vectors)
          END IF
-         
+
       CASE (do_loc_none)
          IF (output_unit > 0) THEN
             WRITE (output_unit, '(T4,A,I6,A)') " No MOS localization applied "
@@ -639,7 +637,7 @@ CONTAINS
 !> \param print_loc_section ...
 !> \param myspin ...
 !> \param ext_mo_coeff ...
-!> \param complex_mo_coeff ...   
+!> \param complex_mo_coeff ...
 !> \par History
 !>      04.2005 created [MI]
 !> \author MI
@@ -667,8 +665,8 @@ CONTAINS
       REAL(dp), DIMENSION(6)                             :: weights
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: centers, vecbuffer
       TYPE(cell_type), POINTER                           :: cell
-      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: moloc_coeff
       TYPE(cp_cfm_p_type), DIMENSION(:), POINTER         :: complex_moloc_coeff
+      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: moloc_coeff
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: op_fm_set
       TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
       TYPE(cp_fm_type), POINTER                          :: mo_coeff

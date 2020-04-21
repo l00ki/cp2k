@@ -56,9 +56,6 @@ MODULE rt_propagation
                                               external_e_potential
    USE qs_ks_methods,                   ONLY: qs_ks_update_qs_env
    USE qs_ks_types,                     ONLY: qs_ks_did_change
-   USE qs_loc_states,                   ONLY: get_localization_info
-   USE qs_loc_types,                    ONLY: qs_loc_env_create
-   USE qs_loc_utils,                    ONLY: qs_loc_init
    USE qs_matrix_pools,                 ONLY: mpools_get
    USE qs_mo_types,                     ONLY: get_mo_set,&
                                               init_mo_set,&

@@ -71,10 +71,10 @@ MODULE rt_propagation_methods
                                               pw_pool_p_type,&
                                               pw_pool_type
    USE pw_types,                        ONLY: COMPLEXDATA1D,&
-                                              pw_p_type,&
                                               REALDATA3D,&
                                               REALSPACE,&
-                                              RECIPROCALSPACE
+                                              RECIPROCALSPACE,&
+                                              pw_p_type
    USE qs_energy_init,                  ONLY: qs_energies_init
    USE qs_energy_types,                 ONLY: qs_energy_type
    USE qs_environment_types,            ONLY: get_qs_env,&
@@ -869,145 +869,145 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE rtp_localize(qs_env, rtp)
 
-     TYPE(qs_environment_type), POINTER, INTENT(IN)    :: qs_env
-     TYPE(rt_prop_type), POINTER, INTENT(IN), OPTIONAL :: rtp
+      TYPE(qs_environment_type), INTENT(IN), POINTER     :: qs_env
+      TYPE(rt_prop_type), INTENT(IN), OPTIONAL, POINTER  :: rtp
 
-     CHARACTER(len=*), PARAMETER :: routineN = "rtp_localize", &
-        routineP = moduleN//":"//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'rtp_localize', routineP = moduleN//':'//routineN
 
-     INTEGER                                     :: handle, ispin, n_rep, nhomo, nlumo, output_unit
-     LOGICAL                                     :: do_homo, do_mo_cubes, do_wannier_cubes, &
-                                                    loc_explicit, loc_print_explicit, p_loc, &
-                                                    p_loc_homo, p_loc_lumo
-     TYPE(pw_p_type)                             :: wf_g, wf_r
-     INTEGER, DIMENSION(:, :, :), POINTER        :: marked_states
-     TYPE(cp_1d_r_p_type), DIMENSION(:), POINTER :: occupied_evals
-     TYPE(cp_fm_p_type), DIMENSION(:), POINTER   :: homo_localized, mo_coeff, occupied_orbs
-     TYPE(cp_logger_type), POINTER               :: logger
-     TYPE(dft_control_type), POINTER             :: dft_control
-     TYPE(particle_list_type), POINTER           :: particles
-     TYPE(pw_env_type), POINTER                  :: pw_env
-     TYPE(pw_pool_p_type), DIMENSION(:), POINTER :: pw_pools
-     TYPE(pw_pool_type), POINTER                 :: auxbas_pw_pool
-     TYPE(qs_loc_env_new_type), POINTER          :: qs_loc_env_homo
-     TYPE(section_vals_type), POINTER            :: dft_section, input, loc_print_section, &
-                                                    loc_section, print_key
+      INTEGER                                            :: handle, ispin, n_rep, nhomo, nlumo, &
+                                                            output_unit
+      INTEGER, DIMENSION(:, :, :), POINTER               :: marked_states
+      LOGICAL                                            :: do_homo, do_mo_cubes, do_wannier_cubes, &
+                                                            loc_explicit, loc_print_explicit, &
+                                                            p_loc, p_loc_homo, p_loc_lumo
+      TYPE(cp_1d_r_p_type), DIMENSION(:), POINTER        :: occupied_evals
+      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: homo_localized, mo_coeff, occupied_orbs
+      TYPE(cp_logger_type), POINTER                      :: logger
+      TYPE(dft_control_type), POINTER                    :: dft_control
+      TYPE(particle_list_type), POINTER                  :: particles
+      TYPE(pw_env_type), POINTER                         :: pw_env
+      TYPE(pw_p_type)                                    :: wf_g, wf_r
+      TYPE(pw_pool_p_type), DIMENSION(:), POINTER        :: pw_pools
+      TYPE(pw_pool_type), POINTER                        :: auxbas_pw_pool
+      TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env_homo
+      TYPE(section_vals_type), POINTER                   :: dft_section, input, loc_print_section, &
+                                                            loc_section, print_key
 
-     CALL timeset(routineN, handle)
+      CALL timeset(routineN, handle)
 
-     NULLIFY(auxbas_pw_pool, dft_control, dft_section, homo_localized, input, loc_print_section, &
-             loc_section, logger, marked_states, mo_coeff, occupied_evals, &
-             occupied_orbs, particles, print_key, pw_env, pw_pools, qs_loc_env_homo)
+      NULLIFY (auxbas_pw_pool, dft_control, dft_section, homo_localized, input, loc_print_section, &
+               loc_section, logger, marked_states, mo_coeff, occupied_evals, &
+               occupied_orbs, particles, print_key, pw_env, pw_pools, qs_loc_env_homo)
 
-     logger => cp_get_default_logger()
-     output_unit = cp_logger_get_default_io_unit(logger)
+      logger => cp_get_default_logger()
+      output_unit = cp_logger_get_default_io_unit(logger)
 
-     loc_explicit = .TRUE.
-     loc_print_explicit = .TRUE.
+      loc_explicit = .TRUE.
+      loc_print_explicit = .TRUE.
 
-     PRINT *, "LOCALIZE| Localising propagated orbitals"
+      PRINT *, "LOCALIZE| Localising propagated orbitals"
 
-     ! get section properties
-     CALL get_qs_env(qs_env, dft_control=dft_control, input=input, pw_env=pw_env)
-     ! get propagated MO coeffs
-     CALL get_rtp(rtp, mos_new=mo_coeff)
-     dft_section => section_vals_get_subs_vals(input, "DFT")
-     loc_section => section_vals_get_subs_vals(dft_section, "LOCALIZE")
-     loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
+      ! get section properties
+      CALL get_qs_env(qs_env, dft_control=dft_control, input=input, pw_env=pw_env)
+      ! get propagated MO coeffs
+      CALL get_rtp(rtp, mos_new=mo_coeff)
+      dft_section => section_vals_get_subs_vals(input, "DFT")
+      loc_section => section_vals_get_subs_vals(dft_section, "LOCALIZE")
+      loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
 
-     ! what properties to print out
-     print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_DIPOLES")
-     p_loc = BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
-     print_key => section_vals_get_subs_vals(loc_print_section, "TOTAL_DIPOLE")
-     p_loc = p_loc &
-             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
-     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_CENTERS")
-     p_loc = p_loc &
-             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
-     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_SPREADS")
-     p_loc = p_loc &
-             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
-     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_CUBES")
-     p_loc = p_loc &
-             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
-     print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_STATES")
-     p_loc = p_loc &
-             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
-     print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_MOMENTS")
-     p_loc = p_loc &
-             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      ! what properties to print out
+      print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_DIPOLES")
+      p_loc = BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      print_key => section_vals_get_subs_vals(loc_print_section, "TOTAL_DIPOLE")
+      p_loc = p_loc &
+              .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_CENTERS")
+      p_loc = p_loc &
+              .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_SPREADS")
+      p_loc = p_loc &
+              .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_CUBES")
+      p_loc = p_loc &
+              .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_STATES")
+      p_loc = p_loc &
+              .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_MOMENTS")
+      p_loc = p_loc &
+              .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
 
-     ! localize occupied or unoccupied orbitals, or both
-     IF (loc_explicit) THEN
-        p_loc_homo = (section_get_ival(loc_section, "STATES") == do_loc_homo .OR. &
-                      section_get_ival(loc_section, "STATES") == do_loc_both) .AND. p_loc
-        p_loc_lumo = (section_get_ival(loc_section, "STATES") == do_loc_lumo .OR. &
-                      section_get_ival(loc_section, "STATES") == do_loc_both) .AND. p_loc
-        ! CALL section_vals_val_get(loc_section, "LIST_UNOCCUPIED", n_rep_val=n_rep)
-     ELSE
-        p_loc_homo = .FALSE.
-        p_loc_lumo = .FALSE.
-        n_rep = 0
-     END IF
+      ! localize occupied or unoccupied orbitals, or both
+      IF (loc_explicit) THEN
+         p_loc_homo = (section_get_ival(loc_section, "STATES") == do_loc_homo .OR. &
+                       section_get_ival(loc_section, "STATES") == do_loc_both) .AND. p_loc
+         p_loc_lumo = (section_get_ival(loc_section, "STATES") == do_loc_lumo .OR. &
+                       section_get_ival(loc_section, "STATES") == do_loc_both) .AND. p_loc
+         ! CALL section_vals_val_get(loc_section, "LIST_UNOCCUPIED", n_rep_val=n_rep)
+      ELSE
+         p_loc_homo = .FALSE.
+         p_loc_lumo = .FALSE.
+         n_rep = 0
+      END IF
 
-     IF (n_rep == 0 .AND. p_loc_lumo) THEN
-        CALL cp_abort(__LOCATION__, "Specify LIST_UNOCCUPIED to localise unoccupied orbitals")
-        p_loc_lumo = .FALSE.
-     END IF
-     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_STATES")
-     p_loc = p_loc .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+      IF (n_rep == 0 .AND. p_loc_lumo) THEN
+         CALL cp_abort(__LOCATION__, "Specify LIST_UNOCCUPIED to localise unoccupied orbitals")
+         p_loc_lumo = .FALSE.
+      END IF
+      print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_STATES")
+      p_loc = p_loc .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
 
-     ! write Wannier cubes?
-     IF (loc_print_explicit) THEN
-        do_wannier_cubes = BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
-                                 "WANNIER_CUBES"), cp_p_file)
-     ELSE
-        do_wannier_cubes = .FALSE.
-     END IF
-     nhomo = section_get_ival(dft_section, "PRINT%MO_CUBES%NHOMO")
-     nlumo = section_get_ival(dft_section, "PRINT%MO_CUBES%NLUMO")
+      ! write Wannier cubes?
+      IF (loc_print_explicit) THEN
+         do_wannier_cubes = BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+                                                             "WANNIER_CUBES"), cp_p_file)
+      ELSE
+         do_wannier_cubes = .FALSE.
+      END IF
+      nhomo = section_get_ival(dft_section, "PRINT%MO_CUBES%NHOMO")
+      nlumo = section_get_ival(dft_section, "PRINT%MO_CUBES%NLUMO")
 
-     ! Setup grids to compute wavefunctions
-     CALL pw_env_get(pw_env, auxbas_pw_pool=auxbas_pw_pool, pw_pools=pw_pools)
-     CALL pw_pool_create_pw(auxbas_pw_pool, wf_r%pw, use_data=REALDATA3D, in_space=REALSPACE)
-     CALL pw_pool_create_pw(auxbas_pw_pool, wf_g%pw, use_data=COMPLEXDATA1D, &
-                            in_space=RECIPROCALSPACE)
+      ! Setup grids to compute wavefunctions
+      CALL pw_env_get(pw_env, auxbas_pw_pool=auxbas_pw_pool, pw_pools=pw_pools)
+      CALL pw_pool_create_pw(auxbas_pw_pool, wf_r%pw, use_data=REALDATA3D, in_space=REALSPACE)
+      CALL pw_pool_create_pw(auxbas_pw_pool, wf_g%pw, use_data=COMPLEXDATA1D, &
+                             in_space=RECIPROCALSPACE)
 
-     IF (p_loc) THEN
-        ! localise occupied orbitals
-        IF (p_loc_homo) THEN
-           ALLOCATE(occupied_orbs(SIZE(mo_coeff)))
-           ALLOCATE(occupied_evals(dft_control%nspins))
-           ALLOCATE(homo_localized(SIZE(mo_coeff)))
+      IF (p_loc) THEN
+         ! localise occupied orbitals
+         IF (p_loc_homo) THEN
+            ALLOCATE (occupied_orbs(SIZE(mo_coeff)))
+            ALLOCATE (occupied_evals(dft_control%nspins))
+            ALLOCATE (homo_localized(SIZE(mo_coeff)))
 
-           CALL get_rtp(rtp, mos_new=mo_coeff)
-           DO ispin = 1, SIZE(mo_coeff)
-              occupied_orbs(ispin)%matrix => mo_coeff(ispin)%matrix
-              CALL cp_fm_create(homo_localized(ispin)%matrix, &
-                                occupied_orbs(ispin)%matrix%matrix_struct)
-              CALL cp_fm_to_fm(occupied_orbs(ispin)%matrix, homo_localized(ispin)%matrix)
-           END DO
+            CALL get_rtp(rtp, mos_new=mo_coeff)
+            DO ispin = 1, SIZE(mo_coeff)
+               occupied_orbs(ispin)%matrix => mo_coeff(ispin)%matrix
+               CALL cp_fm_create(homo_localized(ispin)%matrix, &
+                                 occupied_orbs(ispin)%matrix%matrix_struct)
+               CALL cp_fm_to_fm(occupied_orbs(ispin)%matrix, homo_localized(ispin)%matrix)
+            END DO
 
-           ! perform localization
-           do_homo = .TRUE.
-           CALL qs_loc_env_create(qs_loc_env_homo)
-           CALL qs_loc_control_init(qs_loc_env_homo, loc_section, do_homo=do_homo)
-           CALL qs_loc_init(qs_env, qs_loc_env_homo, loc_section, homo_localized, do_homo, &
-                            do_mo_cubes)
-           CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, wf_r, &
-                                      wf_g, particles, occupied_orbs, occupied_evals, marked_states)
+            ! perform localization
+            do_homo = .TRUE.
+            CALL qs_loc_env_create(qs_loc_env_homo)
+            CALL qs_loc_control_init(qs_loc_env_homo, loc_section, do_homo=do_homo)
+            CALL qs_loc_init(qs_env, qs_loc_env_homo, loc_section, homo_localized, do_homo, &
+                             do_mo_cubes)
+            CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, wf_r, &
+                                       wf_g, particles, occupied_orbs, occupied_evals, marked_states)
 
-           ! memory cleanup
-           CALL cp_fm_vect_dealloc(homo_localized)
-           DEALLOCATE(occupied_orbs)
-           DEALLOCATE(occupied_evals)
+            ! memory cleanup
+            CALL cp_fm_vect_dealloc(homo_localized)
+            DEALLOCATE (occupied_orbs)
+            DEALLOCATE (occupied_evals)
 
-           ! print total dipole
-           CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
-        END IF
-     END IF
+            ! print total dipole
+            CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
+         END IF
+      END IF
 
-     CALL timestop(handle)
+      CALL timestop(handle)
 
    END SUBROUTINE rtp_localize
 
