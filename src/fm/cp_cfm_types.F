@@ -1411,36 +1411,6 @@ CONTAINS
    END SUBROUTINE cp_cfm_cleanup_copy_general
 
 ! **************************************************************************************************
-!> \brief ...
-!> \param fm ...
-!> \param unit ...
-! **************************************************************************************************
-   SUBROUTINE cp_cfm_write_unformatted(fm, unit)
-      TYPE(cp_cfm_type), POINTER               :: fm
-      INTEGER                                  :: unit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_write_unformatted', &
-                                     routineP = moduleN//':'//routineN
-
-      INTEGER                                  :: handle, j, max_block, &
-                                                  ncol_global, nrow_global
-      TYPE(cp_para_env_type), POINTER          :: para_env
-
-      CALL timeset(routineN, handle)
-      CALL cp_cfm_get_info(fm, nrow_global=nrow_global, ncol_global=ncol_global, ncol_block=max_block, &
-                           para_env=para_env)
-
-      IF (unit > 0) THEN
-         DO j = 1, ncol_global
-            WRITE (unit) fm%local_data(:, j)
-         END DO
-      END IF
-
-      CALL timestop(handle)
-
-   END SUBROUTINE cp_cfm_write_unformatted
-   
-! **************************************************************************************************
 !> \brief Write out a complex full matrix in plain text.
 !> \param fm the matrix to be outputted
 !> \param unit the unit number for I/O

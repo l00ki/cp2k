@@ -372,7 +372,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: rmat
 
       CALL timeset(routineN, handle)
-      
+
       dim2 = SIZE(zij, 2)
       NULLIFY (rmat, c_rmat, c_zij)
       ALLOCATE (c_zij(dim2))
@@ -1439,10 +1439,6 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-      IF (PRESENT(complex_vectors)) THEN
-         PRINT *, "complex Jacobi"
-      END IF
-
       output_unit = cp_logger_get_default_io_unit()
 
       NULLIFY (rmat, cz_ij_loc, zdiag_all, zdiag_me)
@@ -2097,9 +2093,7 @@ CONTAINS
             CALL copy_dbcsr_to_fm(op_sm_set(1, i)%matrix, tmp_r(i)%matrix)
             CALL copy_dbcsr_to_fm(op_sm_set(2, i)%matrix, tmp_i(i)%matrix)
             CALL cp_fm_to_cfm(tmp_r(i)%matrix, tmp_i(i)%matrix, tmp_c)
-            ! A|w>
             complex_opvec%local_data = MATMUL(tmp_c%local_data, complex_vectors%local_data)
-            ! <w|A|w>
             CALL cp_cfm_gemm("T", "N", nmoloc, nmoloc, nao, (1.0_dp, 0.0_dp), complex_vectors, &
                              complex_opvec, (0.0_dp, 0.0_dp), tmp_z)
             ! save into real and imaginary components
@@ -2585,4 +2579,3 @@ CONTAINS
    END SUBROUTINE rotate_cardoso_rmat
 
 END MODULE qs_localization_methods
- 

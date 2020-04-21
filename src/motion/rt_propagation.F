@@ -275,8 +275,8 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'run_propagation', &
          routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: aspc_order, handle, i_iter, &
-                                                            i_step, max_iter, max_steps
+      INTEGER                                            :: aspc_order, handle, i_iter, i_step, &
+                                                            max_iter, max_steps
       LOGICAL                                            :: should_stop
       REAL(Kind=dp)                                      :: eps_ener, time_iter_start, &
                                                             time_iter_stop, used_time

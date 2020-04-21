@@ -102,7 +102,6 @@ CONTAINS
       output_unit = cp_logger_get_default_io_unit(logger)
       loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
       do_homo = qs_loc_env%localized_wfn_control%do_homo
-      !PRINT *, dft_control%nspins, SIZE(mo_local)
       ! check whether the coeffs are given as alternating real/imaginary matrices
       mos_are_complex = (dft_control%nspins * 2 == SIZE(mo_local))
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
@@ -136,7 +135,6 @@ CONTAINS
 
             scenter => qs_loc_env%localized_wfn_control%centers_set(ispin)%array
 
-            PRINT *, mos_are_complex
             IF (.NOT. mos_are_complex) THEN
                ! purely real coefficients, e.g. from SCF runs
                CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &

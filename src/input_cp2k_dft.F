@@ -741,7 +741,8 @@ CONTAINS
                        "A new fast method is applied, might be slightly less robust than jacobi, but usually much faster", &
                        "Steepest descent minimization of an approximate l1 norm", &
                        "Using a direct minimisation approacha", "Use QR factorization", &
-                       "Use a Cardoso-Souloumiac algorithm"), &
+                       "Use a Jacobi iteration algorithm with Cardoso-Souloumiac angles, "// &
+                       "suitable for complex coefficients, e.g. from RT-TDDFT"), &
          default_i_val=do_loc_jacobi)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
@@ -8814,7 +8815,7 @@ CONTAINS
                           usage="LOCALIZE", default_i_val=rtp_localize_none, &
                           enum_c_vals=s2a("NONE", "ONCE", "EACH"), &
                           enum_i_vals=(/rtp_localize_none, rtp_localize_once, rtp_localize_each/), &
-                          enum_desc=s2a("The MOs are not localised.", &
+                          enum_desc=s2a("The MOs are not localised during RT-TDDFT.", &
                                         "The MOs are localised, then the Wannier functions are "// &
                                         "propagated.", &
                                         "Propagate the MOs and localise them after each step."))
