@@ -48,10 +48,10 @@ MODULE input_cp2k_dft
         do_admm_purify_cauchy_subspace, do_admm_purify_mcweeny, do_admm_purify_mo_diag, &
         do_admm_purify_mo_no_diag, do_admm_purify_none, do_admm_purify_none_dm, do_arnoldi, &
         do_bch, do_cn, do_ddapc_constraint, do_ddapc_restraint, do_em, do_etrs, do_full_density, &
-        do_gapw_gcs, do_gapw_gct, do_gapw_log, do_loc_both, do_loc_crazy, do_loc_direct, &
+        do_gapw_gcs, do_gapw_gct, do_gapw_log, do_loc_both, do_loc_cardoso, do_loc_crazy, &
+        do_loc_direct, &
         do_loc_homo, do_loc_jacobi, do_loc_l1_norm_sd, do_loc_lumo, do_loc_max, do_loc_min, &
-        do_loc_none, do_loc_scdm, do_loc_cardoso, do_lri_inv, do_lri_inv_auto, do_lri_opt_all, &
-        do_lri_opt_coeff, &
+        do_loc_none, do_loc_scdm, do_lri_inv, do_lri_inv_auto, do_lri_opt_all, do_lri_opt_coeff, &
         do_lri_opt_exps, do_lri_pseudoinv_diag, do_lri_pseudoinv_svd, do_method_am1, &
         do_method_dftb, do_method_gapw, do_method_gapw_xc, do_method_gpw, do_method_lrigpw, &
         do_method_mndo, do_method_mndod, do_method_ofgpw, do_method_pdg, do_method_pm3, &

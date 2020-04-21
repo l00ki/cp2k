@@ -1415,7 +1415,7 @@ CONTAINS
 !> \param fm the matrix to be outputted
 !> \param unit the unit number for I/O
 !> \param header optional header
-!> \param value_format ...
+!> \param value_format format string for printing floats
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_write_formatted(fm, unit, header, value_format)
       TYPE(cp_cfm_type), POINTER               :: fm
