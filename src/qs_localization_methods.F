@@ -2525,18 +2525,23 @@ CONTAINS
 
      DO i = 1, SIZE(zij, 1)
         CALL cp_cfm_to_cfm(zij(i)%matrix, zij_old)
+        !CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), zij_old, Jmat, &
+        !                 (0.0_dp, 0.0_dp), zij(i)%matrix)
+        !CALL cp_cfm_to_cfm(zij(i)%matrix, zij_old)
+        !CALL cp_cfm_gemm("C", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, zij_old, &
+        !                 (0.0_dp, 0.0_dp), zij(i)%matrix)
         !CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, zij_old, &
         !                 (0.0_dp, 0.0_dp), zij(i)%matrix)
         CALL zrot(nstate, zij(i)%matrix%local_data(1, istate), 1, &
                   zij(i)%matrix%local_data(1, jstate), 1, REAL(c), s)
         stride = SIZE(zij(i)%matrix%local_data, 1)
         CALL zrot(nstate, zij(i)%matrix%local_data(istate, 1), stride, &
-                  zij(i)%matrix%local_data(jstate, 1), 1, REAL(c), s)
+                  zij(i)%matrix%local_data(jstate, 1), stride, REAL(c), s)
      END DO
 
      CALL cp_cfm_release(Jmat)
      CALL cp_cfm_release(zij_old)
-     
+
    END SUBROUTINE rotate_cardoso_zij
 
 ! **************************************************************************************************

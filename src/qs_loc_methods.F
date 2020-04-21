@@ -210,6 +210,7 @@ CONTAINS
          CPASSERT(PRESENT(complex_vectors))
          vectors_are_complex = .TRUE.
          method = do_loc_cardoso  ! reference implementation for complex MOs
+         tmp_complex_vectors => complex_vectors
          CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
          CALL zij_matrix(op_sm_set, zij_fm_set, complex_vectors=complex_vectors)
       END IF
@@ -227,12 +228,12 @@ CONTAINS
                                  ispin, print_loc_section, only_initial_out=.TRUE.)
       SELECT CASE (method)
       CASE (do_loc_jacobi)
-         CALL cp_fm_write_formatted(vectors, output_unit, "MOs before")
+         !CALL cp_fm_write_formatted(vectors, output_unit, "MOs before")
          CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                eps_localization=eps_localization, sweeps=sweeps, &
                                out_each=out_each, target_time=target_time, start_time=start_time, &
                                vectors=vectors)
-         CALL cp_fm_write_formatted(vectors, output_unit, "MOs after")
+         !CALL cp_fm_write_formatted(vectors, output_unit, "MOs after")
       CASE (do_loc_scdm)
          ! Decomposition
          CALL scdm_qrfact(vectors)
@@ -279,12 +280,12 @@ CONTAINS
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
       CASE (do_loc_cardoso)
-         CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs before")
+         !CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs before")
          CALL cardoso_souloumiac(weights, zij_fm_set, para_env, max_iter, eps_localization, &
                                  sweeps, out_each, target_time, start_time, tmp_complex_vectors)
 
+         !CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs after")
          IF (PRESENT(vectors)) THEN
-            CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs after")
             CALL cp_cfm_to_fm(tmp_complex_vectors, vectors, nullmat)
             CALL cp_fm_release(nullmat)
             CALL cp_cfm_release(tmp_complex_vectors)
