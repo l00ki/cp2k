@@ -95,7 +95,7 @@ CONTAINS
 
       CALL timeset(routineN, handle)
       NULLIFY (mos, ks_rmpv, dft_control, loc_print_section, marked_states_spin, &
-               matrix_s, scenter, wc, tmp_complex_coeffs)
+           matrix_s, scenter, wc, tmp_complex_coeffs)
       CALL get_qs_env(qs_env, mos=mos, matrix_ks=ks_rmpv, molecule_set=molecule_set, &
                       dft_control=dft_control, matrix_s=matrix_s)
       logger => cp_get_default_logger()
@@ -103,7 +103,7 @@ CONTAINS
       loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
       do_homo = qs_loc_env%localized_wfn_control%do_homo
       ! check whether the coeffs are given as alternating real/imaginary matrices
-      mos_are_complex = (dft_control%nspins*2 == SIZE(mo_local))
+      mos_are_complex = (dft_control%nspins * 2 == SIZE(mo_local))
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
                                            "WANNIER_STATES"), cp_p_file)) THEN
          CALL get_qs_env(qs_env=qs_env, WannierCentres=wc)
@@ -141,12 +141,12 @@ CONTAINS
                                   myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
             ELSE
                ! complex coefficients, e.g. from RTP runs
-               CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin - 1)%matrix%matrix_struct)
-               CALL cp_fm_to_cfm(mo_local(2*ispin - 1)%matrix, mo_local(2*ispin)%matrix, &
+               CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix%matrix_struct)
+               CALL cp_fm_to_cfm(mo_local(2*ispin-1)%matrix, mo_local(2*ispin)%matrix, &
                                  tmp_complex_coeffs)
                CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                   myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
-               CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin - 1)%matrix, &
+               CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
                                  mo_local(2*ispin)%matrix)
             END IF
 

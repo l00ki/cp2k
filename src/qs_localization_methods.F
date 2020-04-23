@@ -291,7 +291,7 @@ CONTAINS
 !> \author Joost VandeVondele (02.2010)
 ! **************************************************************************************************
    SUBROUTINE jacobi_rotations(weights, zij, para_env, max_iter, eps_localization, &
-                               sweeps, out_each, target_time, start_time, vectors, complex_vectors)
+                               sweeps, out_each, target_time, start_time, vectors)
 
       REAL(KIND=dp), INTENT(IN)                          :: weights(:)
       TYPE(cp_fm_p_type), INTENT(INOUT)                  :: ZIJ(:, :)
@@ -301,31 +301,14 @@ CONTAINS
       INTEGER                                            :: sweeps
       INTEGER, INTENT(IN)                                :: out_each
       REAL(dp)                                           :: target_time, start_time
-      TYPE(cp_fm_type), OPTIONAL, POINTER                :: vectors
-      TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_vectors
-
-      IF (PRESENT(vectors)) THEN
-         CPASSERT(.NOT. PRESENT(complex_vectors))
-      ELSE
-         CPASSERT(PRESENT(complex_vectors))
-      END IF
+      TYPE(cp_fm_type), POINTER                          :: vectors
 
       IF (para_env%num_pe == 1) THEN
-         IF (PRESENT(vectors)) THEN
-            CALL jacobi_rotations_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
-                                         vectors=vectors)
-         ELSE
-            CALL jacobi_rotations_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
-                                         complex_vectors=complex_vectors)
-         END IF
+         CALL jacobi_rotations_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
+                                      vectors)
       ELSE
-         IF (PRESENT(vectors)) THEN
-            CALL jacobi_rot_para(weights, zij, para_env, max_iter, eps_localization, sweeps, &
-                                 out_each, target_time, start_time, vectors=vectors)
-         ELSE
-            CALL jacobi_rot_para(weights, zij, para_env, max_iter, eps_localization, sweeps, &
-                                 out_each, target_time, start_time, complex_vectors=complex_vectors)
-         END IF
+         CALL jacobi_rot_para(weights, zij, para_env, max_iter, eps_localization, sweeps, &
+                              out_each, target_time, start_time, vectors)
       ENDIF
 
    END SUBROUTINE jacobi_rotations
@@ -343,15 +326,14 @@ CONTAINS
 !> \param complex_vectors ...
 ! **************************************************************************************************
    SUBROUTINE jacobi_rotations_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
-                                      vectors, complex_vectors)
+                                      vectors)
       REAL(KIND=dp), INTENT(IN)                          :: weights(:)
       TYPE(cp_fm_p_type), INTENT(INOUT)                  :: ZIJ(:, :)
       INTEGER, INTENT(IN)                                :: max_iter
       REAL(KIND=dp), INTENT(IN)                          :: eps_localization
       INTEGER                                            :: sweeps
       INTEGER, INTENT(IN)                                :: out_each
-      TYPE(cp_fm_type), OPTIONAL, POINTER                :: vectors
-      TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_vectors
+      TYPE(cp_fm_type), POINTER                          :: vectors
 
       CHARACTER(len=*), PARAMETER :: routineN = 'jacobi_rotations_serial', &
          routineP = moduleN//':'//routineN
@@ -429,11 +411,7 @@ CONTAINS
       DEALLOCATE (mii, mij, mjj)
       rmat%local_data = REAL(c_rmat%local_data, dp)
 
-      IF (PRESENT(vectors)) THEN
-         CALL rotate_orbitals(rmat, vectors)
-      ELSE
-         CALL rotate_complex_orbitals(c_rmat, complex_vectors)
-      END IF
+      CALL rotate_orbitals(rmat, vectors)
 
       CALL cp_cfm_release(c_rmat)
       CALL cp_fm_release(rmat)
@@ -1395,7 +1373,7 @@ CONTAINS
 !> \author MI (11.2009)
 ! **************************************************************************************************
    SUBROUTINE jacobi_rot_para(weights, zij, para_env, max_iter, eps_localization, &
-                              sweeps, out_each, target_time, start_time, vectors, complex_vectors)
+                              sweeps, out_each, target_time, start_time, vectors)
 
       REAL(KIND=dp), INTENT(IN)                          :: weights(:)
       TYPE(cp_fm_p_type), INTENT(INOUT)                  :: ZIJ(:, :)
@@ -1405,8 +1383,7 @@ CONTAINS
       INTEGER                                            :: sweeps
       INTEGER, INTENT(IN)                                :: out_each
       REAL(dp)                                           :: target_time, start_time
-      TYPE(cp_fm_type), OPTIONAL, POINTER                :: vectors
-      TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_vectors
+      TYPE(cp_fm_type), POINTER                          :: vectors
 
       CHARACTER(len=*), PARAMETER :: routineN = 'jacobi_rot_para', &
          routineP = moduleN//':'//routineN
@@ -2275,7 +2252,8 @@ CONTAINS
       unit_nr = -1
       IF (c_rmat%matrix_struct%para_env%mepos == c_rmat%matrix_struct%para_env%source) THEN
          unit_nr = cp_logger_get_default_unit_nr()
-         WRITE (unit_nr, "(T4,A )") " using Cardoso-Souloumiac angles"
+         WRITE (unit_nr, "(T4,A )") " Localization by iterative Jacobi rotation using "// &
+                                    "Cardoso-Souloumiac angles"
       END IF
 
       ! Jacobi sweeps until converged
@@ -2284,15 +2262,6 @@ CONTAINS
          t1 = m_walltime()
          DO istate = 1, nstate
             DO jstate = istate + 1, nstate
-               !CALL cp_fm_write_formatted(zij(1, 1)%matrix, unit_nr, "zij 1r")
-               !CALL cp_fm_write_formatted(zij(2, 1)%matrix, unit_nr, "zij 1i")
-               !CALL cp_fm_write_formatted(zij(1, 2)%matrix, unit_nr, "zij 2r")
-               !CALL cp_fm_write_formatted(zij(2, 2)%matrix, unit_nr, "zij 2i")
-               !CALL cp_fm_write_formatted(zij(1, 3)%matrix, unit_nr, "zij 3r")
-               !CALL cp_fm_write_formatted(zij(2, 3)%matrix, unit_nr, "zij 3i")
-               !CALL cp_cfm_write_formatted(c_zij(1)%matrix, unit_nr, "c_zij 1")
-               !CALL cp_cfm_write_formatted(c_zij(2)%matrix, unit_nr, "c_zij 2")
-               !CALL cp_cfm_write_formatted(c_zij(3)%matrix, unit_nr, "c_zij 3")
                DO idim = 1, dim2
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, istate, mii(idim))
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, jstate, mij(idim))
@@ -2379,7 +2348,7 @@ CONTAINS
          PRINT *, "dummy call"
       END IF
 
-      CPWARN("Cardoso-Souloumiac Jacobi rotations not yet parallelised, falling back to serial")
+      CPWARN("Falling back to serial")
       CALL cardoso_souloumiac_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
                                      vectors)
 
@@ -2498,37 +2467,16 @@ CONTAINS
       TYPE(cp_cfm_p_type), DIMENSION(:)                  :: zij
 
       INTEGER                                            :: i, nstate, stride
-      TYPE(cp_cfm_type), POINTER                         :: Jmat, zij_old
 
       CALL cp_cfm_get_info(zij(1)%matrix, nrow_global=nstate)
-      CALL cp_cfm_create(Jmat, zij(1)%matrix%matrix_struct)
-      CALL cp_cfm_create(zij_old, zij(1)%matrix%matrix_struct)
-      CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
-      !PRINT *, "c, s ", c, s
-      CALL cp_cfm_set_element(Jmat, istate, istate, c)
-      CALL cp_cfm_set_element(Jmat, istate, jstate, CONJG(s))
-      CALL cp_cfm_set_element(Jmat, jstate, istate, -s)
-      CALL cp_cfm_set_element(Jmat, istate, istate, CONJG(c))
-      !CALL cp_cfm_write_formatted(Jmat, unit_nr, "Jmat zij")
 
       DO i = 1, SIZE(zij, 1)
-         CALL cp_cfm_to_cfm(zij(i)%matrix, zij_old)
-         !CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), zij_old, Jmat, &
-         !                 (0.0_dp, 0.0_dp), zij(i)%matrix)
-         !CALL cp_cfm_to_cfm(zij(i)%matrix, zij_old)
-         !CALL cp_cfm_gemm("C", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, zij_old, &
-         !                 (0.0_dp, 0.0_dp), zij(i)%matrix)
-         !CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, zij_old, &
-         !                 (0.0_dp, 0.0_dp), zij(i)%matrix)
          CALL zrot(nstate, zij(i)%matrix%local_data(1, istate), 1, &
                    zij(i)%matrix%local_data(1, jstate), 1, REAL(c), s)
          stride = SIZE(zij(i)%matrix%local_data, 1)
          CALL zrot(nstate, zij(i)%matrix%local_data(istate, 1), stride, &
                    zij(i)%matrix%local_data(jstate, 1), stride, REAL(c), s)
       END DO
-
-      CALL cp_cfm_release(Jmat)
-      CALL cp_cfm_release(zij_old)
 
    END SUBROUTINE rotate_cardoso_zij
 
@@ -2550,26 +2498,11 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: rmat
 
       INTEGER                                            :: nrow
-      TYPE(cp_cfm_type), POINTER                         :: Jmat, rmat_old
 
       CALL cp_cfm_get_info(rmat, nrow_global=nrow)
-      CALL cp_cfm_create(rmat_old, rmat%matrix_struct)
-      CALL cp_cfm_create(Jmat, rmat%matrix_struct)
-      CALL cp_cfm_to_cfm(rmat, rmat_old)
-      CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
-      CALL cp_cfm_set_element(Jmat, istate, istate, c)
-      CALL cp_cfm_set_element(Jmat, istate, jstate, CONJG(s))
-      CALL cp_cfm_set_element(Jmat, jstate, istate, -s)
-      CALL cp_cfm_set_element(Jmat, istate, istate, CONJG(c))
-      !CALL cp_cfm_write_formatted(Jmat, unit_nr, "Jmat rmat")
 
       CALL zrot(nrow, rmat%local_data(1, istate), 1, &
                 rmat%local_data(1, jstate), 1, REAL(c), s)
-      !CALL cp_cfm_gemm("N", "N", nrow, nrow, nrow, (1.0_dp, 0.0_dp), Jmat, &
-      !                 rmat_old, (0.0_dp, 0.0_dp), rmat)
-
-      CALL cp_cfm_release(Jmat)
-      CALL cp_cfm_release(rmat_old)
 
    END SUBROUTINE rotate_cardoso_rmat
 
