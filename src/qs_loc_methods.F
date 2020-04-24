@@ -28,6 +28,7 @@ MODULE qs_loc_methods
                                               cp_cfm_release,&
                                               cp_cfm_to_fm,&
                                               cp_cfm_type,&
+                                              cp_cfm_write_formatted,&
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm
@@ -276,8 +277,10 @@ CONTAINS
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
       CASE (do_loc_cardoso)
+         CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs before:")
          CALL cardoso_souloumiac(weights, zij_fm_set, para_env, max_iter, eps_localization, &
                                  sweeps, out_each, target_time, start_time, tmp_complex_vectors)
+         CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs after:")
          IF (PRESENT(vectors)) THEN
             CALL cp_cfm_to_fm(tmp_complex_vectors, vectors, nullmat)
             CALL cp_fm_release(nullmat)
@@ -660,7 +663,7 @@ CONTAINS
                                                             loc_method, n_rep, nao, ncubes, nmo, &
                                                             nmosub, s_spin, ub
       INTEGER, DIMENSION(:), POINTER                     :: bounds, list, list_cubes
-      LOGICAL                                            :: append_cube, list_cubes_setup
+      LOGICAL                                            :: append_cube, list_cubes_setup, mos_are_complex
       LOGICAL, SAVE                                      :: first_time = .TRUE.
       REAL(dp), DIMENSION(6)                             :: weights
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: centers, vecbuffer
@@ -703,8 +706,10 @@ CONTAINS
       ! real and complex cases are mutually exclusive
       IF (PRESENT(ext_mo_coeff)) THEN
          CPASSERT(.NOT. PRESENT(complex_mo_coeff))
+         mos_are_complex = .FALSE.
       ELSE
          CPASSERT(.NOT. PRESENT(ext_mo_coeff))
+         mos_are_complex = .TRUE.
       END IF
 
       DO ispin = s_spin, l_spin
@@ -884,9 +889,17 @@ CONTAINS
                my_pos = "APPEND"
             END IF
 
-            CALL qs_print_cubes(qs_env, moloc_coeff(ispin)%matrix, ncubes, list_cubes, centers, &
-                                print_key, "loc"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
-                                ispin=ispin, file_position=my_pos)
+            IF (.NOT. mos_are_complex) THEN
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, centers, &
+                                   print_key, "loc"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                   mo_coeff=moloc_coeff(ispin)%matrix, &
+                                   ispin=ispin, file_position=my_pos)
+            ELSE
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, centers, &
+                                   print_key, "loc"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                   complex_mo_coeff=complex_moloc_coeff(ispin)%matrix, &
+                                   ispin=ispin, file_position=my_pos)
+            END IF 
 
             DEALLOCATE (centers)
             DEALLOCATE (list_cubes)
@@ -915,16 +928,18 @@ CONTAINS
 !> \note
 !>      This routine shoul not be in this module
 ! **************************************************************************************************
-   SUBROUTINE qs_print_cubes(qs_env, mo_coeff, nstates, state_list, centers, &
-                             print_key, root, ispin, idir, state0, file_position)
+   SUBROUTINE qs_print_cubes(qs_env, nstates, state_list, centers, &
+        print_key, root, mo_coeff, complex_mo_coeff, ispin, idir, state0, &
+        file_position)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
-      TYPE(cp_fm_type), POINTER                          :: mo_coeff
       INTEGER, INTENT(IN)                                :: nstates
       INTEGER, DIMENSION(:), POINTER                     :: state_list
       REAL(dp), DIMENSION(:, :), POINTER                 :: centers
       TYPE(section_vals_type), POINTER                   :: print_key
       CHARACTER(LEN=*)                                   :: root
+      TYPE(cp_fm_type), POINTER, OPTIONAL                :: mo_coeff
+      TYPE(cp_cfm_type), POINTER, OPTIONAL               :: complex_mo_coeff
       INTEGER, INTENT(IN), OPTIONAL                      :: ispin, idir
       INTEGER, OPTIONAL                                  :: state0
       CHARACTER(LEN=default_string_length), OPTIONAL     :: file_position
@@ -954,6 +969,12 @@ CONTAINS
       NULLIFY (auxbas_pw_pool, pw_env, logger)
       logger => cp_get_default_logger()
 
+      IF (PRESENT(mo_coeff)) THEN
+         CPASSERT(.NOT. PRESENT(complex_mo_coeff))
+      ELSE
+         CPASSERT(PRESENT(complex_mo_coeff))
+      END IF
+      
       CALL get_qs_env(qs_env=qs_env, pw_env=pw_env, subsys=subsys)
       CALL qs_subsys_get(subsys, particles=particles)
 

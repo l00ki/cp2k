@@ -331,8 +331,9 @@ CONTAINS
             !
 
             DO ispin = 1, nspins
-               CALL qs_print_cubes(qs_env, psi1_ptr(ispin)%matrix, ncubes, list_cubes, &
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, &
                                    centers_set(ispin)%array, print_key, 'psi1_p', &
+                                   mo_coeff=psi1_ptr(ispin)%matrix, &
                                    idir=idir, ispin=ispin, file_position=my_pos)
             ENDDO ! ispin
          ENDIF ! print response functions
@@ -363,8 +364,9 @@ CONTAINS
             print_key => section_vals_get_subs_vals(current_section, "PRINT%RESPONSE_FUNCTION_CUBES")
 
             DO ispin = 1, nspins
-               CALL qs_print_cubes(qs_env, psi1_ptr(ispin)%matrix, ncubes, list_cubes, &
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, &
                                    centers_set(ispin)%array, print_key, 'psi1_rxp', &
+                                   mo_coeff=psi1_ptr(ispin)%matrix, &
                                    idir=idir, ispin=ispin, file_position=my_pos)
             ENDDO ! ispin
          ENDIF ! print response functions
@@ -539,8 +541,9 @@ CONTAINS
                ncubes = SIZE(list_cubes, 1)
                print_key => section_vals_get_subs_vals(current_section, "PRINT%RESPONSE_FUNCTION_CUBES")
                DO ispin = 1, nspins
-                  CALL qs_print_cubes(qs_env, psi1_D(ispin, idir)%matrix, &
+                  CALL qs_print_cubes(qs_env, &
                                       ncubes, list_cubes, centers_set(ispin)%array, print_key, 'psi1_D', &
+                                      mo_coeff=psi1_D(ispin, idir)%matrix, &
                                       idir=idir, ispin=ispin, file_position=my_pos)
                ENDDO
             ENDIF ! print response functions
