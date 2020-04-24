@@ -415,9 +415,10 @@ CONTAINS
          CALL pw_pool_create_pw(auxbas_pw_pool, psi_i(i)%pw, &
                                 use_data=REALDATA3D, &
                                 in_space=REALSPACE)
-         CALL calculate_wavefunction(mo_coeff, i, psi_i(i), rho_g, atomic_kind_set, &
+         CALL calculate_wavefunction(i, psi_i(i), rho_g, atomic_kind_set, &
                                      qs_kind_set, cell, dft_control, particle_set, &
-                                     pw_env_sub, external_vector=my_Cocc(:, i - my_I_occupied_start + 1))
+                                     pw_env_sub, mo_vectors=mo_coeff, &
+                                     external_vector=my_Cocc(:, i - my_I_occupied_start + 1))
       END DO
 
       potential_type = qs_env%mp2_env%potential_parameter%potential_type
@@ -437,9 +438,10 @@ CONTAINS
          IF (calc_ex) BIb_C = 0.0_dp
 
          ! psi_a
-         CALL calculate_wavefunction(mo_coeff, a, psi_a, rho_g, atomic_kind_set, &
+         CALL calculate_wavefunction(a, psi_a, rho_g, atomic_kind_set, &
                                      qs_kind_set, cell, dft_control, particle_set, &
-                                     pw_env_sub, external_vector=my_Cvirt(:, a - (homo + my_A_virtual_start) + 1))
+                                     pw_env_sub, mo_vectors=mo_coeff, &
+                                     external_vector=my_Cvirt(:, a - (homo + my_A_virtual_start) + 1))
          i_counter = 0
          DO i = my_I_occupied_start, my_I_occupied_end
             i_counter = i_counter + 1

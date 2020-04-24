@@ -1887,8 +1887,9 @@ CONTAINS
          CALL mp_sum(wf_vector, para_env%group)
 
          ! Calculate the variable part of the embedding potential
-         CALL calculate_wavefunction(mo_coeff, 1, psi_L, rho_g, atomic_kind_set, &
+         CALL calculate_wavefunction(1, psi_L, rho_g, atomic_kind_set, &
                                      qs_kind_set, cell, dft_control, particle_set, pw_env, &
+                                     mo_vectors=mo_coeff, &
                                      basis_type="RI_AUX", &
                                      external_vector=wf_vector)
          ! Update the full embedding potential
@@ -1914,8 +1915,9 @@ CONTAINS
          CALL mp_sum(wf_vector, para_env%group)
 
          ! Calculate the variable part of the embedding potential
-         CALL calculate_wavefunction(mo_coeff, 1, psi_L, rho_g, atomic_kind_set, &
+         CALL calculate_wavefunction(1, psi_L, rho_g, atomic_kind_set, &
                                      qs_kind_set, cell, dft_control, particle_set, pw_env, &
+                                     mo_vectors=mo_coeff, &
                                      basis_type="RI_AUX", &
                                      external_vector=wf_vector)
          ! No constant potential for spin-dependent potential
@@ -1936,11 +1938,13 @@ CONTAINS
          CALL mp_sum(wf_vector, para_env%group)
 
          ! Calculate the variable part of the embedding potential
-         CALL calculate_wavefunction(mo_coeff, 1, psi_L, rho_g, atomic_kind_set, &
-                                     qs_kind_set, cell, dft_control, particle_set, pw_env)
-
-         CALL calculate_wavefunction(mo_coeff, 1, psi_L, rho_g, atomic_kind_set, &
+         CALL calculate_wavefunction(1, psi_L, rho_g, atomic_kind_set, &
                                      qs_kind_set, cell, dft_control, particle_set, pw_env, &
+                                     mo_vectors=mo_coeff)
+                                     
+         CALL calculate_wavefunction(1, psi_L, rho_g, atomic_kind_set, &
+                                     qs_kind_set, cell, dft_control, particle_set, pw_env, &
+                                     mo_vectors=mo_coeff, &
                                      basis_type="RI_AUX", &
                                      external_vector=wf_vector)
 

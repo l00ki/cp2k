@@ -40,6 +40,7 @@ MODULE qs_collocate_density
                                               gto_basis_set_type
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
+   USE cp_cfm_types,                    ONLY: cp_cfm_type
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: dbcsr_allocate_matrix_set,&
                                               dbcsr_deallocate_matrix_set
@@ -2318,11 +2319,10 @@ CONTAINS
 !>      does it take correctly the periodic images of the basis functions into account
 !>      i.e. is only correct if the basis functions are localised enough to be just in 1 cell ?
 ! **************************************************************************************************
-   SUBROUTINE calculate_wavefunction(mo_vectors, ivector, rho, rho_gspace, &
+   SUBROUTINE calculate_wavefunction(ivector, rho, rho_gspace, &
                                      atomic_kind_set, qs_kind_set, cell, dft_control, particle_set, &
-                                     pw_env, basis_type, external_vector)
+                                     pw_env, mo_vectors, complex_mo_vectors, basis_type, external_vector)
 
-      TYPE(cp_fm_type), POINTER                          :: mo_vectors
       INTEGER                                            :: ivector
       TYPE(pw_p_type), INTENT(INOUT)                     :: rho, rho_gspace
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
@@ -2331,6 +2331,8 @@ CONTAINS
       TYPE(dft_control_type), POINTER                    :: dft_control
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(pw_env_type), POINTER                         :: pw_env
+      TYPE(cp_fm_type), POINTER, OPTIONAL                :: mo_vectors
+      TYPE(cp_cfm_type), POINTER, OPTIONAL               :: complex_mo_vectors
       CHARACTER(LEN=*), INTENT(IN), OPTIONAL             :: basis_type
       REAL(KIND=dp), DIMENSION(:), OPTIONAL              :: external_vector
 
@@ -2344,7 +2346,7 @@ CONTAINS
       INTEGER, DIMENSION(3)                              :: lb, location, tp, ub
       INTEGER, DIMENSION(:), POINTER                     :: la_max, la_min, npgfa, nsgfa
       INTEGER, DIMENSION(:, :), POINTER                  :: first_sgfa
-      LOGICAL                                            :: local, map_it_here
+      LOGICAL                                            :: local, map_it_here, mos_are_complex
       REAL(KIND=dp)                                      :: dab, eps_rho_rspace, radius, scale
       REAL(KIND=dp), DIMENSION(3)                        :: ra
       REAL(KIND=dp), DIMENSION(:), POINTER               :: eigenvector
@@ -2358,8 +2360,16 @@ CONTAINS
 
       IF (PRESENT(basis_type)) THEN
          my_basis_type = basis_type
+         mos_are_complex = .FALSE.
       ELSE
          my_basis_type = "ORB"
+         mos_are_complex = .TRUE.
+      END IF
+
+      IF (PRESENT(mo_vectors)) THEN
+         CPASSERT(.NOT. PRESENT(complex_mo_vectors))
+      ELSE
+         CPASSERT(PRESENT(complex_mo_vectors))
       END IF
 
       CALL timeset(routineN, handle)

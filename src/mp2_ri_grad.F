@@ -447,16 +447,18 @@ CONTAINS
             wf_vector = 0.0_dp
             wf_vector(LLL) = 1.0_dp
             ! pseudo psi_L
-            CALL calculate_wavefunction(mo_coeff, 1, psi_L, rho_g, atomic_kind_set, &
+            CALL calculate_wavefunction(1, psi_L, rho_g, atomic_kind_set, &
                                         qs_kind_set, cell, dft_control, particle_set, pw_env_sub, &
+                                        mo_vectors=mo_coeff, &
                                         basis_type="RI_AUX", &
                                         external_vector=wf_vector)
 
             rho_r%pw%cr3d = psi_L%pw%cr3d
             IF (alpha_beta) THEN
-               CALL calculate_wavefunction(mo_coeff_beta, 1, psi_L_beta, rho_g, atomic_kind_set, &
+               CALL calculate_wavefunction(1, psi_L_beta, rho_g, atomic_kind_set, &
                                            qs_kind_set, cell, dft_control, particle_set, &
-                                           pw_env_sub, basis_type='RI_AUX', &
+                                           pw_env_sub, mo_vectors=mo_coeff_beta, &
+                                           basis_type='RI_AUX', &
                                            external_vector=wf_vector)
                rho_r%pw%cr3d = 0.50_dp*(rho_r%pw%cr3d+psi_L_beta%pw%cr3d)
             ENDIF
@@ -653,9 +655,9 @@ CONTAINS
                CALL timeset(routineN//"_Virial", handle3)
                wf_vector = 0.0_dp
                wf_vector(:) = -2.0_dp*G_PQ_local(:, L_counter)
-               CALL calculate_wavefunction(mo_coeff, 1, psi_L, rho_g, atomic_kind_set, &
+               CALL calculate_wavefunction(1, psi_L, rho_g, atomic_kind_set, &
                                            qs_kind_set, cell, dft_control, particle_set, pw_env_sub, &
-                                           basis_type="RI_AUX", &
+                                           mo_vectors=mo_coeff, basis_type="RI_AUX", &
                                            external_vector=wf_vector)
                ! transfer to reciprocal space and calculate potential
                rho_r%pw%cr3d = psi_L%pw%cr3d
