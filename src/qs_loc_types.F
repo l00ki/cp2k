@@ -93,6 +93,8 @@ MODULE qs_loc_types
          POINTER                                :: complex_moloc_coeff
       TYPE(cp_fm_p_type), DIMENSION(:, :), &
          POINTER                                :: op_fm_set
+      TYPE(cp_cfm_p_type), DIMENSION(:, :), &
+         POINTER                                :: op_cfm_set
       TYPE(distribution_1d_type), POINTER         :: local_molecules
       TYPE(cell_type), POINTER                 :: cell
       TYPE(localized_wfn_control_type), &
@@ -186,6 +188,7 @@ CONTAINS
       NULLIFY (qs_loc_env%cell)
       NULLIFY (qs_loc_env%op_sm_set)
       NULLIFY (qs_loc_env%op_fm_set)
+      NULLIFY (qs_loc_env%op_cfm_set)
       NULLIFY (qs_loc_env%local_molecules)
       NULLIFY (qs_loc_env%moloc_coeff)
       NULLIFY (qs_loc_env%complex_moloc_coeff)
@@ -247,6 +250,15 @@ CONTAINS
             END DO
          END DO
          DEALLOCATE (qs_loc_env%op_fm_set)
+      END IF
+
+      IF (ASSOCIATED(qs_loc_env%op_cfm_set)) THEN
+         DO i = 1, SIZE(qs_loc_env%op_cfm_set, 2)
+            DO j = 1, SIZE(qs_loc_env%op_cfm_set, 1)
+               CALL cp_cfm_release(qs_loc_env%op_cfm_set(j, i)%matrix)
+            END DO
+         END DO
+         DEALLOCATE (qs_loc_env%op_cfm_set)
       END IF
 
       IF (ASSOCIATED(qs_loc_env%op_sm_set)) THEN
@@ -407,8 +419,8 @@ CONTAINS
 !> \author MI
 ! **************************************************************************************************
    SUBROUTINE get_qs_loc_env(qs_loc_env, cell, local_molecules, localized_wfn_control, &
-                             moloc_coeff, complex_moloc_coeff, op_sm_set, op_fm_set, para_env, &
-                             particle_set, weights, dim_op)
+                             moloc_coeff, complex_moloc_coeff, op_sm_set, op_fm_set, op_cfm_set, &
+                             para_env, particle_set, weights, dim_op)
 
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
       TYPE(cell_type), OPTIONAL, POINTER                 :: cell
@@ -423,6 +435,8 @@ CONTAINS
          POINTER                                         :: op_sm_set
       TYPE(cp_fm_p_type), DIMENSION(:, :), OPTIONAL, &
          POINTER                                         :: op_fm_set
+      TYPE(cp_cfm_p_type), DIMENSION(:, :), OPTIONAL, &
+         POINTER                                         :: op_cfm_set
       TYPE(cp_para_env_type), OPTIONAL, POINTER          :: para_env
       TYPE(particle_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: particle_set
@@ -441,6 +455,7 @@ CONTAINS
          localized_wfn_control => qs_loc_env%localized_wfn_control
       IF (PRESENT(op_sm_set)) op_sm_set => qs_loc_env%op_sm_set
       IF (PRESENT(op_fm_set)) op_fm_set => qs_loc_env%op_fm_set
+      IF (PRESENT(op_cfm_set)) op_cfm_set => qs_loc_env%op_cfm_set
       IF (PRESENT(para_env)) para_env => qs_loc_env%para_env
       IF (PRESENT(particle_set)) particle_set => qs_loc_env%particle_set
       IF (PRESENT(weights)) weights(1:6) = qs_loc_env%weights(1:6)
@@ -469,8 +484,8 @@ CONTAINS
 !> \author MI
 ! **************************************************************************************************
    SUBROUTINE set_qs_loc_env(qs_loc_env, cell, local_molecules, localized_wfn_control, &
-                             moloc_coeff, complex_moloc_coeff, op_sm_set, op_fm_set, para_env, &
-                             particle_set, weights, dim_op)
+                             moloc_coeff, complex_moloc_coeff, op_sm_set, op_fm_set, op_cfm_set, &
+                             para_env, particle_set, weights, dim_op)
 
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
       TYPE(cell_type), OPTIONAL, POINTER                 :: cell
@@ -485,6 +500,8 @@ CONTAINS
          POINTER                                         :: op_sm_set
       TYPE(cp_fm_p_type), DIMENSION(:, :), OPTIONAL, &
          POINTER                                         :: op_fm_set
+      TYPE(cp_cfm_p_type), DIMENSION(:, :), OPTIONAL, &
+         POINTER                                         :: op_cfm_set
       TYPE(cp_para_env_type), OPTIONAL, POINTER          :: para_env
       TYPE(particle_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: particle_set
@@ -543,6 +560,9 @@ CONTAINS
       END IF
       IF (PRESENT(op_fm_set)) THEN
          qs_loc_env%op_fm_set => op_fm_set
+      END IF
+      IF (PRESENT(op_cfm_set)) THEN
+         qs_loc_env%op_cfm_set => op_cfm_set
       END IF
       IF (PRESENT(weights)) THEN
          qs_loc_env%weights = weights

@@ -83,7 +83,8 @@ MODULE rt_propagation_methods
    USE qs_loc_dipole,                   ONLY: loc_dipole
    USE qs_loc_states,                   ONLY: get_localization_info
    USE qs_loc_types,                    ONLY: qs_loc_env_create,&
-                                              qs_loc_env_new_type
+                                              qs_loc_env_new_type,&
+                                              qs_loc_env_release
    USE qs_loc_utils,                    ONLY: qs_loc_control_init,&
                                               qs_loc_init
    USE rt_make_propagators,             ONLY: propagate_arnoldi,&
@@ -998,6 +999,7 @@ CONTAINS
                                       wf_g, particles, occupied_orbs, occupied_evals, marked_states)
 
            ! memory cleanup
+           CALL qs_loc_env_release(qs_loc_env_homo)
            CALL cp_fm_vect_dealloc(homo_localized)
            DEALLOCATE(occupied_orbs)
            DEALLOCATE(occupied_evals)
