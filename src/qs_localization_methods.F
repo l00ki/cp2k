@@ -1942,7 +1942,7 @@ CONTAINS
       END DO
 
       DEALLOCATE (z_ij_loc_re)
-     DEALLOCATE (z_ij_loc_im)
+      DEALLOCATE (z_ij_loc_im)
       DO idim = 1, dim2
          DEALLOCATE (cz_ij_loc(idim)%c_array)
       END DO
@@ -2009,70 +2009,57 @@ CONTAINS
 !> \param vectors ...
 !> \param complex_vectors ...
 ! **************************************************************************************************
-   SUBROUTINE zij_matrix(op_sm_set, zij_fm_set, vectors, zij_cfm_set, complex_vectors)
+   SUBROUTINE zij_matrix(op_sm_set, zij_fm_set, vectors, zij_cfm_set, c_vectors)
 
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: op_sm_set
       TYPE(cp_fm_p_type), DIMENSION(:, :), OPTIONAL, &
          POINTER                                         :: zij_fm_set
+      TYPE(cp_fm_type), OPTIONAL, POINTER                :: vectors
       TYPE(cp_cfm_p_type), DIMENSION(:, :), OPTIONAL, &
          POINTER                                         :: zij_cfm_set
-      TYPE(cp_fm_type), OPTIONAL, POINTER                :: vectors
-      TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_vectors
+      TYPE(cp_cfm_type), OPTIONAL, POINTER               :: c_vectors
 
       CHARACTER(len=*), PARAMETER :: routineN = 'zij_matrix', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i, j, nao, nmoloc
-      LOGICAL     :: is_complex
-      TYPE(cp_cfm_type), POINTER                         :: tmp_complex_vectors, complex_opvec, tmp_c, tmp_z
-      TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: tmp_i, tmp_r
-      TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct_nao, tmp_fm_struct_nmoloc
-      TYPE(cp_fm_type), POINTER                          :: opvec
+      LOGICAL                                            :: is_complex  ! TRUE if time-dependent
+      TYPE(cp_fm_struct_type), POINTER                   :: fm_struct_nao
+      TYPE(cp_fm_type), POINTER                          :: opvec, opmat, nullmat
+      TYPE(cp_cfm_type), POINTER                         :: c_opvec, c_opmat
 
       CALL timeset(routineN, handle)
-      
-      NULLIFY (complex_opvec, opvec, tmp_r, tmp_i, tmp_c, tmp_z, tmp_fm_struct_nao, &
-               tmp_fm_struct_nmoloc)
+      NULLIFY (fm_struct_nao, opvec, opmat, nullmat, c_opvec, c_opmat)
 
-      ! real and complex case are mutually exclusive
       IF (PRESENT(vectors)) THEN
          is_complex = .FALSE.
-         !CPASSERT(PRESENT(zij_cfm_set))
-         CPASSERT(.NOT. PRESENT(complex_vectors))
-         !CPASSERT(.NOT. PRESENT(zij_fm_set))
-      ELSE
-         is_complex = .TRUE.
-         !CPASSERT(.NOT. PRESENT(zij_fm_set))
-         CPASSERT(PRESENT(complex_vectors))
-         !CPASSERT(PRESENT(zij_cfm_set))
-      END IF
-
-      NULLIFY (complex_opvec, opvec, tmp_r, tmp_i, tmp_c, tmp_z, tmp_fm_struct_nao, tmp_fm_struct_nmoloc)
-      ! get rows and cols of the input
-      IF (PRESENT(vectors)) THEN
+         CPASSERT(.NOT. PRESENT(c_vectors))
+         CPASSERT(.NOT. PRESENT(zij_cfm_set))
+         CPASSERT(PRESENT(zij_fm_set))
+         ! get rows and cols of the input
          CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
          ! replicate the input kind of matrix
          CALL cp_fm_create(opvec, vectors%matrix_struct)
       ELSE
-         CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
+         is_complex = .TRUE.
+         CPASSERT(.NOT. PRESENT(vectors))
+         CPASSERT(.NOT. PRESENT(zij_fm_set))
+         CPASSERT(PRESENT(zij_cfm_set))
+         ! get rows and cols of the input
+         CALL cp_cfm_get_info(c_vectors, nrow_global=nao, ncol_global=nmoloc)
          ! replicate the input kind of matrix
-         CALL cp_cfm_create(complex_opvec, complex_vectors%matrix_struct)
-         CALL cp_fm_struct_create(tmp_fm_struct_nao, template_fmstruct=complex_vectors%matrix_struct, &
-                                  nrow_global=nao, ncol_global=nao)
-         CALL cp_fm_struct_create(tmp_fm_struct_nmoloc, template_fmstruct=complex_vectors%matrix_struct, &
-                                  nrow_global=nmoloc, ncol_global=nmoloc)
-         ALLOCATE (tmp_r(SIZE(zij_fm_set, 2)), tmp_i(SIZE(zij_fm_set, 2)), tmp_c, tmp_z)
-         CALL cp_cfm_create(tmp_c, tmp_fm_struct_nao)
-         CALL cp_cfm_create(tmp_z, zij_fm_set(1, 1)%matrix%matrix_struct)
-         DO i = 1, SIZE(zij_fm_set, 2)
-            CALL cp_fm_create(tmp_r(i)%matrix, tmp_fm_struct_nao)
-            CALL cp_fm_create(tmp_i(i)%matrix, tmp_fm_struct_nao)
-         END DO
+         CALL cp_fm_struct_create(fm_struct_nao, template_fmstruct=c_vectors%matrix_struct, &
+                 nrow_global=nao, ncol_global=nao)
+         CALL cp_fm_create(opmat, fm_struct_nao)
+         CALL cp_fm_create(nullmat, fm_struct_nao)
+         CALL cp_fm_set_all(nullmat, 0.0_dp)
+         CALL cp_cfm_create(c_opmat, fm_struct_nao)
+         CALL cp_cfm_create(c_opvec, c_vectors%matrix_struct)
       END IF
 
-      IF (PRESENT(vectors)) THEN
-         ! Compute zij from real coeffs
-         DO i = 1, SIZE(zij_fm_set, 2)  ! x, y, z
-            DO j = 1, SIZE(zij_fm_set, 1)  ! real, imag
+      IF (.NOT. is_complex) THEN
+         ! Compute zij here for the time-independent case
+         DO i = 1, SIZE(zij_fm_set, 2)
+            DO j = 1, SIZE(zij_fm_set, 1)
                CALL cp_fm_set_all(zij_fm_set(j, i)%matrix, 0.0_dp)
                CALL cp_dbcsr_sm_fm_multiply(op_sm_set(j, i)%matrix, vectors, opvec, ncol=nmoloc)
                CALL cp_gemm("T", "N", nmoloc, nmoloc, nao, 1.0_dp, vectors, opvec, 0.0_dp, &
@@ -2080,27 +2067,27 @@ CONTAINS
             ENDDO
          ENDDO
       ELSE
-         ! compute zij from complex coeffs
-         DO i = 1, SIZE(zij_fm_set, 2)  ! x, y, z
-            CALL copy_dbcsr_to_fm(op_sm_set(1, i)%matrix, tmp_r(i)%matrix)
-            CALL copy_dbcsr_to_fm(op_sm_set(2, i)%matrix, tmp_i(i)%matrix)
-            CALL cp_fm_to_cfm(tmp_r(i)%matrix, tmp_i(i)%matrix, tmp_c)
-            complex_opvec%local_data = MATMUL(tmp_c%local_data, complex_vectors%local_data)
-            CALL cp_cfm_gemm("T", "N", nmoloc, nmoloc, nao, (1.0_dp, 0.0_dp), complex_vectors, &
-                             complex_opvec, (0.0_dp, 0.0_dp), tmp_z)
-            ! save into real and imaginary components
-            CALL cp_cfm_to_fm(tmp_z, zij_fm_set(1, i)%matrix, zij_fm_set(2, i)%matrix)
-         END DO
-         CALL cp_fm_vect_dealloc(tmp_r)
-         CALL cp_fm_vect_dealloc(tmp_i)
-         CALL cp_cfm_release(tmp_c)
-         CALL cp_cfm_release(tmp_z)
-         CALL cp_cfm_release(complex_opvec)
-         CALL cp_fm_struct_release(tmp_fm_struct_nao)
-         CALL cp_fm_struct_release(tmp_fm_struct_nmoloc)
+         ! Compute the spread operator matrices here for the time-dependent case, where each
+         ! cos/sin matrix individually becomes complex
+         DO i = 1, SIZE(zij_cfm_set, 2)
+            DO j = 1, SIZE(zij_cfm_set, 1)
+               CALL copy_dbcsr_to_fm(op_sm_set(j, i)%matrix, opmat)
+               CALL cp_fm_to_cfm(opmat, nullmat, c_opmat)
+               CALL cp_cfm_gemm("N", "N", nao, nmoloc, nao, (1.0_dp, 0.0_dp), c_opmat, c_vectors, &
+                       (0.0_dp, 0.0_dp), c_opvec)
+               CALL cp_cfm_gemm("C", "N", nmoloc, nmoloc, nao, (1.0_dp, 0.0_dp), c_vectors, c_opvec, &
+                       (0.0_dp, 0.0_dp), zij_cfm_set(j, i)%matrix)
+            ENDDO
+         ENDDO
       END IF
 
       CALL cp_fm_release(opvec)
+      CALL cp_cfm_release(c_opvec)
+      CALL cp_fm_struct_release(fm_struct_nao)
+      CALL cp_fm_release(opmat)
+      CALL cp_fm_release(nullmat)
+      CALL cp_cfm_release(c_opvec)
+      CALL cp_cfm_release(c_opmat)
       CALL timestop(handle)
 
    END SUBROUTINE zij_matrix
@@ -2260,12 +2247,14 @@ CONTAINS
       ALLOCATE (c_zij(dim1*dim2), mii(dim1*dim2), mij(dim1*dim2), mji(dim1*dim2), mjj(dim1*dim2))
 
       CALL cp_cfm_create(c_rmat, zij(1, 1)%matrix%matrix_struct)
-      CALL cp_cfm_set_all(c_rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
+      CALL cp_cfm_set_all(c_rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))  ! start with the identity transformation
+      PRINT *, "dim2", dim2, "dim1", dim1
       DO idim = 1, dim2
          DO jdim = 1, dim1
-            NULLIFY(c_zij(idim+jdim-1)%matrix)
-            CALL cp_cfm_create(c_zij(idim+jdim-1)%matrix, zij(jdim, idim)%matrix%matrix_struct)
-            CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij(idim+jdim-1)%matrix)
+            PRINT *, "idim", idim, "jdim", jdim, "(idim-1)*dim1+jdim", (idim-1)*dim1+jdim
+            NULLIFY(c_zij((idim-1)*dim1+jdim)%matrix)
+            CALL cp_cfm_create(c_zij((idim-1)*dim1+jdim)%matrix, zij(jdim, idim)%matrix%matrix_struct)
+            CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij((idim-1)*dim1+jdim)%matrix)
          END DO
       END DO
 
@@ -2285,14 +2274,15 @@ CONTAINS
          sweeps = sweeps + 1
          t1 = m_walltime()
          DO jstate = 1, nstate
-            DO istate = 1, jstate-1
-               DO idim = 1, dim2
+            DO istate = jstate+1, nstate
+               DO idim = 1, dim1*dim2
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, istate, mii(idim))
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, jstate, mij(idim))
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, jstate, istate, mji(idim))
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, jstate, jstate, mjj(idim))
                END DO
                CALL get_cardoso_angles(mii, mij, mji, mjj, c, s, c_zij(1)%matrix%matrix_struct)
+               !PRINT *, "c", c, "s", s
                CALL rotate_cardoso_zij(istate, jstate, c, s, c_zij)
                CALL rotate_cardoso_rmat(istate, jstate, c, s, c_rmat)
             END DO
@@ -2309,14 +2299,14 @@ CONTAINS
       DO idim = 1, dim2
          ! back to an interlaced matrix
          DO jdim = 1, dim1
-            CALL cp_cfm_to_cfm(c_zij(idim+jdim-1)%matrix, zij(jdim, idim)%matrix)
-            CALL cp_cfm_release(c_zij(idim+jdim-1)%matrix)
+            CALL cp_cfm_to_cfm(c_zij((idim-1)*dim1+jdim)%matrix, zij(jdim, idim)%matrix)
+            CALL cp_cfm_release(c_zij((idim-1)*dim1+jdim)%matrix)
          END DO
       END DO
-      DEALLOCATE (c_zij, mii, mij, mji, mjj)
 
       CALL rotate_complex_orbitals(c_rmat, vectors)
 
+      DEALLOCATE (c_zij, mii, mij, mji, mjj)
       CALL cp_cfm_release(c_rmat)
 
       CALL timestop(handle)
@@ -2428,24 +2418,12 @@ CONTAINS
          CALL cp_cfm_set_element(hmat, 1, 1, (mii(i) - mjj(i)))
          CALL cp_cfm_set_element(hmat, 1, 2, (mij(i) + mji(i)))
          CALL cp_cfm_set_element(hmat, 1, 3, (0.0_dp, 1.0_dp)*(mji(i) - mij(i)))
-         !CALL cp_cfm_write_formatted(hmat, unit, "hmat")
          CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), hmat, hmat, (1.0_dp, 0.0_dp), c_Gmat)
       END DO
-      !PRINT *, "mii", mii
-      !PRINT *, "mij", mij
-      !PRINT *, "mji", mji
-      !PRINT *, "mjj", mjj
+
       CALL cp_cfm_to_fm(c_Gmat, Gmat, i_Gmat)
 
-      !CALL cp_cfm_write_formatted(hmat, unit, "hmat before")
-      !CALL cp_cfm_write_formatted(c_Gmat, unit, "c_Gmat before")
-      !CALL cp_fm_write_formatted(Gmat, unit, "Gmat before")
-
       CALL choose_eigv_solver(Gmat, evects, evals)
-
-      !CALL cp_fm_write_formatted(Gmat, unit, "Gmat after")
-      !CALL cp_fm_write_formatted(evects, unit, "evects after")
-      !PRINT *, "evals ", evals
 
       ! find eigenvector with highest eigenvalue
       i_max = MAXLOC(evals, 1)
@@ -2455,16 +2433,14 @@ CONTAINS
       IF (x < 0) THEN
          x = -x
          y = -y
-         z = z
+         z = -z
       END IF
       !PRINT *, "xyz", x, y, z
 
       ! calculate the angles
-      r = SQRT(x**2 + y**2 + z**2)
-      c = SQRT((x + r) / (2 * r))
+      r = SQRT(x**2 + y**2 + z**2)  ! this will always be 1
+      c = SQRT((x + r) / (2 * r))  ! this will always be real
       s = CMPLX(y / SQRT(2 * r * (x + r)), -1.0 * z / SQRT(2 * r * (x + r)), KIND=dp)
-
-      !PRINT *, "c, s, norm", c, s, ABS(c)**2+ABS(s)**2
 
       CALL cp_fm_struct_release(h_fm_struct)
       CALL cp_fm_struct_release(G_fm_struct)
@@ -2494,7 +2470,7 @@ CONTAINS
       COMPLEX(kind=dp), INTENT(INOUT)                    :: s
       TYPE(cp_cfm_p_type), DIMENSION(:)                  :: zij
 
-      INTEGER                                            :: i, nstate, stride
+      INTEGER                                            :: i, j, nstate, stride
       TYPE(cp_cfm_type), POINTER                         :: Jmat, tmpmat
 
       CALL cp_cfm_get_info(zij(1)%matrix, nrow_global=nstate)
@@ -2503,22 +2479,18 @@ CONTAINS
       CALL cp_cfm_create(Jmat, zij(1)%matrix%matrix_struct)
       CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
       Jmat%local_data(istate, istate) = c
-      Jmat%local_data(istate, jstate) = CONJG(s)
-      Jmat%local_data(jstate, istate) = -s
+      Jmat%local_data(jstate, istate) = s
+      Jmat%local_data(istate, jstate) = -CONJG(s)
       Jmat%local_data(jstate, jstate) = c
 
-      DO i = 1, SIZE(zij, 1)
-         !CALL zrot(nstate, zij(i)%matrix%local_data(1, istate), 1, &
-         !          zij(i)%matrix%local_data(1, jstate), 1, c, s)
-         !stride = SIZE(zij(i)%matrix%local_data, 1)
-         !CALL zrot(nstate, zij(i)%matrix%local_data(istate, 1), stride, &
-         !          zij(i)%matrix%local_data(jstate, 1), stride, c, s)
-         CALL cp_cfm_gemm("N", "C", nstate, nstate, nstate, (1.0_dp, 0.0_dp), zij(i)%matrix, Jmat, &
+      DO i = 1, SIZE(zij)
+         !CALL cp_cfm_write_formatted(zij(i)%matrix, 6, "zij before")
+         CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), zij(i)%matrix, Jmat, &
                           (0.0_dp, 0.0_dp), tmpmat)
-         CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, tmpmat, &
+         CALL cp_cfm_gemm("C", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, tmpmat, &
                           (0.0_dp, 0.0_dp), zij(i)%matrix)
+         !CALL cp_cfm_write_formatted(zij(i)%matrix, 6, "zij after")
       END DO
-
    END SUBROUTINE rotate_cardoso_zij
 
 ! **************************************************************************************************
@@ -2548,16 +2520,15 @@ CONTAINS
       CALL cp_cfm_create(Jmat, rmat%matrix_struct)
       CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
       Jmat%local_data(istate, istate) = c
-      Jmat%local_data(istate, jstate) = CONJG(s)
-      Jmat%local_data(jstate, istate) = -s
+      Jmat%local_data(jstate, istate) = s
+      Jmat%local_data(istate, jstate) = -CONJG(s)
       Jmat%local_data(jstate, jstate) = c
 
-      CALL cp_cfm_gemm("N", "C", nrow, nrow, nrow, (1.0_dp, 0.0_dp), rmat, Jmat, &
+      CALL cp_cfm_write_formatted(rmat, 6, "rmat before")
+      CALL cp_cfm_gemm("N", "N", nrow, nrow, nrow, (1.0_dp, 0.0_dp), rmat, Jmat, &
                        (0.0_dp, 0.0_dp), tmpmat)
+      CALL cp_cfm_write_formatted(rmat, 6, "rmat after")
       CALL cp_cfm_to_cfm(tmpmat, rmat)
-
-      !CALL zrot(nrow, rmat%local_data(1, istate), 1, &
-      !          rmat%local_data(1, jstate), 1, c, s)
 
    END SUBROUTINE rotate_cardoso_rmat
 

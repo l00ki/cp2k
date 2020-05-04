@@ -23,6 +23,7 @@ MODULE qs_loc_methods
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
+                                              cp_cfm_get_element,&
                                               cp_cfm_get_info,&
                                               cp_cfm_p_type,&
                                               cp_cfm_release,&
@@ -204,7 +205,7 @@ CONTAINS
             CALL cp_fm_set_all(nullmat, 0.0_dp, 0.0_dp)
             CALL cp_cfm_create(tmp_complex_vectors, vectors%matrix_struct)
             CALL cp_fm_to_cfm(vectors, nullmat, tmp_complex_vectors)
-            CALL zij_matrix(op_sm_set, zij_fm_set, complex_vectors=tmp_complex_vectors)
+            CALL zij_matrix(op_sm_set, zij_cfm_set=zij_cfm_set, c_vectors=tmp_complex_vectors)
          ELSE
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
@@ -215,7 +216,7 @@ CONTAINS
          method = do_loc_cardoso  ! currently the only method that works with TD MOs
          tmp_complex_vectors => complex_vectors
          CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
-         CALL zij_matrix(op_sm_set, zij_cfm_set=zij_cfm_set, complex_vectors=complex_vectors)
+         CALL zij_matrix(op_sm_set, zij_cfm_set=zij_cfm_set, c_vectors=complex_vectors)
       END IF
 
       max_iter = qs_loc_env%localized_wfn_control%max_iter
@@ -490,6 +491,7 @@ CONTAINS
       REAL(dp), DIMENSION(3)                             :: c, c2, cpbc
       REAL(dp), DIMENSION(:, :), POINTER                 :: centers
       REAL(KIND=dp)                                      :: imagpart, realpart
+      COMPLEX(KIND=dp)                                   :: sinpart, cospart
       TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(section_vals_type), POINTER                   :: print_key
 
@@ -500,9 +502,11 @@ CONTAINS
       IF (PRESENT(zij)) THEN
          zij_is_complex = .FALSE.
          CPASSERT(.NOT. PRESENT(c_zij))
+         CALL cp_fm_get_info(zij(1, 1)%matrix, nrow_global=nstates)
       ELSE
          zij_is_complex = .TRUE.
          CPASSERT(PRESENT(c_zij))
+         CALL cp_cfm_get_info(c_zij(1, 1)%matrix, nrow_global=nstates)
       END IF
 
       file_tmp = TRIM(qs_loc_env%tag_mo)//"_spreads_s"//TRIM(ADJUSTL(cp_to_string(ispin)))
@@ -513,7 +517,6 @@ CONTAINS
       iter = cp_iter_string(logger%iter_info)
       IF (unit_out_s > 0 .AND. .NOT. my_only_init) WRITE (unit_out_s, '(i6,/,A)') nmoloc, TRIM(iter)
 
-      CALL cp_fm_get_info(zij(1, 1)%matrix, nrow_global=nstates)
       CPASSERT(nstates >= nmoloc)
 
       centers => qs_loc_env%localized_wfn_control%centers_set(ispin)%array
@@ -527,21 +530,39 @@ CONTAINS
          c2 = 0.0_dp
          spread_i = 0.0_dp
          spread_ii = 0.0_dp
-         DO jdir = 1, SIZE(zij, 2)
-            CALL cp_fm_get_element(zij(1, jdir)%matrix, istate, istate, realpart)
-            CALL cp_fm_get_element(zij(2, jdir)%matrix, istate, istate, imagpart)
-            z = CMPLX(realpart, imagpart, dp)
-            spread_i = spread_i - weights(jdir)* &
-                       LOG(realpart*realpart + imagpart*imagpart)/twopi/twopi
-            spread_ii = spread_ii + weights(jdir)* &
-                        (1.0_dp - (realpart*realpart + imagpart*imagpart))/twopi/twopi
-            IF (jdir < 4) THEN
-               DO idir = 1, 3
-                  c(idir) = c(idir) + &
-                            (cell%hmat(idir, jdir)/twopi)*AIMAG(LOG(z))
-               ENDDO
-            END IF
-         END DO
+         IF (.NOT. zij_is_complex) THEN
+            DO jdir = 1, SIZE(zij, 2)
+               CALL cp_fm_get_element(zij(1, jdir)%matrix, istate, istate, realpart)
+               CALL cp_fm_get_element(zij(2, jdir)%matrix, istate, istate, imagpart)
+               z = CMPLX(realpart, imagpart, dp)
+               spread_i = spread_i - weights(jdir)* &
+                          LOG(realpart*realpart + imagpart*imagpart)/twopi/twopi
+               spread_ii = spread_ii + weights(jdir)* &
+                           (1.0_dp - (realpart*realpart + imagpart*imagpart))/twopi/twopi
+               IF (jdir < 4) THEN
+                  DO idir = 1, 3
+                     c(idir) = c(idir) + &
+                               (cell%hmat(idir, jdir)/twopi)*AIMAG(LOG(z))
+                  END DO
+               END IF
+            END DO
+         ELSE
+            DO jdir = 1, SIZE(c_zij, 2)
+               CALL cp_cfm_get_element(c_zij(1, jdir)%matrix, istate, istate, cospart)
+               CALL cp_cfm_get_element(c_zij(2, jdir)%matrix, istate, istate, sinpart)
+               z = cospart + (0.0_dp, 1.0_dp) * sinpart
+               spread_i = REAL(spread_i - weights(jdir)* &
+                          LOG(cospart*cospart + sinpart*sinpart)/twopi/twopi, KIND=dp)
+               spread_ii = REAL(spread_ii + weights(jdir)* &
+                           (1.0_dp - (cospart*cospart + sinpart*sinpart))/twopi/twopi, KIND=dp)
+               IF (jdir < 4) THEN
+                  DO idir = 1, 3
+                     c(idir) = c(idir) + &
+                               (cell%hmat(idir, jdir)/twopi)*AIMAG(LOG(z))
+                  ENDDO
+               END IF
+            END DO
+         END IF
          cpbc = pbc(c, cell)
          centers(1:3, istate) = cpbc(1:3)
          centers(4, istate) = spread_i
@@ -549,7 +570,7 @@ CONTAINS
          sum_spread_i = sum_spread_i + centers(4, istate)
          sum_spread_ii = sum_spread_ii + centers(5, istate)
          IF (unit_out_s > 0 .AND. .NOT. my_only_init) WRITE (unit_out_s, '(I6,2F16.8)') istate, centers(4:5, istate)
-      ENDDO
+      END DO
       !PRINT *, "centers after", centers
 
       ! Print of wannier centers
@@ -775,21 +796,23 @@ CONTAINS
             END IF
             !
             DO i = 1, dim_op
-               DO j = 1, SIZE(op_fm_set, 1)
-                  IF (.NOT. mos_are_complex) THEN
+               IF (.NOT. mos_are_complex) THEN
+                  DO j = 1, SIZE(op_fm_set, 1)
                      NULLIFY (op_fm_set(j, i)%matrix)
                      CALL cp_fm_create(op_fm_set(j, i)%matrix, tmp_fm_struct)
                      CALL cp_fm_get_info(op_fm_set(j, i)%matrix, nrow_global=nmosub)
                      CPASSERT(nmo >= nmosub)
                      CALL cp_fm_set_all(op_fm_set(j, i)%matrix, 0.0_dp)
-                  ELSE
+                  END DO
+               ELSE
+                  DO j = 1, SIZE(op_cfm_set, 1)
                      NULLIFY (op_cfm_set(j, i)%matrix)
                      CALL cp_cfm_create(op_cfm_set(j, i)%matrix, tmp_fm_struct)
                      CALL cp_cfm_get_info(op_cfm_set(j, i)%matrix, nrow_global=nmosub)
                      CPASSERT(nmo >= nmosub)
                      CALL cp_cfm_set_all(op_cfm_set(j, i)%matrix, (0.0_dp, 0.0_dp))
-                  END IF
-               END DO
+                  END DO
+               END IF
             END DO
             CALL cp_fm_struct_release(tmp_fm_struct)
 
