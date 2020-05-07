@@ -68,6 +68,7 @@ MODULE rt_propagation_methods
    USE pw_env_types,                    ONLY: pw_env_get,&
                                               pw_env_type
    USE pw_pool_types,                   ONLY: pw_pool_create_pw,&
+                                              pw_pool_give_back_pw,&
                                               pw_pool_p_type,&
                                               pw_pool_type
    USE pw_types,                        ONLY: COMPLEXDATA1D,&
@@ -83,6 +84,7 @@ MODULE rt_propagation_methods
    USE qs_loc_dipole,                   ONLY: loc_dipole
    USE qs_loc_states,                   ONLY: get_localization_info
    USE qs_loc_types,                    ONLY: qs_loc_env_create,&
+                                              qs_loc_env_destroy,&
                                               qs_loc_env_new_type,&
                                               qs_loc_env_release
    USE qs_loc_utils,                    ONLY: qs_loc_control_init,&
@@ -998,16 +1000,18 @@ CONTAINS
            CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, wf_r, &
                                       wf_g, particles, occupied_orbs, occupied_evals, marked_states)
 
+           CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
+           
            ! memory cleanup
-           CALL qs_loc_env_release(qs_loc_env_homo)
            CALL cp_fm_vect_dealloc(homo_localized)
            DEALLOCATE(occupied_orbs)
            DEALLOCATE(occupied_evals)
-
-           ! print total dipole
-           CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
+           CALL qs_loc_env_destroy(qs_loc_env_homo)
         END IF
      END IF
+
+     CALL pw_pool_give_back_pw(auxbas_pw_pool, wf_r%pw)
+     CALL pw_pool_give_back_pw(auxbas_pw_pool, wf_g%pw)
 
      CALL timestop(handle)
 
