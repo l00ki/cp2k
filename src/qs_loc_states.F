@@ -9,6 +9,7 @@
 MODULE qs_loc_states
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
+                                              cp_cfm_release,&
                                               cp_cfm_to_fm,&
                                               cp_cfm_type,&
                                               cp_fm_to_cfm
@@ -36,6 +37,7 @@ MODULE qs_loc_states
    USE qs_loc_molecules,                ONLY: wfc_to_molecule
    USE qs_loc_types,                    ONLY: qs_loc_env_new_type
    USE qs_mo_types,                     ONLY: mo_set_p_type
+   USE wannier_dipoles,                 ONLY: calculate_wannier_dipole
    USE wannier_states,                  ONLY: construct_wannier_states
    USE wannier_states_types,            ONLY: wannier_centres_type
 #include "./base/base_uses.f90"
@@ -212,7 +214,14 @@ CONTAINS
                                            "WANNIER_STATES"), cp_p_file)) THEN
          CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
       ENDIF
-
+      ! print dipoles of Wannier functions
+      IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+                                           "WANNIER_DIPOLES"), cp_p_file)) THEN
+         CALL calculate_wannier_dipole(qs_env, qs_loc_env, loc_print_section)
+      END IF
+     
+      CALL cp_cfm_release(tmp_complex_coeffs)
+      
       CALL timestop(handle)
 
    END SUBROUTINE get_localization_info

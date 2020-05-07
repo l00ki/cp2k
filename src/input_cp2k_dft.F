@@ -878,6 +878,10 @@ CONTAINS
       CALL create_wannier_states_section(subsection)
       CALL section_add_subsection(print_section, subsection)
       CALL section_release(subsection)
+      ! Wannier dipoles with wannier
+      CALL create_wannier_dipoles_section(subsection)
+      CALL section_add_subsection(print_section, subsection)
+      CALL section_release(subsection)
       CALL section_add_subsection(section, print_section)
       CALL section_release(print_section)
 
@@ -3056,6 +3060,28 @@ CONTAINS
       CALL section_release(print_key2)
    END SUBROUTINE create_wannier_states_section
 
+! **************************************************************************************************
+!> \brief ...
+!> \param print_key ...
+!> \author Lukas Schreder
+! **************************************************************************************************
+   SUBROUTINE create_wannier_dipoles_section(print_key)
+     TYPE(section_type), POINTER       :: print_key
+
+     CHARACTER(len=*), PARAMETER :: routineN = "create_wannier_dipoles_section", &
+          routineP = moduleN//":"//routineN
+
+     TYPE(keyword_type), POINTER       :: keyword
+     
+     CPASSERT(.NOT. ASSOCIATED(print_key))
+     NULLIFY(keyword)
+     CALL cp_print_key_section_create(print_key, __LOCATION__, "WANNIER_DIPOLES", &
+                                      description="Controls printing of dipole contributions "// &
+                                      "of Wannier functions", print_level=high_print_level, &
+                                      filename=" ")
+     
+   END SUBROUTINE create_wannier_dipoles_section
+     
 ! **************************************************************************************************
 !> \brief creates the input section for the qs part
 !> \param section the section to create

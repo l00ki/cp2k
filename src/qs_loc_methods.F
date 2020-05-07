@@ -238,12 +238,10 @@ CONTAINS
       END IF
       SELECT CASE (method)
       CASE (do_loc_jacobi)
-         CALL cp_fm_write_formatted(vectors, output_unit, "MOs before:")
          CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                eps_localization=eps_localization, sweeps=sweeps, &
                                out_each=out_each, target_time=target_time, start_time=start_time, &
                                vectors=vectors)
-         CALL cp_fm_write_formatted(vectors, output_unit, "MOs after:")
       CASE (do_loc_scdm)
          ! Decomposition
          CALL scdm_qrfact(vectors)
@@ -290,10 +288,8 @@ CONTAINS
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
       CASE (do_loc_cardoso)
-         CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs before:")
          CALL cardoso_souloumiac(weights, zij_cfm_set, para_env, max_iter, eps_localization, &
                                  sweeps, out_each, target_time, start_time, tmp_complex_vectors)
-         CALL cp_cfm_write_formatted(tmp_complex_vectors, output_unit, "MOs after:")
          IF (PRESENT(vectors)) THEN
             CALL cp_cfm_to_fm(tmp_complex_vectors, vectors, nullmat)
             CALL cp_fm_release(nullmat)
@@ -487,7 +483,7 @@ CONTAINS
                                                             output_unit, unit_out_s
       LOGICAL                                            :: my_only_init, zij_is_complex
       REAL(dp)                                           :: spread_i, spread_ii, sum_spread_i, &
-                                                            sum_spread_ii
+                                                            sum_spread_ii!, itwopi
       REAL(dp), DIMENSION(3)                             :: c, c2, cpbc
       REAL(dp), DIMENSION(:, :), POINTER                 :: centers
       REAL(KIND=dp)                                      :: imagpart, realpart
@@ -520,7 +516,6 @@ CONTAINS
       CPASSERT(nstates >= nmoloc)
 
       centers => qs_loc_env%localized_wfn_control%centers_set(ispin)%array
-      !PRINT *, "centers before", centers
       CPASSERT(ASSOCIATED(centers))
       CPASSERT(SIZE(centers, 2) == nmoloc)
       sum_spread_i = 0.0_dp
@@ -551,15 +546,15 @@ CONTAINS
                CALL cp_cfm_get_element(c_zij(1, jdir)%matrix, istate, istate, cospart)
                CALL cp_cfm_get_element(c_zij(2, jdir)%matrix, istate, istate, sinpart)
                z = cospart + (0.0_dp, 1.0_dp) * sinpart
-               spread_i = REAL(spread_i - weights(jdir)* &
-                          LOG(cospart*cospart + sinpart*sinpart)/twopi/twopi, KIND=dp)
-               spread_ii = REAL(spread_ii + weights(jdir)* &
-                           (1.0_dp - (cospart*cospart + sinpart*sinpart))/twopi/twopi, KIND=dp)
+               spread_i = REAL(spread_i - weights(jdir) * &
+                               LOG(cospart**2 + sinpart**2) / twopi / twopi)
+               spread_ii =  REAL(spread_ii + weights(jdir) * &
+                                 ((1.0_dp, 0.0_dp) - (cospart**2 + sinpart**2)) / twopi / twopi)
                IF (jdir < 4) THEN
                   DO idir = 1, 3
                      c(idir) = c(idir) + &
-                               (cell%hmat(idir, jdir)/twopi)*AIMAG(LOG(z))
-                  ENDDO
+                               (cell%hmat(idir, jdir)/twopi) * AIMAG(LOG(z))
+                  END DO
                END IF
             END DO
          END IF
@@ -571,7 +566,6 @@ CONTAINS
          sum_spread_ii = sum_spread_ii + centers(5, istate)
          IF (unit_out_s > 0 .AND. .NOT. my_only_init) WRITE (unit_out_s, '(I6,2F16.8)') istate, centers(4:5, istate)
       END DO
-      !PRINT *, "centers after", centers
 
       ! Print of wannier centers
       print_key => section_vals_get_subs_vals(print_loc_section, "WANNIER_CENTERS")

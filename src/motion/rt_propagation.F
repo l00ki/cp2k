@@ -20,6 +20,7 @@ MODULE rt_propagation
                                               cp_fm_to_fm,&
                                               cp_fm_type
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
+                                              cp_logger_get_default_unit_nr,&
                                               cp_logger_type,&
                                               cp_to_string
    USE cp_output_handling,              ONLY: cp_add_iter_level,&
@@ -273,7 +274,7 @@ CONTAINS
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: aspc_order, handle, i_iter, i_step, &
-                                                            max_iter, max_steps
+                                                            max_iter, max_steps, unit_nr
       LOGICAL                                            :: should_stop
       REAL(Kind=dp)                                      :: eps_ener, time_iter_start, &
                                                             time_iter_stop, used_time
@@ -291,6 +292,11 @@ CONTAINS
 
       NULLIFY (logger, dft_control, energy, rtp, rtp_control)
       logger => cp_get_default_logger()
+      IF (logger%para_env%ionode) THEN
+         unit_nr = cp_logger_get_default_unit_nr(logger, local=.TRUE.)
+      ELSE
+         unit_nr = -1
+      END IF
 
       CALL get_qs_env(qs_env=qs_env, dft_control=dft_control, rtp=rtp, energy=energy)
 
@@ -308,6 +314,9 @@ CONTAINS
       IF (rtp%i_start >= max_steps) CALL cp_abort(__LOCATION__, &
                                                   "maximum step number smaller than initial step value")
       DO i_step = rtp%i_start + 1, max_steps
+         IF (unit_nr > 0) THEN
+            WRITE (unit_nr, "(T3,A,I5,A,I5)") "Real-time propagation step: ", i_step, "/", max_steps
+         END IF
          energy%efield_core = 0.0_dp
          qs_env%sim_time = REAL(i_step, dp)*rtp%dt
          CALL get_qs_env(qs_env, pw_env=pw_env)

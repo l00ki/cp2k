@@ -129,6 +129,7 @@ CONTAINS
             zwfc = 3.0_dp - REAL(dft_control%nspins, dp)
 
             DO ispins = 1, dft_control%nspins
+               PRINT *, "ispins", ispins
                DO i = 1, SIZE(qs_loc_env%localized_wfn_control%centers_set(ispins)%array, 2)
                   ria = pbc(qs_loc_env%localized_wfn_control%centers_set(ispins)%array(1:3, i), cell)
                   DO j = 1, 3

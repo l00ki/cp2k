@@ -266,10 +266,8 @@ CONTAINS
 
       REAL(KIND=dp), DIMENSION(3, 3)                     :: metric
 
-      PRINT *, "hmat", cell%hmat
       metric = 0.0_dp
       CALL dgemm('T', 'N', 3, 3, 3, 1._dp, cell%hmat, 3, cell%hmat, 3, 0.0_dp, metric, 3)
-      PRINT *, "metric", metric
 
       weights(1) = METRIC(1, 1) - METRIC(1, 2) - METRIC(1, 3)
       weights(2) = METRIC(2, 2) - METRIC(1, 2) - METRIC(2, 3)
@@ -682,13 +680,27 @@ CONTAINS
          DO jstate = 1, ncol_local
 ! get real and imaginary parts
             grad_ij = 0.0_dp
-            DO idim = 1, dim_m
-               zii = diag(row_indices(istate), idim)
-               zjj = diag(col_indices(jstate), idim)
-               zij = matrix_p(idim)%matrix%local_data(istate, jstate)
-               grad_ij = grad_ij + weights(idim)* &
-                         REAL(4.0_dp*CONJG(zij)*(zjj - zii), dp)
-            END DO
+            IF (dim_m == 6) THEN  ! time-dependent case, 6 complex spread matrices
+               DO idim = 1, 3
+                  ! combine the cos/sin decomposition back into 3 matrices
+                  zii = diag(row_indices(istate), idim*2-1) + &
+                        (0.0_dp, 1.0_dp) * diag(row_indices(istate), idim*2)
+                  zjj = diag(row_indices(jstate), idim*2-1) + &
+                        (0.0_dp, 1.0_dp) * diag(row_indices(jstate), idim*2)
+                  zij = matrix_p(idim*2-1)%matrix%local_data(istate, jstate) + &
+                        (0.0_dp, 1.0_dp) *  matrix_p(idim*2)%matrix%local_data(istate, jstate)
+                  grad_ij = grad_ij + weights(idim)* &
+                            REAL(4.0_dp*CONJG(zij)*(zjj - zii), dp)
+               END DO
+            ELSE  ! generic case, dim_m complex spread matrices
+               DO idim = 1, dim_m
+                  zii = diag(row_indices(istate), idim)
+                  zjj = diag(col_indices(jstate), idim)
+                  zij = matrix_p(idim)%matrix%local_data(istate, jstate)
+                  grad_ij = grad_ij + weights(idim)* &
+                            REAL(4.0_dp*CONJG(zij)*(zjj - zii), dp)
+               END DO
+            END IF
             matrix%local_data(istate, jstate) = grad_ij
          END DO
       END DO
@@ -2248,10 +2260,8 @@ CONTAINS
 
       CALL cp_cfm_create(c_rmat, zij(1, 1)%matrix%matrix_struct)
       CALL cp_cfm_set_all(c_rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))  ! start with the identity transformation
-      PRINT *, "dim2", dim2, "dim1", dim1
       DO idim = 1, dim2
          DO jdim = 1, dim1
-            PRINT *, "idim", idim, "jdim", jdim, "(idim-1)*dim1+jdim", (idim-1)*dim1+jdim
             NULLIFY(c_zij((idim-1)*dim1+jdim)%matrix)
             CALL cp_cfm_create(c_zij((idim-1)*dim1+jdim)%matrix, zij(jdim, idim)%matrix%matrix_struct)
             CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij((idim-1)*dim1+jdim)%matrix)
@@ -2282,12 +2292,13 @@ CONTAINS
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, jstate, jstate, mjj(idim))
                END DO
                CALL get_cardoso_angles(mii, mij, mji, mjj, c, s, c_zij(1)%matrix%matrix_struct)
-               !PRINT *, "c", c, "s", s
                CALL rotate_cardoso_zij(istate, jstate, c, s, c_zij)
                CALL rotate_cardoso_rmat(istate, jstate, c, s, c_rmat)
             END DO
          END DO
-         CALL check_tolerance(c_zij, weights, tolerance)
+         CALL check_tolerance(c_zij, weights, spread)
+         tolerance = ABS(spread - old_spread)
+         old_spread = spread
          t2 = m_walltime()
          IF (unit_nr > 0 .AND. MODULO(sweeps, out_each) == 0) THEN
             WRITE (unit_nr, "(T4,A,I7,T30,A,E12.4,T60,A,F8.3)") &
@@ -2397,7 +2408,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3)                        :: evals
       TYPE(cp_cfm_type), POINTER                         :: c_Gmat, hmat
       TYPE(cp_fm_struct_type), POINTER                   :: G_fm_struct, h_fm_struct
-      TYPE(cp_fm_type), POINTER                          :: evects, Gmat, Gmat_T, i_Gmat
+      TYPE(cp_fm_type), POINTER                          :: evects, Gmat, i_Gmat
 
       dim_m = SIZE(mii)
 
@@ -2408,7 +2419,6 @@ CONTAINS
       CALL cp_cfm_create(hmat, h_fm_struct)
       CALL cp_cfm_create(c_Gmat, G_fm_struct)
       CALL cp_cfm_set_all(c_Gmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
-      CALL cp_fm_create(Gmat_T, G_fm_struct)
       CALL cp_fm_create(Gmat, G_fm_struct)
       CALL cp_fm_create(i_Gmat, G_fm_struct)
       CALL cp_fm_create(evects, G_fm_struct)
@@ -2435,7 +2445,6 @@ CONTAINS
          y = -y
          z = -z
       END IF
-      !PRINT *, "xyz", x, y, z
 
       ! calculate the angles
       r = SQRT(x**2 + y**2 + z**2)  ! this will always be 1
@@ -2470,26 +2479,16 @@ CONTAINS
       COMPLEX(kind=dp), INTENT(INOUT)                    :: s
       TYPE(cp_cfm_p_type), DIMENSION(:)                  :: zij
 
-      INTEGER                                            :: i, j, nstate, stride
-      TYPE(cp_cfm_type), POINTER                         :: Jmat, tmpmat
+      INTEGER                                            :: i, nstate, stride
 
       CALL cp_cfm_get_info(zij(1)%matrix, nrow_global=nstate)
 
-      CALL cp_cfm_create(tmpmat, zij(1)%matrix%matrix_struct)
-      CALL cp_cfm_create(Jmat, zij(1)%matrix%matrix_struct)
-      CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
-      Jmat%local_data(istate, istate) = c
-      Jmat%local_data(jstate, istate) = s
-      Jmat%local_data(istate, jstate) = -CONJG(s)
-      Jmat%local_data(jstate, jstate) = c
-
       DO i = 1, SIZE(zij)
-         !CALL cp_cfm_write_formatted(zij(i)%matrix, 6, "zij before")
-         CALL cp_cfm_gemm("N", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), zij(i)%matrix, Jmat, &
-                          (0.0_dp, 0.0_dp), tmpmat)
-         CALL cp_cfm_gemm("C", "N", nstate, nstate, nstate, (1.0_dp, 0.0_dp), Jmat, tmpmat, &
-                          (0.0_dp, 0.0_dp), zij(i)%matrix)
-         !CALL cp_cfm_write_formatted(zij(i)%matrix, 6, "zij after")
+         CALL zrot(nstate, zij(i)%matrix%local_data(1, istate), 1, &
+                   zij(i)%matrix%local_data(1, jstate), 1, c, s)
+         stride = SIZE(zij(i)%matrix%local_data, 1)
+         CALL zrot(nstate, zij(i)%matrix%local_data(istate, 1), stride, &
+                   zij(i)%matrix%local_data(jstate, 1), stride, c, CONJG(s))
       END DO
    END SUBROUTINE rotate_cardoso_zij
 
@@ -2512,23 +2511,11 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: rmat
 
       INTEGER                                            :: nrow
-      TYPE(cp_cfm_type), POINTER                         :: Jmat, tmpmat
 
       CALL cp_cfm_get_info(rmat, nrow_global=nrow)
 
-      CALL cp_cfm_create(tmpmat, rmat%matrix_struct)
-      CALL cp_cfm_create(Jmat, rmat%matrix_struct)
-      CALL cp_cfm_set_all(Jmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
-      Jmat%local_data(istate, istate) = c
-      Jmat%local_data(jstate, istate) = s
-      Jmat%local_data(istate, jstate) = -CONJG(s)
-      Jmat%local_data(jstate, jstate) = c
-
-      CALL cp_cfm_write_formatted(rmat, 6, "rmat before")
-      CALL cp_cfm_gemm("N", "N", nrow, nrow, nrow, (1.0_dp, 0.0_dp), rmat, Jmat, &
-                       (0.0_dp, 0.0_dp), tmpmat)
-      CALL cp_cfm_write_formatted(rmat, 6, "rmat after")
-      CALL cp_cfm_to_cfm(tmpmat, rmat)
+      CALL zrot(nrow, rmat%local_data(1, istate), 1, &
+                rmat%local_data(1, jstate), 1, c, s)
 
    END SUBROUTINE rotate_cardoso_rmat
 
