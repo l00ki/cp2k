@@ -867,7 +867,18 @@ CONTAINS
                           usage=" ORDER {integer}", default_i_val=2, type_of_var=integer_t)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
-      !
+      CALL section_add_subsection(print_section, subsection)
+      CALL section_release(subsection)
+      ! Wannier moments
+      CALL cp_print_key_section_create(subsection, __LOCATION__, name="WANNIER_MOMENTS", &
+                                       description="Section controlling the calculation of "// &
+                                                   "multipole moments from Wannier functions", &
+                                       print_level=debug_print_level + 1, filename="__STD_OUT__")
+      CALL keyword_create(keyword, __LOCATION__, name="ORDER", &
+                          description="Maximum order of multimpole expansion", &
+                          usage="ORDER {integer}", default_i_val=1, type_of_var=integer_t)
+      CALL section_add_keyword(subsection, keyword)
+      CALL keyword_release(keyword)
       CALL section_add_subsection(print_section, subsection)
       CALL section_release(subsection)
       ! Molecular States with wannier
@@ -878,10 +889,7 @@ CONTAINS
       CALL create_wannier_states_section(subsection)
       CALL section_add_subsection(print_section, subsection)
       CALL section_release(subsection)
-      ! Wannier dipoles with wannier
-      CALL create_wannier_dipoles_section(subsection)
-      CALL section_add_subsection(print_section, subsection)
-      CALL section_release(subsection)
+      !
       CALL section_add_subsection(section, print_section)
       CALL section_release(print_section)
 
@@ -3060,28 +3068,6 @@ CONTAINS
       CALL section_release(print_key2)
    END SUBROUTINE create_wannier_states_section
 
-! **************************************************************************************************
-!> \brief ...
-!> \param print_key ...
-!> \author Lukas Schreder
-! **************************************************************************************************
-   SUBROUTINE create_wannier_dipoles_section(print_key)
-     TYPE(section_type), POINTER       :: print_key
-
-     CHARACTER(len=*), PARAMETER :: routineN = "create_wannier_dipoles_section", &
-          routineP = moduleN//":"//routineN
-
-     TYPE(keyword_type), POINTER       :: keyword
-     
-     CPASSERT(.NOT. ASSOCIATED(print_key))
-     NULLIFY(keyword)
-     CALL cp_print_key_section_create(print_key, __LOCATION__, "WANNIER_DIPOLES", &
-                                      description="Controls printing of dipole contributions "// &
-                                      "of Wannier functions", print_level=high_print_level, &
-                                      filename=" ")
-     
-   END SUBROUTINE create_wannier_dipoles_section
-     
 ! **************************************************************************************************
 !> \brief creates the input section for the qs part
 !> \param section the section to create

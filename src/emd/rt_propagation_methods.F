@@ -939,6 +939,9 @@ CONTAINS
      print_key => section_vals_get_subs_vals(loc_print_section, "MOLECULAR_MOMENTS")
      p_loc = p_loc &
              .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+     print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_MOMENTS")
+     p_loc = p_loc &
+             .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
 
      ! localize occupied or unoccupied orbitals, or both
      IF (loc_explicit) THEN

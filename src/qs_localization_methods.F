@@ -2474,21 +2474,34 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE rotate_cardoso_zij(istate, jstate, c, s, zij)
 
-      INTEGER, INTENT(IN)                                :: istate, jstate
-      REAL(kind=dp), INTENT(INOUT)                       :: c
-      COMPLEX(kind=dp), INTENT(INOUT)                    :: s
-      TYPE(cp_cfm_p_type), DIMENSION(:)                  :: zij
+      INTEGER, INTENT(IN)                :: istate, jstate
+      REAL(kind=dp), INTENT(INOUT)       :: c
+      COMPLEX(kind=dp), INTENT(INOUT)    :: s
+      TYPE(cp_cfm_p_type), DIMENSION(:)  :: zij
 
-      INTEGER                                            :: i, nstate, stride
+      INTEGER                            :: i, nstate
+#if defined(__SCALAPACK)
+      INTEGER, DIMENSTION(9)             :: desc
+#else
+      INTEGER                            :: stride
+#endif
 
       CALL cp_cfm_get_info(zij(1)%matrix, nrow_global=nstate)
 
       DO i = 1, SIZE(zij)
+#if defined(__SCALAPACK)
+         desc(:) = zij(i)%matrix%matrix_struct%descriptor(:)
+         CALL pzrot(nstate, zij(i)%matrix%local_data(1, 1), 1, istate, desc, 1, &
+                    zij(i)%matrix%local_data(1, 1), 1, jstate, desc, 1, c, s)
+         CALL pzrot(nstate, zij(i)%matrix%local_data(1, 1), istate, 1, desc, nstate, &
+                    zij(i)%matrix%local_data(1, 1), jstate, 1, desc, nstate, c, CONJG(s))
+#else
          CALL zrot(nstate, zij(i)%matrix%local_data(1, istate), 1, &
                    zij(i)%matrix%local_data(1, jstate), 1, c, s)
          stride = SIZE(zij(i)%matrix%local_data, 1)
          CALL zrot(nstate, zij(i)%matrix%local_data(istate, 1), stride, &
                    zij(i)%matrix%local_data(jstate, 1), stride, c, CONJG(s))
+#endif
       END DO
    END SUBROUTINE rotate_cardoso_zij
 
@@ -2505,17 +2518,25 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE rotate_cardoso_rmat(istate, jstate, c, s, rmat)
 
-      INTEGER, INTENT(IN)                                :: istate, jstate
-      REAL(kind=dp), INTENT(INOUT)                       :: c
-      COMPLEX(kind=dp), INTENT(INOUT)                    :: s
-      TYPE(cp_cfm_type), POINTER                         :: rmat
+      INTEGER, INTENT(IN)              :: istate, jstate
+      REAL(kind=dp), INTENT(INOUT)     :: c
+      COMPLEX(kind=dp), INTENT(INOUT)  :: s
+      TYPE(cp_cfm_type), POINTER       :: rmat
 
-      INTEGER                                            :: nrow
+      INTEGER                          :: nrow
+#if defined(__SCALAPACK)
+      INTEGER, DIMENSION(9)            ::desc
+#endif
 
       CALL cp_cfm_get_info(rmat, nrow_global=nrow)
-
+#if defined(__SCALAPACK)
+      desc(:) = rmat%matrix_struct%descriptor(:)
+      CALL pzrot(nstate, rmat%local_data(1, 1), 1, istate, desc, 1 &
+           rmat%local_data(1, 1), 1, jstate, desc, 1, c, s)
+#else
       CALL zrot(nrow, rmat%local_data(1, istate), 1, &
                 rmat%local_data(1, jstate), 1, c, s)
+#endif
 
    END SUBROUTINE rotate_cardoso_rmat
 

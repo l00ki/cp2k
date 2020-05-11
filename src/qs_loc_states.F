@@ -37,7 +37,7 @@ MODULE qs_loc_states
    USE qs_loc_molecules,                ONLY: wfc_to_molecule
    USE qs_loc_types,                    ONLY: qs_loc_env_new_type
    USE qs_mo_types,                     ONLY: mo_set_p_type
-   USE wannier_dipoles,                 ONLY: calculate_wannier_dipole
+   USE wannier_moments,                 ONLY: calculate_wannier_moments
    USE wannier_states,                  ONLY: construct_wannier_states
    USE wannier_states_types,            ONLY: wannier_centres_type
 #include "./base/base_uses.f90"
@@ -107,7 +107,9 @@ CONTAINS
       ! check whether the coeffs are given as alternating real/imaginary matrices
       mos_are_complex = (dft_control%nspins * 2 == SIZE(mo_local))
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
-                                           "WANNIER_STATES"), cp_p_file)) THEN
+           "WANNIER_STATES"), cp_p_file) .OR. &
+          BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+           "WANNIER_MOMENTS"), cp_p_file)) THEN
          CALL get_qs_env(qs_env=qs_env, WannierCentres=wc)
          IF (.NOT. ASSOCIATED(wc)) THEN
             ALLOCATE (wc(dft_control%nspins))
@@ -164,7 +166,9 @@ CONTAINS
 
             ! Compute the wannier states
             IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
-                                                 "WANNIER_STATES"), cp_p_file)) THEN
+                 "WANNIER_STATES"), cp_p_file) .OR. &
+                (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+                 "WANNIER_MOMENTS"), cp_p_file))) THEN
                ns = SIZE(qs_loc_env%localized_wfn_control%loc_states, 1)
                IF (.NOT. ASSOCIATED(wc(ispin)%centres)) THEN
                   ALLOCATE (wc(ispin)%WannierHamDiag(ns))
@@ -214,10 +218,12 @@ CONTAINS
                                            "WANNIER_STATES"), cp_p_file)) THEN
          CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
       ENDIF
-      ! print dipoles of Wannier functions
+      ! print moments of Wannier functions
+      print *, "test"
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
-                                           "WANNIER_DIPOLES"), cp_p_file)) THEN
-         CALL calculate_wannier_dipole(qs_env, qs_loc_env, loc_print_section)
+                                           "WANNIER_MOMENTS"), cp_p_file)) THEN
+         CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
+         CALL calculate_wannier_moments(qs_env, qs_loc_env, loc_print_section)
       END IF
      
       CALL cp_cfm_release(tmp_complex_coeffs)
