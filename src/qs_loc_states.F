@@ -12,6 +12,7 @@ MODULE qs_loc_states
                                               cp_cfm_release,&
                                               cp_cfm_to_fm,&
                                               cp_cfm_type,&
+                                              cp_cfm_write_formatted,&
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_fm_types,                     ONLY: cp_fm_p_type
@@ -150,8 +151,6 @@ CONTAINS
                                  tmp_complex_coeffs)
                CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                   myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
-               CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
-                                 mo_local(2*ispin)%matrix)
             END IF
 
             ! maps wfc to molecules, and compute the molecular dipoles if required
@@ -219,11 +218,10 @@ CONTAINS
          CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
       ENDIF
       ! print moments of Wannier functions
-      print *, "test"
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
                                            "WANNIER_MOMENTS"), cp_p_file)) THEN
          CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
-         CALL calculate_wannier_moments(qs_env, qs_loc_env, loc_print_section)
+         CALL calculate_wannier_moments(qs_env, qs_loc_env, loc_print_section, mos_are_complex)
       END IF
      
       CALL cp_cfm_release(tmp_complex_coeffs)

@@ -75,17 +75,16 @@ contains
 !> \brief calculates and prints the expectation values of electric moments of Wannier functions
 !> \note  only does dipoles for now, but may be easily extended  
 ! **************************************************************************************************
-   subroutine calculate_wannier_moments(qs_env, qs_loc_env, loc_print_key, mo_coeffs)
+   subroutine calculate_wannier_moments(qs_env, qs_loc_env, loc_print_key, mos_are_complex)
 
       type(qs_environment_type), pointer   :: qs_env
       type(qs_loc_env_new_type), pointer   :: qs_loc_env
       type(section_vals_type), pointer     :: loc_print_key
-      type(cp_fm_p_type), pointer          :: mo_coeffs(:)
+      logical                              :: mos_are_complex
      
       character(len=*), parameter :: routineN = "calculate_wannier_moments", &
                                      routineP = moduleN//":"//routineN
 
-      logical                              :: mos_are_complex
       integer                              :: handle, idim, iion, ispin, istate, naos, norder, &
                                               ndims, nions, nspins, nstates, order, unit_nr, a, b
       integer, allocatable                 :: wcs_ions_map(:)
@@ -116,11 +115,10 @@ contains
       call get_qs_env(qs_env, cell=cell, dft_control=dft_control, matrix_s=matrix_s, &
                       para_env=para_env, particle_set=ions_list, wanniercentres=wcs)
       nspins = dft_control%nspins
-      mos_are_complex = (dft_control%nspins * 2 == size(mo_coeffs))
       !print *, "mos_are_complex", mos_are_complex
       nstates = size(wcs(1)%centres, 2)  ! no. of wannier states
       !print *, "nstates", nstates
-      naos = mo_coeffs(1)%matrix%matrix_struct%nrow_global
+      naos = qs_loc_env%moloc_coeff(1)%matrix%matrix_struct%nrow_global
       !print *, "naos", naos
       ndims = size(wcs(1)%centres, 1)
       !print *, "ndims", ndims
@@ -131,25 +129,26 @@ contains
       CPASSERT(order > 0)
 
       ! create a temp matrix to restore complex MO coeffs
-      call cp_cfm_create(tmp_coeff, mo_coeffs(1)%matrix%matrix_struct)
+      call cp_cfm_create(tmp_coeff, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
       if (.not. mos_are_complex) then
          ! imaginary part full of zeroes for real inputs
-         call cp_fm_create(null_fm, mo_coeffs(1)%matrix%matrix_struct)
+         call cp_fm_create(null_fm, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
          call cp_fm_set_all(null_fm, 0.0_dp, 0.0_dp)
       end if
 
-      call cp_fm_struct_create(naos_fm_struct, template_fmstruct=mo_coeffs(1)%matrix%matrix_struct, &
+      call cp_fm_struct_create(naos_fm_struct, &
+                               template_fmstruct=qs_loc_env%moloc_coeff(1)%matrix%matrix_struct, &
                                nrow_global=naos, ncol_global=naos)
       call cp_fm_struct_create(nstates_fm_struct, &
-                               template_fmstruct=mo_coeffs(1)%matrix%matrix_struct, &
+                               template_fmstruct=qs_loc_env%moloc_coeff(1)%matrix%matrix_struct, &
                                nrow_global=nstates, ncol_global=nstates)
       call cp_fm_create(op_fm, naos_fm_struct)
       call cp_cfm_create(op_cfm, naos_fm_struct)
-      call cp_cfm_create(tmp_opvec, mo_coeffs(1)%matrix%matrix_struct)
+      call cp_cfm_create(tmp_opvec, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
       allocate(moments(ndims), opvec(ndims))
       do idim = 1, ndims
          call cp_cfm_create(moments(idim)%matrix, nstates_fm_struct)
-         call cp_cfm_create(opvec(idim)%matrix, mo_coeffs(1)%matrix%matrix_struct)
+         call cp_cfm_create(opvec(idim)%matrix, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
       end do
       ! imaginary part of the operator is 0 since this is in the Schrodinger picture
       call cp_fm_create(null_naos_fm, naos_fm_struct)
@@ -163,11 +162,11 @@ contains
      do ispin = 1, nspins
         ! prepare coeffs
         if (mos_are_complex) then
-           call cp_fm_to_cfm(mo_coeffs(2*ispin-1)%matrix, mo_coeffs(2*ispin)%matrix, tmp_coeff)
+           tmp_coeff => qs_loc_env%complex_moloc_coeff(ispin)%matrix
         else
-           call cp_fm_to_cfm(mo_coeffs(ispin)%matrix, null_fm, tmp_coeff)
+           call cp_fm_to_cfm(qs_loc_env%moloc_coeff(ispin)%matrix, null_fm, tmp_coeff)
         end if
-        !call cp_cfm_write_formatted(tmp_coeff, unit_nr, "tmp_coeff")
+        call cp_cfm_write_formatted(tmp_coeff, unit_nr, "tmp_coeff")
 
         ! wrap wcs into the cell and map them to "their" ions
         call wrap_wcs_to_cell(wcs(ispin)%centres, cell, rcentres)
