@@ -9,9 +9,13 @@
 ! **************************************************************************************************
 module wannier_moments
 
+   use atomic_kind_types,     only: atomic_kind_type, &
+                                    get_atomic_kind
    use cell_types,            only: cell_type, &
-                                    get_cell
-   use cp_cfm_basic_linalg,   only: cp_cfm_gemm
+                                    get_cell, &
+                                    pbc
+   use cp_cfm_basic_linalg,   only: cp_cfm_gemm, &
+                                    cp_cfm_schur_product
    use cp_cfm_types,          only: cp_cfm_create, &
                                     cp_cfm_p_type, &
                                     cp_cfm_release, &
@@ -26,6 +30,7 @@ module wannier_moments
                                     cp_fm_struct_release, &
                                     cp_fm_struct_type
    use cp_fm_types,           only: cp_fm_create, &
+                                    cp_fm_get_info, &
                                     cp_fm_p_type, &
                                     cp_fm_release, &
                                     cp_fm_set_all, &
@@ -33,8 +38,10 @@ module wannier_moments
    use cp_log_handling,       only: cp_logger_type, &
                                     cp_get_default_logger
    use cp_output_handling,    only: cp_iter_string, &
-                                    cp_print_key_unit_nr, &
-                                    cp_print_key_finished_output
+                                    cp_p_file, &
+                                    cp_print_key_finished_output, &
+                                    cp_print_key_should_output, &
+                                    cp_print_key_unit_nr
    use cp_para_types,         only: cp_para_env_type
    use dbcsr_api,             only: dbcsr_copy, &
                                     dbcsr_deallocate_matrix, &
@@ -42,13 +49,21 @@ module wannier_moments
                                     dbcsr_p_type, &
                                     dbcsr_release, &
                                     dbcsr_set
-   use input_section_types,   only: section_vals_type, &
+   use input_constants,       only: use_mom_ref_com
+   use input_section_types,   only: section_get_ival, &
+                                    section_vals_type, &
                                     section_vals_val_get
    use kinds,                 only: default_string_length, &
                                     dp
+   use mathconstants,         only: twopi
+   use moments_utils,         only: get_reference_point
+   use orbital_pointers,      only: indco, &
+                                    ncoset
    use particle_types,        only: particle_type
    use qs_environment_types,  only: qs_environment_type, &
                                     get_qs_env
+   use qs_kind_types,         only: get_qs_kind, &
+                                    qs_kind_type
    use qs_loc_types,          only: get_qs_loc_env, &
                                     qs_loc_env_new_type
    use qs_moments,            only: build_local_moment_matrix
@@ -75,154 +90,217 @@ contains
 !> \brief calculates and prints the expectation values of electric moments of Wannier functions
 !> \note  only does dipoles for now, but may be easily extended  
 ! **************************************************************************************************
-   subroutine calculate_wannier_moments(qs_env, qs_loc_env, loc_print_key, mos_are_complex)
-
-      type(qs_environment_type), pointer   :: qs_env
-      type(qs_loc_env_new_type), pointer   :: qs_loc_env
-      type(section_vals_type), pointer     :: loc_print_key
-      logical                              :: mos_are_complex
+   subroutine calculate_wannier_moments(qs_env, qs_loc_env, print_key, mos_are_complex)
+    
+      type(qs_environment_type), pointer    :: qs_env
+      type(qs_loc_env_new_type), pointer    :: qs_loc_env
+      type(section_vals_type), pointer      :: print_key
+      logical                               :: mos_are_complex
      
       character(len=*), parameter :: routineN = "calculate_wannier_moments", &
                                      routineP = moduleN//":"//routineN
 
-      integer                              :: handle, idim, iion, ispin, istate, naos, norder, &
-                                              ndims, nions, nspins, nstates, order, unit_nr, a, b
-      integer, allocatable                 :: wcs_ions_map(:)
-      real(dp), pointer                    :: rions(:, :), rcentres(:, :)
-      character(len=default_string_length) :: iter
-      type(cell_type), pointer             :: cell
-      type(cp_cfm_type), pointer           :: op_cfm, tmp_coeff, tmp_opvec
-      type(cp_cfm_p_type), pointer         :: moments(:), opvec(:)
-      type(cp_fm_struct_type), pointer     :: naos_fm_struct, nstates_fm_struct
-      type(cp_fm_type), pointer            :: null_fm, null_naos_fm, op_fm
-      type(cp_logger_type), pointer        :: logger
-      type(cp_para_env_type), pointer      :: para_env
-      type(dbcsr_p_type), pointer          :: matrix_s(:), moments_op(:)
-      type(dft_control_type), pointer      :: dft_control
-      type(particle_type), pointer         :: ions_list(:)
-      type(wannier_centres_type), pointer  :: wcs(:)
+      character(len=default_string_length)  :: iter
+      integer                               :: akind, handle, idim, iion, iorder, ispin, istate, lx, ly, lz, &
+           nao, ndims, &
+           nions, nmo, nspins, nstates, order, unit_nr
+      integer, allocatable                  :: wcs_ions_map(:)
+      logical                               :: first_time, floating, ghost
+      real(kind=dp)                         :: rcc(3), ria(3), zwfc, zeff
+      real(kind=dp), allocatable            :: moment_set(:, :)
+      real(kind=dp), pointer                :: rcentres(:, :), rions(:, :), ref_point(:)
+      type(atomic_kind_type), pointer       :: atomic_kind
+      type(cell_type), pointer              :: cell
+      type(cp_cfm_p_type), pointer          :: moments_op(:), coeffs(:)
+      type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, coeff_ctmp_conj, mvector, mvector_conj, omvector, momv
+      type(cp_fm_p_type), pointer           :: moloc_coeff(:)
+      type(cp_fm_type), pointer             :: coeff_null, nao_null, nao_tmp
+      type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, nmo_struct, vec_struct
+      type(cp_logger_type), pointer         :: logger
+      type(cp_para_env_type), pointer       :: para_env
+      type(dbcsr_p_type), pointer           :: matrix_s(:), tmp_moments_op(:)
+      type(dft_control_type), pointer       :: dft_control
+      type(particle_type), pointer          :: ions_list(:)
+      type(qs_kind_type), pointer           :: qs_kind_set(:)
+      type(wannier_centres_type), pointer   :: wcs(:)
 
       call timeset(routineN, handle)
 
+      ! input/output
       logger => cp_get_default_logger()
-      unit_nr = cp_print_key_unit_nr(logger, loc_print_key, "WANNIER_MOMENTS", extension=".WanMom", &
-                                    middle_name="WANNIER_MOMENTS")
+      unit_nr = cp_print_key_unit_nr(logger, print_key, "WANNIER_MOMENTS", extension=".WanMom", &
+                                     middle_name="WANNIER_MOMENTS")
       iter = cp_iter_string(logger%iter_info)
-      
-      ! header line of output
-      write (unit=unit_nr, fmt="(A)") "# iter_level, ispin, istate, mapped ion, dipole(x,y,z)[a.u.]"
+      call section_vals_val_get(print_key, "WANNIER_MOMENTS%ORDER", i_val=order)
+      CPASSERT(order >= 0)
 
-      call get_qs_env(qs_env, cell=cell, dft_control=dft_control, matrix_s=matrix_s, &
-                      para_env=para_env, particle_set=ions_list, wanniercentres=wcs)
-      nspins = dft_control%nspins
-      !print *, "mos_are_complex", mos_are_complex
-      nstates = size(wcs(1)%centres, 2)  ! no. of wannier states
-      !print *, "nstates", nstates
-      naos = qs_loc_env%moloc_coeff(1)%matrix%matrix_struct%nrow_global
-      !print *, "naos", naos
-      ndims = size(wcs(1)%centres, 1)
-      !print *, "ndims", ndims
+      ! get infos from the environment
+      call get_qs_env(qs_env, cell=cell, dft_control=dft_control, para_env=para_env, &
+                      particle_set=ions_list, qs_kind_set=qs_kind_set, wanniercentres=wcs)
+      ndims = ncoset(order) - 1  ! dimensionality (i guess this will always be 3)
       nions = size(ions_list)
-      !print *, "nions", nions
-      call section_vals_val_get(loc_print_key, "WANNIER_MOMENTS%ORDER", i_val=order)
-      !print *, "order", order
-      CPASSERT(order > 0)
+      nspins = dft_control%nspins
+      zwfc = 3.0_dp - real(nspins, kind=dp)  ! assuming equal occupation of the Wannier states
+      call get_qs_loc_env(qs_loc_env, moloc_coeff=moloc_coeff)
 
-      ! create a temp matrix to restore complex MO coeffs
-      call cp_cfm_create(tmp_coeff, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
+      ! prepare work matrices
+      call cp_fm_get_info(moloc_coeff(1)%matrix, nrow_global=nao, ncol_global=nstates, &
+                          matrix_struct=coeff_struct)
+      call cp_fm_struct_create(vec_struct, template_fmstruct=coeff_struct, ncol_global=1)
+      call cp_fm_struct_create(nao_struct, template_fmstruct=coeff_struct, nrow_global=nao, &
+                               ncol_global=nao)
+      call cp_fm_struct_create(nmo_struct, template_fmstruct=coeff_struct, nrow_global=nmo, &
+                               ncol_global=nmo)
+      call cp_fm_create(nao_null, nao_struct)
+      call cp_fm_set_all(nao_null, 0.0_dp)
+      call cp_fm_create(nao_tmp, nao_struct)
+      call cp_cfm_create(coeff_ctmp, coeff_struct)
+      call cp_cfm_create(coeff_ctmp_conj, coeff_struct)
+      call cp_cfm_create(nao_ctmp, nao_struct)
       if (.not. mos_are_complex) then
-         ! imaginary part full of zeroes for real inputs
-         call cp_fm_create(null_fm, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
-         call cp_fm_set_all(null_fm, 0.0_dp, 0.0_dp)
+         ! null matrix for time-independent inputs
+         call cp_fm_create(coeff_null, coeff_struct)
+         call cp_fm_set_all(coeff_null, 0.0_dp)
       end if
 
-      call cp_fm_struct_create(naos_fm_struct, &
-                               template_fmstruct=qs_loc_env%moloc_coeff(1)%matrix%matrix_struct, &
-                               nrow_global=naos, ncol_global=naos)
-      call cp_fm_struct_create(nstates_fm_struct, &
-                               template_fmstruct=qs_loc_env%moloc_coeff(1)%matrix%matrix_struct, &
-                               nrow_global=nstates, ncol_global=nstates)
-      call cp_fm_create(op_fm, naos_fm_struct)
-      call cp_cfm_create(op_cfm, naos_fm_struct)
-      call cp_cfm_create(tmp_opvec, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
-      allocate(moments(ndims), opvec(ndims))
-      do idim = 1, ndims
-         call cp_cfm_create(moments(idim)%matrix, nstates_fm_struct)
-         call cp_cfm_create(opvec(idim)%matrix, qs_loc_env%moloc_coeff(1)%matrix%matrix_struct)
+      ! prepare MO coefficients
+      allocate(coeffs(nspins))
+      do ispin = 1, nspins
+         call cp_cfm_create(coeffs(ispin)%matrix, coeff_struct)
+         if (mos_are_complex) then
+            call cp_fm_to_cfm(moloc_coeff(2*ispin-1)%matrix, moloc_coeff(2*ispin)%matrix, &
+                              coeffs(ispin)%matrix)
+         else
+            call cp_fm_to_cfm(moloc_coeff(ispin)%matrix, coeff_null, &
+                              coeffs(ispin)%matrix)
+         end if
       end do
-      ! imaginary part of the operator is 0 since this is in the Schrodinger picture
-      call cp_fm_create(null_naos_fm, naos_fm_struct)
-      call cp_fm_set_all(null_naos_fm, 0.0_dp, 0.0_dp)
 
-      allocate(rions(ndims, nions), moments_op(ndims))
+      ! the result matrix
+      allocate(moment_set(ndims, nstates+nions))
+      moment_set = 0.0_dp
+
+      ! wrap wcs into the cell and map them to "their" ions
+      allocate(rions(ndims, nions), rcentres(ndims, nstates), wcs_ions_map(nstates))
       do iion = 1, nions
          rions(:, iion) = ions_list(iion)%r
       end do
+      call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
+      call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
 
-     do ispin = 1, nspins
-        ! prepare coeffs
-        if (mos_are_complex) then
-           tmp_coeff => qs_loc_env%complex_moloc_coeff(ispin)%matrix
-        else
-           call cp_fm_to_cfm(qs_loc_env%moloc_coeff(ispin)%matrix, null_fm, tmp_coeff)
-        end if
-        call cp_cfm_write_formatted(tmp_coeff, unit_nr, "tmp_coeff")
+      CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                               ref_point=ref_point)
 
-        ! wrap wcs into the cell and map them to "their" ions
-        call wrap_wcs_to_cell(wcs(ispin)%centres, cell, rcentres)
-        call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
+      if (order > 0) then  ! don't do anything if zero order
+         call get_qs_env(qs_env, matrix_s=matrix_s)  ! just used as a template
+         do istate = 1, nstates
+            ! get moments operator
+            allocate(tmp_moments_op(ndims))
+            do idim = 1, ndims
+               allocate(tmp_moments_op(idim)%matrix)
+               call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
+                               "moments operator matrix")
+               call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
+            end do
+            call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
 
-        do istate = 1, nstates
-           ! build the moments operator
-           do idim = 1, ndims
-              allocate(moments_op(idim)%matrix)
-              call dbcsr_copy(moments_op(idim)%matrix, matrix_s(1)%matrix, "Wannier moments op")
-              call dbcsr_set(moments_op(idim)%matrix, 0.0_dp)
-           end do
-           call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcentres(:, istate))
+            ! translate moments operator to a full matrix
+            allocate(moments_op(ndims))
+            do idim = 1, ndims
+               call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
+               call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
+               call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
+            end do
 
-           ! calculate expectation values
-           do idim = 1, ndims
-              call copy_dbcsr_to_fm(moments_op(idim)%matrix, op_fm)
-              call cp_fm_to_cfm(op_fm, null_naos_fm, op_cfm)
-              call cp_cfm_gemm("N", "N", naos, nstates, naos, (1.0_dp, 0.0_dp), op_cfm, &
-                               tmp_coeff, (0.0_dp, 0.0_dp), tmp_opvec)
-              ! only keep the istate-th column
-              call cp_cfm_to_cfm(tmp_opvec, opvec(idim)%matrix, 1, istate, istate)
-              call cp_cfm_set_all(tmp_opvec, (0.0_dp, 0.0_dp))
-           end do
-           do idim = 1, ndims
-              call cp_cfm_gemm("C", "N", nstates, nstates, naos, (1.0_dp, 0.0_dp), tmp_coeff, &
-                               opvec(idim)%matrix, (0.0_dp, 0.0_dp), moments(idim)%matrix)
-              call dbcsr_deallocate_matrix(moments_op(idim)%matrix)
-           end do
+            ! calculate expectation values
+            do ispin = 1, nspins
+               coeff_ctmp => coeffs(ispin)%matrix  ! local state
+               call cp_cfm_to_cfm(coeff_ctmp, coeff_ctmp_conj)
+               coeff_ctmp_conj%local_data = conjg(coeff_ctmp%local_data)
 
-           ! output
-           write (unit=unit_nr, fmt="(a,3(i7),3(es18.8))") &
-                iter(1:15), ispin, istate, wcs_ions_map(istate), &
-                real(moments(1)%matrix%local_data(istate,istate), dp), &
-                real(moments(2)%matrix%local_data(istate,istate), dp), &
-                real(moments(3)%matrix%local_data(istate,istate), dp)
+               call cp_cfm_create(mvector, vec_struct)
+               call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
+               call cp_cfm_write_formatted(mvector, 6, "mvector")
+               
+               call cp_cfm_create(mvector_conj, vec_struct)
+               call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
+               call cp_cfm_write_formatted(mvector_conj, 6, "mvector_conj")
+               
+               call cp_cfm_create(omvector, vec_struct)
+               call cp_cfm_create(momv, vec_struct)
+
+               do idim = 1, ndims
+                  call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
+                                   moments_op(idim)%matrix, mvector, (0.0_dp, 0.0_dp), omvector)
+                  call cp_cfm_schur_product(mvector_conj, omvector, momv)
+                  moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
+                                             real(sum(momv%local_data), dp)
+               end do
+
+               call cp_cfm_release(mvector)
+               call cp_cfm_release(omvector)
+               call cp_cfm_release(momv)
+            end do
+
+            ! cleanup
+            do idim = 1, ndims
+               call dbcsr_release(tmp_moments_op(idim)%matrix)
+            end do
+            deallocate(tmp_moments_op)
+         end do
+      end if
+      
+      CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                               ref_point=ref_point)
+
+      ! nuclear contributions
+      do idim = 1, ndims
+         lx = indco(1, idim+1)
+         ly = indco(2, idim+1)
+         lz = indco(3, idim+1)
+         do iion = 1, nions
+            atomic_kind => ions_list(iion)%atomic_kind
+            call get_atomic_kind(atomic_kind, kind_number=akind)
+            call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
+            if (.not. ghost .and. .not. floating) then
+               call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
+               ria = ions_list(iion)%r - rcc
+               ria = pbc(ria, cell)
+               moment_set(idim, nstates+iion) = moment_set(idim, nstates+iion) + &
+                    zeff*ria(1)**lx*ria(2)**ly*ria(3)**lz
+            end if
          end do
       end do
 
-      call cp_print_key_finished_output(unit_nr, logger, loc_print_key, "WANNIER_MOMENTS")
-
-      ! cleanup
-      call cp_fm_struct_release(naos_fm_struct)
-      call cp_fm_struct_release(nstates_fm_struct)
-      call cp_fm_release(op_fm)
-      call cp_cfm_release(op_cfm)
-      call cp_fm_release(null_fm)
-      call cp_fm_release(null_naos_fm)
-      do idim = 1, ndims
-         call cp_cfm_release(moments(idim)%matrix)
-         call cp_cfm_release(opvec(idim)%matrix)
-      end do
-      deallocate(moments, moments_op, opvec)
+      first_time = .TRUE.
+      ! output
+      if (first_time) then
+         ! announce nuclear contributions once
+         write(unit=unit_nr, fmt="(a)") "# NUCLEAR DIPOLES"
+         write(unit=unit_nr, fmt="(a)") "# iter_level, ion index, order, moments[a.u.]"
+         do iion = 1, nions
+            do iorder = 1, order
+               write (unit=unit_nr, fmt="(a,i5,i2,3es18.8)") &
+                    iter(1:15), iion, iorder, moment_set(ncoset(iorder-1):ncoset(iorder)-1, nstates+iion)
+            end do
+         end do
+         write(unit=unit_nr, fmt="(a)") "# WANNIER DIPOLES"
+         write(unit=unit_nr, fmt="(a)") "# iter_level, istate, mapped ion, order, moments[a.u.]"
+      end if
+         
+      if (unit_nr > 0) then
+         do istate = 1, nstates
+            do iorder = 1, order
+               write (unit=unit_nr, fmt="(a,i5,i5,i2,3es18.8)") &
+                    iter(1:15), istate, wcs_ions_map(istate), iorder, &
+                    moment_set(ncoset(iorder-1):ncoset(iorder)-1, istate)
+            end do
+         end do
+      end if
+      call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
 
       call timestop(handle)
-
+      
    end subroutine calculate_wannier_moments
 
 ! **************************************************************************************************
@@ -265,7 +343,7 @@ contains
      real(dp), pointer, intent(in)      :: rions(:, :)
      integer, allocatable, intent(out)  :: wcs_ions_map(:)
      
-     integer                            :: icentre, idim, iion, ncentres, ndims, nions
+     integer                            :: icentre, iion, ncentres, ndims, nions
      real(dp), pointer                  :: r(:), d(:)
 
      ndims = size(rcentres, 1)
