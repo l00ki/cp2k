@@ -40,7 +40,9 @@ MODULE qs_collocate_density
                                               gto_basis_set_type
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
-   USE cp_cfm_types,                    ONLY: cp_cfm_type
+   USE cp_cfm_types,                    ONLY: cp_cfm_get_info,&
+                                              cp_cfm_get_element,&
+                                              cp_cfm_type
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: dbcsr_allocate_matrix_set,&
                                               dbcsr_deallocate_matrix_set
@@ -2321,7 +2323,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE calculate_wavefunction(ivector, rho, rho_gspace, &
                                      atomic_kind_set, qs_kind_set, cell, dft_control, particle_set, &
-                                     pw_env, mo_vectors, complex_mo_vectors, basis_type, external_vector)
+                                     pw_env, mo_vectors, c_mo_vectors, basis_type, external_vector, c_external_vector)
 
       INTEGER                                            :: ivector
       TYPE(pw_p_type), INTENT(INOUT)                     :: rho, rho_gspace
@@ -2332,9 +2334,10 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(pw_env_type), POINTER                         :: pw_env
       TYPE(cp_fm_type), POINTER, OPTIONAL                :: mo_vectors
-      TYPE(cp_cfm_type), POINTER, OPTIONAL               :: complex_mo_vectors
+      TYPE(cp_cfm_type), POINTER, OPTIONAL               :: c_mo_vectors
       CHARACTER(LEN=*), INTENT(IN), OPTIONAL             :: basis_type
       REAL(KIND=dp), DIMENSION(:), OPTIONAL              :: external_vector
+      COMPLEX(KIND=dp), DIMENSION(:), OPTIONAL           :: c_external_vector
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_wavefunction', &
          routineP = moduleN//':'//routineN
@@ -2350,7 +2353,9 @@ CONTAINS
       REAL(KIND=dp)                                      :: dab, eps_rho_rspace, radius, scale
       REAL(KIND=dp), DIMENSION(3)                        :: ra
       REAL(KIND=dp), DIMENSION(:), POINTER               :: eigenvector
+      COMPLEX(KIND=dp), DIMENSION(:), POINTER            :: c_eigenvector  ! for the time-dependent case
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: pab, sphi_a, work, zeta
+      COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: c_pab, c_work
       TYPE(cube_info_type), DIMENSION(:), POINTER        :: cube_info
       TYPE(gridlevel_info_type), POINTER                 :: gridlevel_info
       TYPE(gto_basis_set_type), POINTER                  :: orb_basis_set
@@ -2360,34 +2365,48 @@ CONTAINS
 
       IF (PRESENT(basis_type)) THEN
          my_basis_type = basis_type
-         mos_are_complex = .FALSE.
       ELSE
          my_basis_type = "ORB"
-         mos_are_complex = .TRUE.
       END IF
 
       IF (PRESENT(mo_vectors)) THEN
-         CPASSERT(.NOT. PRESENT(complex_mo_vectors))
+         CPASSERT(.NOT. PRESENT(c_mo_vectors))
+         mos_are_complex = .FALSE.
       ELSE
-         CPASSERT(PRESENT(complex_mo_vectors))
+         CPASSERT(PRESENT(c_mo_vectors))
+         mos_are_complex = .TRUE.
       END IF
 
       CALL timeset(routineN, handle)
 
-      NULLIFY (eigenvector, orb_basis_set, pab, work, la_max, la_min, &
+      NULLIFY (eigenvector, c_eigenvector, orb_basis_set, pab, c_pab, work, c_work, la_max, la_min, &
                npgfa, nsgfa, sphi_a, zeta, first_sgfa, rs_rho, pw_pools, &
                mgrid_rspace, mgrid_gspace)
 
-      IF (PRESENT(external_vector)) THEN
-         nao = SIZE(external_vector)
-         ALLOCATE (eigenvector(nao))
-         eigenvector = external_vector
+      IF (.NOT. mos_are_complex) THEN
+         IF (PRESENT(external_vector)) THEN
+            nao = SIZE(external_vector)
+            ALLOCATE (eigenvector(nao))
+            eigenvector = external_vector
+         ELSE
+            CALL cp_fm_get_info(matrix=mo_vectors, nrow_global=nao)
+            ALLOCATE (eigenvector(nao))
+            DO i = 1, nao
+               CALL cp_fm_get_element(mo_vectors, i, ivector, eigenvector(i), local)
+            ENDDO
+         ENDIF
       ELSE
-         CALL cp_fm_get_info(matrix=mo_vectors, nrow_global=nao)
-         ALLOCATE (eigenvector(nao))
-         DO i = 1, nao
-            CALL cp_fm_get_element(mo_vectors, i, ivector, eigenvector(i), local)
-         ENDDO
+         IF (PRESENT(c_external_vector)) THEN
+            nao = SIZE(c_external_vector)
+            ALLOCATE (c_eigenvector(nao))
+            c_eigenvector = c_external_vector
+         ELSE
+            CALL cp_cfm_get_info(matrix=c_mo_vectors, nrow_global=nao)
+            ALLOCATE (c_eigenvector(nao))
+            DO i = 1, nao
+               CALL cp_cfm_get_element(c_mo_vectors, i, ivector, c_eigenvector(i))
+            ENDDO
+         ENDIF
       ENDIF
 
       ! *** set up the pw multi-grids
@@ -2416,8 +2435,13 @@ CONTAINS
                            maxsgf_set=maxsgf_set, &
                            basis_type=my_basis_type)
 
-      ALLOCATE (pab(maxco, 1))
-      ALLOCATE (work(maxco, 1))
+      IF (.NOT. mos_are_complex) THEN
+         ALLOCATE (pab(maxco, 1))
+         ALLOCATE (work(maxco, 1))
+      ELSE
+         ALLOCATE (c_pab(maxco, 1))
+         ALLOCATE (c_work(maxco, 1))
+      END IF
 
       offset = 0
       group = mgrid_rspace(1)%pw%pw_grid%para%group
@@ -2449,10 +2473,17 @@ CONTAINS
                work(i, 1) = eigenvector(offset + i)
             ENDDO
 
-            CALL dgemm("N", "N", ncoa, 1, nsgfa(iset), &
-                       1.0_dp, sphi_a(1, sgfa), SIZE(sphi_a, 1), &
-                       work(1, 1), SIZE(work, 1), &
-                       0.0_dp, pab(1, 1), SIZE(pab, 1))
+            IF (.NOT. mos_are_complex) THEN
+               CALL dgemm("N", "N", ncoa, 1, nsgfa(iset), &
+                          1.0_dp, sphi_a(1, sgfa), SIZE(sphi_a, 1), &
+                          work(1, 1), SIZE(work, 1), &
+                          0.0_dp, pab(1, 1), SIZE(pab, 1))
+            ELSE
+               !CALL zgemm("N", "N", ncoa, 1, nsgfa(iset), &
+               !           (1.0_dp, 0.0_dp), c_sphi_a(1, sgfa), SIZE(sphi_a, 1), &
+               !           c_work(1, 1), SIZE(c_work, 1), &
+               !           (0.0_dp, 0.0_dp), pab(1, 1), SIZE(pab, 1))
+            END IF
 
             DO ipgf = 1, npgfa(iset)
 
@@ -2527,12 +2558,12 @@ CONTAINS
       CALL pw_transfer(rho_gspace%pw, rho%pw)
 
       ! Release work storage
-      DEALLOCATE (eigenvector)
-
-      DEALLOCATE (pab)
-
-      DEALLOCATE (work)
-
+      IF (.NOT. mos_are_complex) THEN
+         DEALLOCATE (eigenvector, pab, work)
+      ELSE
+         DEALLOCATE (c_eigenvector, c_pab, c_work)
+      END IF
+      
       ! give back the pw multi-grids
       CALL pw_pools_give_back_pws(pw_pools, mgrid_gspace)
       CALL pw_pools_give_back_pws(pw_pools, mgrid_rspace)

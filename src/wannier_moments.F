@@ -134,120 +134,121 @@ contains
       call section_vals_val_get(print_key, "WANNIER_MOMENTS%ORDER", i_val=order)
       CPASSERT(order >= 0)
 
-      ! get infos from the environment
-      call get_qs_env(qs_env, cell=cell, dft_control=dft_control, para_env=para_env, &
-                      particle_set=ions_list, qs_kind_set=qs_kind_set, wanniercentres=wcs)
-      ndims = ncoset(order) - 1  ! dimensionality (i guess this will always be 3)
-      nions = size(ions_list)
-      nspins = dft_control%nspins
-      zwfc = 3.0_dp - real(nspins, kind=dp)  ! assuming equal occupation of the Wannier states
-      call get_qs_loc_env(qs_loc_env, moloc_coeff=moloc_coeff)
+      if (BTEST(cp_print_key_should_output(logger%iter_info, print_key, "WANNIER_MOMENTS", first_time=first_time), cp_p_file)) then
+      
+         ! get infos from the environment
+         call get_qs_env(qs_env, cell=cell, dft_control=dft_control, para_env=para_env, &
+                         particle_set=ions_list, qs_kind_set=qs_kind_set, wanniercentres=wcs)
+         ndims = ncoset(order) - 1  ! dimensionality (i guess this will always be 3)
+         nions = size(ions_list)
+         nspins = dft_control%nspins
+         zwfc = 3.0_dp - real(nspins, kind=dp)  ! assuming equal occupation of the Wannier states
+         call get_qs_loc_env(qs_loc_env, moloc_coeff=moloc_coeff)
 
-      ! prepare work matrices
-      call cp_fm_get_info(moloc_coeff(1)%matrix, nrow_global=nao, ncol_global=nstates, &
-                          matrix_struct=coeff_struct)
-      call cp_fm_struct_create(vec_struct, template_fmstruct=coeff_struct, ncol_global=1)
-      call cp_fm_struct_create(nao_struct, template_fmstruct=coeff_struct, nrow_global=nao, &
-                               ncol_global=nao)
-      call cp_fm_struct_create(nmo_struct, template_fmstruct=coeff_struct, nrow_global=nmo, &
-                               ncol_global=nmo)
-      call cp_fm_create(nao_null, nao_struct)
-      call cp_fm_set_all(nao_null, 0.0_dp)
-      call cp_fm_create(nao_tmp, nao_struct)
-      call cp_cfm_create(coeff_ctmp, coeff_struct)
-      call cp_cfm_create(coeff_ctmp_conj, coeff_struct)
-      call cp_cfm_create(nao_ctmp, nao_struct)
-      if (.not. mos_are_complex) then
-         ! null matrix for time-independent inputs
-         call cp_fm_create(coeff_null, coeff_struct)
-         call cp_fm_set_all(coeff_null, 0.0_dp)
-      end if
-
-      ! prepare MO coefficients
-      allocate(coeffs(nspins))
-      do ispin = 1, nspins
-         call cp_cfm_create(coeffs(ispin)%matrix, coeff_struct)
-         if (mos_are_complex) then
-            call cp_fm_to_cfm(moloc_coeff(2*ispin-1)%matrix, moloc_coeff(2*ispin)%matrix, &
-                              coeffs(ispin)%matrix)
-         else
-            call cp_fm_to_cfm(moloc_coeff(ispin)%matrix, coeff_null, &
-                              coeffs(ispin)%matrix)
+         ! prepare work matrices
+         call cp_fm_get_info(moloc_coeff(1)%matrix, nrow_global=nao, ncol_global=nstates, &
+                             matrix_struct=coeff_struct)
+         call cp_fm_struct_create(vec_struct, template_fmstruct=coeff_struct, ncol_global=1)
+         call cp_fm_struct_create(nao_struct, template_fmstruct=coeff_struct, nrow_global=nao, &
+                                  ncol_global=nao)
+         call cp_fm_struct_create(nmo_struct, template_fmstruct=coeff_struct, nrow_global=nmo, &
+                                  ncol_global=nmo)
+         call cp_fm_create(nao_null, nao_struct)
+         call cp_fm_set_all(nao_null, 0.0_dp)
+         call cp_fm_create(nao_tmp, nao_struct)
+         call cp_cfm_create(coeff_ctmp, coeff_struct)
+         call cp_cfm_create(coeff_ctmp_conj, coeff_struct)
+         call cp_cfm_create(nao_ctmp, nao_struct)
+         if (.not. mos_are_complex) then
+            ! null matrix for time-independent inputs
+            call cp_fm_create(coeff_null, coeff_struct)
+            call cp_fm_set_all(coeff_null, 0.0_dp)
          end if
-      end do
 
-      ! the result matrix
-      allocate(moment_set(ndims, nstates+nions))
-      moment_set = 0.0_dp
+         ! prepare MO coefficients
+         allocate(coeffs(nspins))
+         do ispin = 1, nspins
+            call cp_cfm_create(coeffs(ispin)%matrix, coeff_struct)
+            if (mos_are_complex) then
+               call cp_fm_to_cfm(moloc_coeff(2*ispin-1)%matrix, moloc_coeff(2*ispin)%matrix, &
+                                 coeffs(ispin)%matrix)
+            else
+               call cp_fm_to_cfm(moloc_coeff(ispin)%matrix, coeff_null, &
+                                 coeffs(ispin)%matrix)
+            end if
+         end do
 
-      ! wrap wcs into the cell and map them to "their" ions
-      allocate(rions(ndims, nions), rcentres(ndims, nstates), wcs_ions_map(nstates))
-      do iion = 1, nions
-         rions(:, iion) = ions_list(iion)%r
-      end do
-      call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
-      call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
+         ! the result matrix
+         allocate(moment_set(ndims, nstates+nions))
+         moment_set = 0.0_dp
 
-      CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
-                               ref_point=ref_point)
+         ! wrap wcs into the cell and map them to "their" ions
+         allocate(rions(ndims, nions), rcentres(ndims, nstates), wcs_ions_map(nstates))
+         do iion = 1, nions
+            rions(:, iion) = ions_list(iion)%r
+         end do
+         call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
+         call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
 
-      if (order > 0) then  ! don't do anything if zero order
-         call get_qs_env(qs_env, matrix_s=matrix_s)  ! just used as a template
-         do istate = 1, nstates
-            ! get moments operator
-            allocate(tmp_moments_op(ndims))
-            do idim = 1, ndims
-               allocate(tmp_moments_op(idim)%matrix)
-               call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
-                               "moments operator matrix")
-               call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
-            end do
-            call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
+         CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                                  ref_point=ref_point)
 
-            ! translate moments operator to a full matrix
-            allocate(moments_op(ndims))
-            do idim = 1, ndims
-               call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
-               call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
-               call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
-            end do
-
-            ! calculate expectation values
-            do ispin = 1, nspins
-               coeff_ctmp => coeffs(ispin)%matrix  ! local state
-               call cp_cfm_to_cfm(coeff_ctmp, coeff_ctmp_conj)
-               coeff_ctmp_conj%local_data = conjg(coeff_ctmp%local_data)
-
-               call cp_cfm_create(mvector, vec_struct)
-               call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-               call cp_cfm_write_formatted(mvector, 6, "mvector")
-               
-               call cp_cfm_create(mvector_conj, vec_struct)
-               call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
-               call cp_cfm_write_formatted(mvector_conj, 6, "mvector_conj")
-               
-               call cp_cfm_create(omvector, vec_struct)
-               call cp_cfm_create(momv, vec_struct)
-
+         if (order > 0) then  ! don't do anything if zero order
+            call get_qs_env(qs_env, matrix_s=matrix_s)  ! just used as a template
+            do istate = 1, nstates
+               ! get moments operator
+               allocate(tmp_moments_op(ndims))
                do idim = 1, ndims
-                  call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
-                                   moments_op(idim)%matrix, mvector, (0.0_dp, 0.0_dp), omvector)
-                  call cp_cfm_schur_product(mvector_conj, omvector, momv)
-                  moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
-                                             real(sum(momv%local_data), dp)
+                  allocate(tmp_moments_op(idim)%matrix)
+                  call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
+                                  "moments operator matrix")
+                  call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
+               end do
+               call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
+
+               ! translate moments operator to a full matrix
+               allocate(moments_op(ndims))
+               do idim = 1, ndims
+                  call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
+                  call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
+                  call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
                end do
 
-               call cp_cfm_release(mvector)
-               call cp_cfm_release(omvector)
-               call cp_cfm_release(momv)
-            end do
+               ! calculate expectation values
+               do ispin = 1, nspins
+                  coeff_ctmp => coeffs(ispin)%matrix  ! local state
+                  call cp_cfm_to_cfm(coeff_ctmp, coeff_ctmp_conj)
+                  coeff_ctmp_conj%local_data = conjg(coeff_ctmp%local_data)
 
-            ! cleanup
-            do idim = 1, ndims
-               call dbcsr_release(tmp_moments_op(idim)%matrix)
+                  call cp_cfm_create(mvector, vec_struct)
+                  call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
+               
+                  call cp_cfm_create(mvector_conj, vec_struct)
+                  call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
+               
+                  call cp_cfm_create(omvector, vec_struct)
+                  call cp_cfm_create(momv, vec_struct)
+
+                  do idim = 1, ndims
+                     call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
+                                      moments_op(idim)%matrix, mvector, (0.0_dp, 0.0_dp), omvector)
+                     call cp_cfm_schur_product(mvector_conj, omvector, momv)
+                     moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
+                                                real(sum(momv%local_data), dp)
+                  end do
+
+                  call cp_cfm_release(mvector)
+                  call cp_cfm_release(omvector)
+                  call cp_cfm_release(momv)
+               end do
+
+               ! cleanup
+               do idim = 1, ndims
+                  call dbcsr_release(tmp_moments_op(idim)%matrix)
+               end do
+               deallocate(tmp_moments_op)
             end do
-            deallocate(tmp_moments_op)
-         end do
+         end if
       end if
       
       CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
@@ -272,7 +273,6 @@ contains
          end do
       end do
 
-      first_time = .TRUE.
       ! output
       if (first_time) then
          ! announce nuclear contributions once
@@ -280,7 +280,7 @@ contains
          write(unit=unit_nr, fmt="(a)") "# iter_level, ion index, order, moments[a.u.]"
          do iion = 1, nions
             do iorder = 1, order
-               write (unit=unit_nr, fmt="(a,i5,i2,3es18.8)") &
+               write (unit=unit_nr, fmt="(a,i5,i2,3es22.12)") &
                     iter(1:15), iion, iorder, moment_set(ncoset(iorder-1):ncoset(iorder)-1, nstates+iion)
             end do
          end do
@@ -291,7 +291,7 @@ contains
       if (unit_nr > 0) then
          do istate = 1, nstates
             do iorder = 1, order
-               write (unit=unit_nr, fmt="(a,i5,i5,i2,3es18.8)") &
+               write (unit=unit_nr, fmt="(a,i5,i5,i2,3es22.12)") &
                     iter(1:15), istate, wcs_ions_map(istate), iorder, &
                     moment_set(ncoset(iorder-1):ncoset(iorder)-1, istate)
             end do
