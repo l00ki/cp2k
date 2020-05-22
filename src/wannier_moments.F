@@ -112,7 +112,7 @@ contains
       type(atomic_kind_type), pointer       :: atomic_kind
       type(cell_type), pointer              :: cell
       type(cp_cfm_p_type), pointer          :: moments_op(:), coeffs(:)
-      type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, coeff_ctmp_conj, mvector, mvector_conj, omvector, momv
+      type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, mvector, omvector, momv
       type(cp_fm_p_type), pointer           :: moloc_coeff(:)
       type(cp_fm_type), pointer             :: coeff_null, nao_null, nao_tmp
       type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, nmo_struct, vec_struct
@@ -156,8 +156,6 @@ contains
          call cp_fm_create(nao_null, nao_struct)
          call cp_fm_set_all(nao_null, 0.0_dp)
          call cp_fm_create(nao_tmp, nao_struct)
-         call cp_cfm_create(coeff_ctmp, coeff_struct)
-         call cp_cfm_create(coeff_ctmp_conj, coeff_struct)
          call cp_cfm_create(nao_ctmp, nao_struct)
          if (.not. mos_are_complex) then
             ! null matrix for time-independent inputs
@@ -217,14 +215,9 @@ contains
                ! calculate expectation values
                do ispin = 1, nspins
                   coeff_ctmp => coeffs(ispin)%matrix  ! local state
-                  call cp_cfm_to_cfm(coeff_ctmp, coeff_ctmp_conj)
-                  coeff_ctmp_conj%local_data = conjg(coeff_ctmp%local_data)
 
                   call cp_cfm_create(mvector, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-               
-                  call cp_cfm_create(mvector_conj, vec_struct)
-                  call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
                
                   call cp_cfm_create(omvector, vec_struct)
                   call cp_cfm_create(momv, vec_struct)
@@ -232,7 +225,12 @@ contains
                   do idim = 1, ndims
                      call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
                                       moments_op(idim)%matrix, mvector, (0.0_dp, 0.0_dp), omvector)
-                     call cp_cfm_schur_product(mvector_conj, omvector, momv)
+                     ! this is just matrix multiplication with the bra
+                     !call cp_cfm_schur_product(mvector_conj, omvector, momv)
+                     !moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
+                     !                           real(sum(momv%local_data), dp)
+                     call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), mvector, &
+                                      omvector, (0.0_dp, 0.0_dp), momv)
                      moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
                                                 real(sum(momv%local_data), dp)
                   end do
@@ -244,9 +242,11 @@ contains
 
                ! cleanup
                do idim = 1, ndims
-                  call dbcsr_release(tmp_moments_op(idim)%matrix)
+                  deallocate(tmp_moments_op(idim)%matrix)
+                  call cp_cfm_release(moments_op(idim)%matrix)
                end do
                deallocate(tmp_moments_op)
+               deallocate(moments_op)
             end do
          end if
       end if
@@ -298,6 +298,19 @@ contains
          end do
       end if
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
+
+      do ispin = 1, nspins
+         call cp_cfm_release(coeffs(ispin)%matrix)
+      end do
+      deallocate(coeffs)
+      call cp_cfm_release(nao_ctmp)
+      call cp_fm_release(coeff_null)
+      call cp_fm_release(nao_null)
+      call cp_fm_release(nao_tmp)
+      call cp_fm_struct_release(nao_struct)
+      call cp_fm_struct_release(nmo_struct)
+      call cp_fm_struct_release(vec_struct)
+      deallocate(wcs_ions_map, moment_set, rcentres, rions)
 
       call timestop(handle)
       
