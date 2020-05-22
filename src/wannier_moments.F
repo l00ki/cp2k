@@ -181,11 +181,15 @@ contains
          moment_set = 0.0_dp
 
          ! wrap wcs into the cell and map them to "their" ions
-         allocate(rions(ndims, nions), rcentres(ndims, nstates), wcs_ions_map(nstates))
+         allocate(rions(ndims, nions))
+         allocate(rcentres(ndims, nstates))
+         allocate(wcs_ions_map(nstates))
          do iion = 1, nions
-            rions(:, iion) = ions_list(iion)%r
+            rions(:, iion) = pbc(ions_list(iion)%r, cell)
          end do
-         call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
+         do istate = 1, nstates
+            rcentres(:, istate) = pbc(wcs(1)%centres(:, istate), cell)
+         end do
          call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
 
          CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
