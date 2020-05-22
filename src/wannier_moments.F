@@ -304,7 +304,9 @@ contains
       end do
       deallocate(coeffs)
       call cp_cfm_release(nao_ctmp)
-      call cp_fm_release(coeff_null)
+      if (.not. mos_are_complex) then
+         call cp_fm_release(coeff_null)
+      end if
       call cp_fm_release(nao_null)
       call cp_fm_release(nao_tmp)
       call cp_fm_struct_release(nao_struct)
