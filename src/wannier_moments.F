@@ -155,7 +155,6 @@ contains
          call cp_fm_create(nao_null, nao_struct)
          call cp_fm_set_all(nao_null, 0.0_dp)
          call cp_fm_create(nao_tmp, nao_struct)
-         call cp_cfm_create(coeff_ctmp, coeff_struct)
          call cp_cfm_create(coeff_ctmp_conj, coeff_struct)
          call cp_cfm_create(nao_ctmp, nao_struct)
          if (.not. mos_are_complex) then
@@ -184,7 +183,6 @@ contains
          ! wrap wcs into the cell and map them to "their" ions
          allocate(rions(ndims, nions))
          allocate(rcentres(ndims, nstates))
-         allocate(wcs_ions_map(nstates))
          do iion = 1, nions
             rions(:, iion) = pbc(ions_list(iion)%r, cell)
          end do
@@ -194,7 +192,7 @@ contains
          !call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
          call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
 
-         CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+         call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
                                   ref_point=ref_point)
 
          if (order > 0) then  ! don't do anything if zero order
@@ -226,11 +224,9 @@ contains
 
                   call cp_cfm_create(mvector, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-!                  call cp_cfm_write_formatted(mvector, 6, "mvector")
 
                   call cp_cfm_create(mvector_conj, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
-!                  call cp_cfm_write_formatted(mvector_conj, 6, "mvector_conj")
 
                   call cp_cfm_create(omvector, vec_struct)
                   call cp_cfm_create(momv, vec_struct)
@@ -244,6 +240,7 @@ contains
                   end do
 
                   call cp_cfm_release(mvector)
+                  call cp_cfm_release(mvector_conj)
                   call cp_cfm_release(omvector)
                   call cp_cfm_release(momv)
                end do
@@ -257,9 +254,6 @@ contains
                deallocate(moments_op)
             end do
          end if
-
-         CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
-                                  ref_point=ref_point)
 
          ! nuclear contributions
          do idim = 1, ndims
@@ -305,14 +299,22 @@ contains
             end do
          end if
 
+         do ispin = 1, nspins
+            call cp_cfm_release(coeffs(ispin)%matrix)
+         end do
+         deallocate(coeffs)
          deallocate(rions)
          deallocate(rcentres)
          deallocate(wcs_ions_map)
+         deallocate(moment_set)
+         if (.not. mos_are_complex) then
+            call cp_fm_release(coeff_null)
+         end if
          call cp_fm_struct_release(vec_struct)
          call cp_fm_struct_release(nmo_struct)
          call cp_fm_struct_release(nao_struct)
+         call cp_fm_release(nao_tmp)
          call cp_cfm_release(nao_ctmp)
-         call cp_cfm_release(coeff_ctmp)
          call cp_cfm_release(coeff_ctmp_conj)
       end if
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
