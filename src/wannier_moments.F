@@ -182,14 +182,16 @@ contains
          moment_set = 0.0_dp
 
          ! wrap wcs into the cell and map them to "their" ions
-         allocate(rions(ndims, nions), rcentres(ndims, nstates), wcs_ions_map(nstates))
+         allocate(rions(ndims, nions))
+         allocate(rcentres(ndims, nstates))
+         allocate(wcs_ions_map(nstates))
          do iion = 1, nions
             rions(:, iion) = pbc(ions_list(iion)%r, cell)
          end do
          do istate = 1, nstates
             rcentres(:, istate) = pbc(wcs(1)%centres(:, istate), cell)
          end do
-         call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
+         !call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
          call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
 
          CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
@@ -224,11 +226,11 @@ contains
 
                   call cp_cfm_create(mvector, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-                  call cp_cfm_write_formatted(mvector, 6, "mvector")
+!                  call cp_cfm_write_formatted(mvector, 6, "mvector")
 
                   call cp_cfm_create(mvector_conj, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
-                  call cp_cfm_write_formatted(mvector_conj, 6, "mvector_conj")
+!                  call cp_cfm_write_formatted(mvector_conj, 6, "mvector_conj")
 
                   call cp_cfm_create(omvector, vec_struct)
                   call cp_cfm_create(momv, vec_struct)
@@ -248,9 +250,11 @@ contains
 
                ! cleanup
                do idim = 1, ndims
-                  call dbcsr_release(tmp_moments_op(idim)%matrix)
+                  deallocate(tmp_moments_op(idim)%matrix)
+                  call cp_cfm_release(moments_op(idim)%matrix)
                end do
                deallocate(tmp_moments_op)
+               deallocate(moments_op)
             end do
          end if
 
@@ -276,7 +280,6 @@ contains
             end do
          end do
 
-         first_time = .TRUE.
          ! output
          if (first_time) then
             ! announce nuclear contributions once
@@ -301,6 +304,16 @@ contains
                end do
             end do
          end if
+
+         deallocate(rions)
+         deallocate(rcentres)
+         deallocate(wcs_ions_map)
+         call cp_fm_struct_release(vec_struct)
+         call cp_fm_struct_release(nmo_struct)
+         call cp_fm_struct_release(nao_struct)
+         call cp_cfm_release(nao_ctmp)
+         call cp_cfm_release(coeff_ctmp)
+         call cp_cfm_release(coeff_ctmp_conj)
       end if
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
 
