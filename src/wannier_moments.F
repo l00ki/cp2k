@@ -112,7 +112,7 @@ contains
       type(atomic_kind_type), pointer       :: atomic_kind
       type(cell_type), pointer              :: cell
       type(cp_cfm_p_type), pointer          :: moments_op(:), coeffs(:)
-      type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, mvector, omvector, momv
+      type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, coeff_ctmp_conj, mvector, mvector_conj, omvector, momv
       type(cp_fm_p_type), pointer           :: moloc_coeff(:)
       type(cp_fm_type), pointer             :: coeff_null, nao_null, nao_tmp
       type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, nmo_struct, vec_struct
@@ -135,7 +135,6 @@ contains
       CPASSERT(order >= 0)
 
       if (BTEST(cp_print_key_should_output(logger%iter_info, print_key, "WANNIER_MOMENTS", first_time=first_time), cp_p_file)) then
-      
          ! get infos from the environment
          call get_qs_env(qs_env, cell=cell, dft_control=dft_control, para_env=para_env, &
                          particle_set=ions_list, qs_kind_set=qs_kind_set, wanniercentres=wcs)
@@ -156,6 +155,8 @@ contains
          call cp_fm_create(nao_null, nao_struct)
          call cp_fm_set_all(nao_null, 0.0_dp)
          call cp_fm_create(nao_tmp, nao_struct)
+         call cp_cfm_create(coeff_ctmp, coeff_struct)
+         call cp_cfm_create(coeff_ctmp_conj, coeff_struct)
          call cp_cfm_create(nao_ctmp, nao_struct)
          if (.not. mos_are_complex) then
             ! null matrix for time-independent inputs
@@ -181,15 +182,14 @@ contains
          moment_set = 0.0_dp
 
          ! wrap wcs into the cell and map them to "their" ions
-         allocate(rions(ndims, nions))
-         allocate(rcentres(ndims, nstates))
-         allocate(wcs_ions_map(nstates))
+         allocate(rions(ndims, nions), rcentres(ndims, nstates), wcs_ions_map(nstates))
          do iion = 1, nions
             rions(:, iion) = pbc(ions_list(iion)%r, cell)
          end do
          do istate = 1, nstates
             rcentres(:, istate) = pbc(wcs(1)%centres(:, istate), cell)
          end do
+         call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
          call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
 
          CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
@@ -219,22 +219,24 @@ contains
                ! calculate expectation values
                do ispin = 1, nspins
                   coeff_ctmp => coeffs(ispin)%matrix  ! local state
+                  call cp_cfm_to_cfm(coeff_ctmp, coeff_ctmp_conj)
+                  coeff_ctmp_conj%local_data = conjg(coeff_ctmp%local_data)
 
                   call cp_cfm_create(mvector, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-               
+                  call cp_cfm_write_formatted(mvector, 6, "mvector")
+
+                  call cp_cfm_create(mvector_conj, vec_struct)
+                  call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
+                  call cp_cfm_write_formatted(mvector_conj, 6, "mvector_conj")
+
                   call cp_cfm_create(omvector, vec_struct)
                   call cp_cfm_create(momv, vec_struct)
 
                   do idim = 1, ndims
                      call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
                                       moments_op(idim)%matrix, mvector, (0.0_dp, 0.0_dp), omvector)
-                     ! this is just matrix multiplication with the bra
-                     !call cp_cfm_schur_product(mvector_conj, omvector, momv)
-                     !moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
-                     !                           real(sum(momv%local_data), dp)
-                     call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), mvector, &
-                                      omvector, (0.0_dp, 0.0_dp), momv)
+                     call cp_cfm_schur_product(mvector_conj, omvector, momv)
                      moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
                                                 real(sum(momv%local_data), dp)
                   end do
@@ -246,77 +248,61 @@ contains
 
                ! cleanup
                do idim = 1, ndims
-                  deallocate(tmp_moments_op(idim)%matrix)
-                  call cp_cfm_release(moments_op(idim)%matrix)
+                  call dbcsr_release(tmp_moments_op(idim)%matrix)
                end do
                deallocate(tmp_moments_op)
-               deallocate(moments_op)
+            end do
+         end if
+
+         CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                                  ref_point=ref_point)
+
+         ! nuclear contributions
+         do idim = 1, ndims
+            lx = indco(1, idim+1)
+            ly = indco(2, idim+1)
+            lz = indco(3, idim+1)
+            do iion = 1, nions
+               atomic_kind => ions_list(iion)%atomic_kind
+               call get_atomic_kind(atomic_kind, kind_number=akind)
+               call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
+               if (.not. ghost .and. .not. floating) then
+                  call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
+                  ria = ions_list(iion)%r - rcc
+                  ria = pbc(ria, cell)
+                  moment_set(idim, nstates+iion) = moment_set(idim, nstates+iion) + &
+                       zeff*ria(1)**lx*ria(2)**ly*ria(3)**lz
+               end if
+            end do
+         end do
+
+         first_time = .TRUE.
+         ! output
+         if (first_time) then
+            ! announce nuclear contributions once
+            write(unit=unit_nr, fmt="(a)") "# NUCLEAR DIPOLES"
+            write(unit=unit_nr, fmt="(a)") "# iter_level, ion index, order, moments[a.u.]"
+            do iion = 1, nions
+               do iorder = 1, order
+                  write (unit=unit_nr, fmt="(a,i5,i2,3es22.12)") &
+                       iter(1:15), iion, iorder, moment_set(ncoset(iorder-1):ncoset(iorder)-1, nstates+iion)
+               end do
+            end do
+            write(unit=unit_nr, fmt="(a)") "# WANNIER DIPOLES"
+            write(unit=unit_nr, fmt="(a)") "# iter_level, istate, mapped ion, order, moments[a.u.]"
+         end if
+
+         if (unit_nr > 0) then
+            do istate = 1, nstates
+               do iorder = 1, order
+                  write (unit=unit_nr, fmt="(a,i5,i5,i2,3es22.12)") &
+                       iter(1:15), istate, wcs_ions_map(istate), iorder, &
+                       moment_set(ncoset(iorder-1):ncoset(iorder)-1, istate)
+               end do
             end do
          end if
       end if
-      
-      CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
-                               ref_point=ref_point)
-
-      ! nuclear contributions
-      do idim = 1, ndims
-         lx = indco(1, idim+1)
-         ly = indco(2, idim+1)
-         lz = indco(3, idim+1)
-         do iion = 1, nions
-            atomic_kind => ions_list(iion)%atomic_kind
-            call get_atomic_kind(atomic_kind, kind_number=akind)
-            call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
-            if (.not. ghost .and. .not. floating) then
-               call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
-               ria = ions_list(iion)%r - rcc
-               ria = pbc(ria, cell)
-               moment_set(idim, nstates+iion) = moment_set(idim, nstates+iion) + &
-                    zeff*ria(1)**lx*ria(2)**ly*ria(3)**lz
-            end if
-         end do
-      end do
-
-      ! output
-      if (first_time) then
-         ! announce nuclear contributions once
-         write(unit=unit_nr, fmt="(a)") "# NUCLEAR DIPOLES"
-         write(unit=unit_nr, fmt="(a)") "# iter_level, ion index, order, moments[a.u.]"
-         do iion = 1, nions
-            do iorder = 1, order
-               write (unit=unit_nr, fmt="(a,i5,i2,3es22.12)") &
-                    iter(1:15), iion, iorder, moment_set(ncoset(iorder-1):ncoset(iorder)-1, nstates+iion)
-            end do
-         end do
-         write(unit=unit_nr, fmt="(a)") "# WANNIER DIPOLES"
-         write(unit=unit_nr, fmt="(a)") "# iter_level, istate, mapped ion, order, moments[a.u.]"
-      end if
-         
-      if (unit_nr > 0) then
-         do istate = 1, nstates
-            do iorder = 1, order
-               write (unit=unit_nr, fmt="(a,i5,i5,i2,3es22.12)") &
-                    iter(1:15), istate, wcs_ions_map(istate), iorder, &
-                    moment_set(ncoset(iorder-1):ncoset(iorder)-1, istate)
-            end do
-         end do
-      end if
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
-
-      do ispin = 1, nspins
-         call cp_cfm_release(coeffs(ispin)%matrix)
-      end do
-      deallocate(coeffs)
-      call cp_cfm_release(nao_ctmp)
-      if (.not. mos_are_complex) then
-         call cp_fm_release(coeff_null)
-      end if
-      call cp_fm_release(nao_null)
-      call cp_fm_release(nao_tmp)
-      call cp_fm_struct_release(nao_struct)
-      call cp_fm_struct_release(nmo_struct)
-      call cp_fm_struct_release(vec_struct)
-      deallocate(wcs_ions_map, moment_set, rcentres, rions)
 
       call timestop(handle)
       
