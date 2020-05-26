@@ -2,7 +2,6 @@
 !   CP2K: A general program to perform molecular dynamics simulations                              !
 !   Copyright (C) 2000 - 2020  CP2K developers group                                               !
 !--------------------------------------------------------------------------------------------------!
-
 ! **************************************************************************************************
 !> \brief Routines for the calculation of moments from Wannier functions
 !> \author Lukas Schreder
@@ -115,7 +114,7 @@ contains
       type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, coeff_ctmp_conj, mvector, mvector_conj, omvector, momv
       type(cp_fm_p_type), pointer           :: moloc_coeff(:)
       type(cp_fm_type), pointer             :: coeff_null, nao_null, nao_tmp
-      type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, nmo_struct, vec_struct
+      type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, vec_struct
       type(cp_logger_type), pointer         :: logger
       type(cp_para_env_type), pointer       :: para_env
       type(dbcsr_p_type), pointer           :: matrix_s(:), tmp_moments_op(:)
@@ -150,8 +149,6 @@ contains
          call cp_fm_struct_create(vec_struct, template_fmstruct=coeff_struct, ncol_global=1)
          call cp_fm_struct_create(nao_struct, template_fmstruct=coeff_struct, nrow_global=nao, &
                                   ncol_global=nao)
-         call cp_fm_struct_create(nmo_struct, template_fmstruct=coeff_struct, nrow_global=nmo, &
-                                  ncol_global=nmo)
          call cp_fm_create(nao_null, nao_struct)
          call cp_fm_set_all(nao_null, 0.0_dp)
          call cp_fm_create(nao_tmp, nao_struct)
@@ -195,41 +192,38 @@ contains
          call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
                                   ref_point=ref_point)
 
+         call get_qs_env(qs_env, matrix_s=matrix_s)  ! just used as a template
+         allocate(tmp_moments_op(ndims))
+         ! get moments operator
+         do idim = 1, ndims
+            allocate(tmp_moments_op(idim)%matrix)
+            call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
+                            "moments operator matrix")
+            call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
+         end do
+         call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
+         ! translate moments operator to a full matrix
+         allocate(moments_op(ndims))
+         do idim = 1, ndims
+            call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
+            call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
+            call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
+         end do
+
+         call cp_cfm_create(mvector, vec_struct)
+         call cp_cfm_create(mvector_conj, vec_struct)
+         call cp_cfm_create(omvector, vec_struct)
+         call cp_cfm_create(momv, vec_struct)
+
          if (order > 0) then  ! don't do anything if zero order
-            call get_qs_env(qs_env, matrix_s=matrix_s)  ! just used as a template
             do istate = 1, nstates
-               ! get moments operator
-               allocate(tmp_moments_op(ndims))
-               do idim = 1, ndims
-                  allocate(tmp_moments_op(idim)%matrix)
-                  call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
-                                  "moments operator matrix")
-                  call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
-               end do
-               call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
-
-               ! translate moments operator to a full matrix
-               allocate(moments_op(ndims))
-               do idim = 1, ndims
-                  call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
-                  call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
-                  call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
-               end do
-
                ! calculate expectation values
                do ispin = 1, nspins
                   coeff_ctmp => coeffs(ispin)%matrix  ! local state
                   call cp_cfm_to_cfm(coeff_ctmp, coeff_ctmp_conj)
                   coeff_ctmp_conj%local_data = conjg(coeff_ctmp%local_data)
-
-                  call cp_cfm_create(mvector, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-
-                  call cp_cfm_create(mvector_conj, vec_struct)
                   call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
-
-                  call cp_cfm_create(omvector, vec_struct)
-                  call cp_cfm_create(momv, vec_struct)
 
                   do idim = 1, ndims
                      call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
@@ -238,20 +232,7 @@ contains
                      moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
                                                 real(sum(momv%local_data), dp)
                   end do
-
-                  call cp_cfm_release(mvector)
-                  call cp_cfm_release(mvector_conj)
-                  call cp_cfm_release(omvector)
-                  call cp_cfm_release(momv)
                end do
-
-               ! cleanup
-               do idim = 1, ndims
-                  deallocate(tmp_moments_op(idim)%matrix)
-                  call cp_cfm_release(moments_op(idim)%matrix)
-               end do
-               deallocate(tmp_moments_op)
-               deallocate(moments_op)
             end do
          end if
 
@@ -267,7 +248,7 @@ contains
                if (.not. ghost .and. .not. floating) then
                   call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
                   ria = ions_list(iion)%r - rcc
-                  ria = pbc(ria, cell)
+                  !ria = pbc(ria, cell)  ! dont do that
                   moment_set(idim, nstates+iion) = moment_set(idim, nstates+iion) + &
                        zeff*ria(1)**lx*ria(2)**ly*ria(3)**lz
                end if
@@ -302,6 +283,19 @@ contains
          do ispin = 1, nspins
             call cp_cfm_release(coeffs(ispin)%matrix)
          end do
+
+         ! cleanup
+         call cp_cfm_release(mvector)
+         call cp_cfm_release(mvector_conj)
+         call cp_cfm_release(omvector)
+         call cp_cfm_release(momv)
+         do idim = 1, ndims
+            call dbcsr_release(tmp_moments_op(idim)%matrix)
+            deallocate(tmp_moments_op(idim)%matrix)
+            call cp_cfm_release(moments_op(idim)%matrix)
+         end do
+         deallocate(tmp_moments_op)
+         deallocate(moments_op)
          deallocate(coeffs)
          deallocate(rions)
          deallocate(rcentres)
@@ -310,8 +304,8 @@ contains
          if (.not. mos_are_complex) then
             call cp_fm_release(coeff_null)
          end if
+         call cp_fm_release(nao_null)
          call cp_fm_struct_release(vec_struct)
-         call cp_fm_struct_release(nmo_struct)
          call cp_fm_struct_release(nao_struct)
          call cp_fm_release(nao_tmp)
          call cp_cfm_release(nao_ctmp)
