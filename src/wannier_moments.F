@@ -102,7 +102,7 @@ contains
       character(len=default_string_length)  :: iter
       integer                               :: akind, handle, idim, iion, iorder, ispin, istate, lx, ly, lz, &
            nao, ndims, &
-           nions, nmo, nspins, nstates, order, unit_nr
+           nions, nspins, nstates, order, unit_nr
       integer, allocatable                  :: wcs_ions_map(:)
       logical                               :: first_time, floating, ghost
       real(kind=dp)                         :: rcc(3), ria(3), zwfc, zeff
@@ -111,10 +111,10 @@ contains
       type(atomic_kind_type), pointer       :: atomic_kind
       type(cell_type), pointer              :: cell
       type(cp_cfm_p_type), pointer          :: moments_op(:), coeffs(:)
-      type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, coeff_ctmp_conj, mvector, mvector_conj, omvector, momv
+      type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, mvector, omvector, momv
       type(cp_fm_p_type), pointer           :: moloc_coeff(:)
       type(cp_fm_type), pointer             :: coeff_null, nao_null, nao_tmp
-      type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, vec_struct
+      type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, vec_struct, one_struct
       type(cp_logger_type), pointer         :: logger
       type(cp_para_env_type), pointer       :: para_env
       type(dbcsr_p_type), pointer           :: matrix_s(:), tmp_moments_op(:)
@@ -147,12 +147,12 @@ contains
          call cp_fm_get_info(moloc_coeff(1)%matrix, nrow_global=nao, ncol_global=nstates, &
                              matrix_struct=coeff_struct)
          call cp_fm_struct_create(vec_struct, template_fmstruct=coeff_struct, ncol_global=1)
+         call cp_fm_struct_create(one_struct, template_fmstruct=coeff_struct, ncol_global=1, nrow_global=1)
          call cp_fm_struct_create(nao_struct, template_fmstruct=coeff_struct, nrow_global=nao, &
                                   ncol_global=nao)
          call cp_fm_create(nao_null, nao_struct)
          call cp_fm_set_all(nao_null, 0.0_dp)
          call cp_fm_create(nao_tmp, nao_struct)
-         call cp_cfm_create(coeff_ctmp_conj, coeff_struct)
          call cp_cfm_create(nao_ctmp, nao_struct)
          if (.not. mos_are_complex) then
             ! null matrix for time-independent inputs
@@ -201,36 +201,33 @@ contains
                             "moments operator matrix")
             call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
          end do
-         call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
          ! translate moments operator to a full matrix
          allocate(moments_op(ndims))
-         do idim = 1, ndims
+         call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
+            do idim = 1, ndims
             call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
             call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
             call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
          end do
 
          call cp_cfm_create(mvector, vec_struct)
-         call cp_cfm_create(mvector_conj, vec_struct)
          call cp_cfm_create(omvector, vec_struct)
-         call cp_cfm_create(momv, vec_struct)
+         call cp_cfm_create(momv, one_struct)
 
          if (order > 0) then  ! don't do anything if zero order
             do istate = 1, nstates
                ! calculate expectation values
                do ispin = 1, nspins
                   coeff_ctmp => coeffs(ispin)%matrix  ! local state
-                  call cp_cfm_to_cfm(coeff_ctmp, coeff_ctmp_conj)
-                  coeff_ctmp_conj%local_data = conjg(coeff_ctmp%local_data)
                   call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-                  call cp_cfm_to_cfm(coeff_ctmp_conj, mvector_conj, 1, istate, 1)
 
                   do idim = 1, ndims
                      call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
                                       moments_op(idim)%matrix, mvector, (0.0_dp, 0.0_dp), omvector)
-                     call cp_cfm_schur_product(mvector_conj, omvector, momv)
+                     call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), &
+                                      mvector, omvector, (0.0_dp, 0.0_dp), momv)
                      moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
-                                                real(sum(momv%local_data), dp)
+                                                real(momv%local_data(1,1), dp)
                   end do
                end do
             end do
@@ -247,8 +244,7 @@ contains
                call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
                if (.not. ghost .and. .not. floating) then
                   call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
-                  ria = ions_list(iion)%r - rcc
-                  !ria = pbc(ria, cell)  ! dont do that
+                  ria = pbc(ions_list(iion)%r, cell) - pbc(rcc, cell)
                   moment_set(idim, nstates+iion) = moment_set(idim, nstates+iion) + &
                        zeff*ria(1)**lx*ria(2)**ly*ria(3)**lz
                end if
@@ -262,7 +258,7 @@ contains
             write(unit=unit_nr, fmt="(a)") "# iter_level, ion index, order, moments[a.u.]"
             do iion = 1, nions
                do iorder = 1, order
-                  write (unit=unit_nr, fmt="(a,i5,i2,3es22.12)") &
+                  write (unit=unit_nr, fmt="(a,i5,i2,3es26.16)") &
                        iter(1:15), iion, iorder, moment_set(ncoset(iorder-1):ncoset(iorder)-1, nstates+iion)
                end do
             end do
@@ -273,7 +269,7 @@ contains
          if (unit_nr > 0) then
             do istate = 1, nstates
                do iorder = 1, order
-                  write (unit=unit_nr, fmt="(a,i5,i5,i2,3es22.12)") &
+                  write (unit=unit_nr, fmt="(a,i5,i5,i2,3es26.16)") &
                        iter(1:15), istate, wcs_ions_map(istate), iorder, &
                        moment_set(ncoset(iorder-1):ncoset(iorder)-1, istate)
                end do
@@ -286,7 +282,6 @@ contains
 
          ! cleanup
          call cp_cfm_release(mvector)
-         call cp_cfm_release(mvector_conj)
          call cp_cfm_release(omvector)
          call cp_cfm_release(momv)
          do idim = 1, ndims
@@ -306,10 +301,10 @@ contains
          end if
          call cp_fm_release(nao_null)
          call cp_fm_struct_release(vec_struct)
+         call cp_fm_struct_release(one_struct)
          call cp_fm_struct_release(nao_struct)
          call cp_fm_release(nao_tmp)
          call cp_cfm_release(nao_ctmp)
-         call cp_cfm_release(coeff_ctmp_conj)
       end if
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
 
