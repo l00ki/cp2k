@@ -48,7 +48,8 @@ module wannier_moments
                                     dbcsr_p_type, &
                                     dbcsr_release, &
                                     dbcsr_set
-   use input_constants,       only: use_mom_ref_com
+   use input_constants,       only: use_mom_ref_com, &
+                                    use_mom_ref_zero
    use input_section_types,   only: section_get_ival, &
                                     section_vals_type, &
                                     section_vals_val_get
@@ -65,7 +66,8 @@ module wannier_moments
                                     qs_kind_type
    use qs_loc_types,          only: get_qs_loc_env, &
                                     qs_loc_env_new_type
-   use qs_moments,            only: build_local_moment_matrix
+   use qs_moments,            only: build_berry_moment_matrix, &
+                                    build_local_moment_matrix
    use wannier_states_types,  only: wannier_centres_type
 #include "./base/base_uses.f90"
 
@@ -100,12 +102,13 @@ contains
                                      routineP = moduleN//":"//routineN
 
       character(len=default_string_length)  :: iter
-      integer                               :: akind, handle, idim, iion, iorder, ispin, istate, lx, ly, lz, &
-           nao, ndims, &
-           nions, nspins, nstates, order, unit_nr
+      integer                               :: akind, handle, idim, iion, iorder, ispin, istate, &
+                                               lx, ly, lz, nao, ndims, nions, nspins, nstates, &
+                                               order, unit_nr
       integer, allocatable                  :: wcs_ions_map(:)
-      logical                               :: first_time, floating, ghost
-      real(kind=dp)                         :: rcc(3), ria(3), zwfc, zeff
+      logical                               :: first_time, floating, ghost, is_periodic
+      real(kind=dp)                         :: rcc(3), ria(3), zwfc, zeff, abc(3), rcc_wrapped(3), &
+                                               kvec(3)
       real(kind=dp), allocatable            :: moment_set(:, :)
       real(kind=dp), pointer                :: rcentres(:, :), rions(:, :), ref_point(:)
       type(atomic_kind_type), pointer       :: atomic_kind
@@ -113,7 +116,7 @@ contains
       type(cp_cfm_p_type), pointer          :: moments_op(:), coeffs(:)
       type(cp_cfm_type), pointer            :: nao_ctmp, coeff_ctmp, mvector, omvector, momv
       type(cp_fm_p_type), pointer           :: moloc_coeff(:)
-      type(cp_fm_type), pointer             :: coeff_null, nao_null, nao_tmp
+      type(cp_fm_type), pointer             :: coeff_null, nao_null, nao_tmp, cosmat, sinmat
       type(cp_fm_struct_type), pointer      :: coeff_struct, nao_struct, vec_struct, one_struct
       type(cp_logger_type), pointer         :: logger
       type(cp_para_env_type), pointer       :: para_env
@@ -131,9 +134,11 @@ contains
                                      middle_name="WANNIER_MOMENTS")
       iter = cp_iter_string(logger%iter_info)
       call section_vals_val_get(print_key, "WANNIER_MOMENTS%ORDER", i_val=order)
+      call section_vals_val_get(print_key, "WANNIER_MOMENTS%PERIODIC", l_val=is_periodic)
       CPASSERT(order >= 0)
 
-      if (BTEST(cp_print_key_should_output(logger%iter_info, print_key, "WANNIER_MOMENTS", first_time=first_time), cp_p_file)) then
+      if (BTEST(cp_print_key_should_output(logger%iter_info, print_key, "WANNIER_MOMENTS", &
+                first_time=first_time), cp_p_file)) then
          ! get infos from the environment
          call get_qs_env(qs_env, cell=cell, dft_control=dft_control, para_env=para_env, &
                          particle_set=ions_list, qs_kind_set=qs_kind_set, wanniercentres=wcs)
@@ -142,12 +147,14 @@ contains
          nspins = dft_control%nspins
          zwfc = 3.0_dp - real(nspins, kind=dp)  ! assuming equal occupation of the Wannier states
          call get_qs_loc_env(qs_loc_env, moloc_coeff=moloc_coeff)
+         call get_cell(cell, abc=abc)
 
          ! prepare work matrices
          call cp_fm_get_info(moloc_coeff(1)%matrix, nrow_global=nao, ncol_global=nstates, &
                              matrix_struct=coeff_struct)
          call cp_fm_struct_create(vec_struct, template_fmstruct=coeff_struct, ncol_global=1)
-         call cp_fm_struct_create(one_struct, template_fmstruct=coeff_struct, ncol_global=1, nrow_global=1)
+         call cp_fm_struct_create(one_struct, template_fmstruct=coeff_struct, ncol_global=1, &
+                                  nrow_global=1)
          call cp_fm_struct_create(nao_struct, template_fmstruct=coeff_struct, nrow_global=nao, &
                                   ncol_global=nao)
          call cp_fm_create(nao_null, nao_struct)
@@ -181,34 +188,55 @@ contains
          allocate(rions(ndims, nions))
          allocate(rcentres(ndims, nstates))
          do iion = 1, nions
-            rions(:, iion) = pbc(ions_list(iion)%r, cell)
+            call wrap_to_cell_1d(ions_list(iion)%r, cell, rions(:, iion)) 
          end do
-         do istate = 1, nstates
-            rcentres(:, istate) = pbc(wcs(1)%centres(:, istate), cell)
-         end do
-         !call wrap_wcs_to_cell(wcs(1)%centres, cell, rcentres)
+         call wrap_to_cell(wcs(1)%centres, cell, rcentres)
          call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
 
          call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
                                   ref_point=ref_point)
+         call wrap_to_cell_d(rcc, cell, rcc_wrapped)
 
          call get_qs_env(qs_env, matrix_s=matrix_s)  ! just used as a template
-         allocate(tmp_moments_op(ndims))
-         ! get moments operator
-         do idim = 1, ndims
-            allocate(tmp_moments_op(idim)%matrix)
-            call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
-                            "moments operator matrix")
-            call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
-         end do
-         ! translate moments operator to a full matrix
+         
+         ! get moments operator and translate into a full matrix
          allocate(moments_op(ndims))
-         call build_local_moment_matrix(qs_env, tmp_moments_op, order, rcc)
+         if (.not. is_periodic) then
+            allocate(tmp_moments_op(ndims))
             do idim = 1, ndims
-            call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
-            call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
-            call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
-         end do
+               allocate(tmp_moments_op(idim)%matrix)
+               call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
+                    "moments operator matrix")
+               call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
+            end do
+            call build_local_moment_matrix(qs_env, tmp_moments_op, order, ref_point=rcc)
+            do idim = 1, ndims
+               call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
+               call copy_dbcsr_to_fm(tmp_moments_op(idim)%matrix, nao_tmp)
+               call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
+            end do
+         else
+            allocate(tmp_moments_op(2))  ! the Berry operator is split into cos and sin
+            call cp_fm_create(cosmat, nao_struct)
+            call cp_fm_create(sinmat, nao_struct)
+            do idim = 1, 2*ndims
+               allocate(tmp_moments_op(idim)%matrix)
+               call dbcsr_copy(tmp_moments_op(idim)%matrix, matrix_s(1)%matrix, &
+                     "Berry moments operator matrix")
+               call dbcsr_set(tmp_moments_op(idim)%matrix, 0.0_dp)
+            end do
+            do idim = 1, ndims
+               kvec(:)  = twopi * cell%h_inv(idim, :)
+               call build_berry_moment_matrix(qs_env, tmp_moments_op(1)%matrix, &
+                    tmp_moments_op(2)%matrix, kvec)
+               call copy_dbcsr_to_fm(tmp_moments_op(1)%matrix, cosmat)
+               call copy_dbcsr_to_fm(tmp_moments_op(2)%matrix, sinmat)
+               call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
+               call cp_fm_to_cfm(cosmat, sinmat, moments_op(idim)%matrix)
+            end do
+            call cp_fm_release(cosmat)
+            call cp_fm_release(sinmat)
+         end if
 
          call cp_cfm_create(mvector, vec_struct)
          call cp_cfm_create(omvector, vec_struct)
@@ -220,14 +248,13 @@ contains
                do ispin = 1, nspins
                   coeff_ctmp => coeffs(ispin)%matrix  ! local state
                   call cp_cfm_to_cfm(coeff_ctmp, mvector, 1, istate, 1)
-
                   do idim = 1, ndims
                      call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), &
                                       moments_op(idim)%matrix, mvector, (0.0_dp, 0.0_dp), omvector)
                      call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), &
                                       mvector, omvector, (0.0_dp, 0.0_dp), momv)
                      moment_set(idim, istate) = moment_set(idim, istate) - zwfc * &
-                                                real(momv%local_data(1,1), dp)
+                                                real(sum(momv%local_data), dp)
                   end do
                end do
             end do
@@ -254,15 +281,15 @@ contains
          ! output
          if (first_time) then
             ! announce nuclear contributions once
-            write(unit=unit_nr, fmt="(a)") "# NUCLEAR DIPOLES"
-            write(unit=unit_nr, fmt="(a)") "# iter_level, ion index, order, moments[a.u.]"
+            !write(unit=unit_nr, fmt="(a)") "# NUCLEAR DIPOLES"
+            !write(unit=unit_nr, fmt="(a)") "# iter_level, ion index, order, moments[a.u.]"
             do iion = 1, nions
                do iorder = 1, order
-                  write (unit=unit_nr, fmt="(a,i5,i2,3es26.16)") &
-                       iter(1:15), iion, iorder, moment_set(ncoset(iorder-1):ncoset(iorder)-1, nstates+iion)
+                  !write (unit=unit_nr, fmt="(a,i5,i2,3es26.16)") &
+                  !     iter(1:15), iion, iorder, moment_set(ncoset(iorder-1):ncoset(iorder)-1, nstates+iion)
                end do
             end do
-            write(unit=unit_nr, fmt="(a)") "# WANNIER DIPOLES"
+            !write(unit=unit_nr, fmt="(a)") "# WANNIER DIPOLES"
             write(unit=unit_nr, fmt="(a)") "# iter_level, istate, mapped ion, order, moments[a.u.]"
          end if
 
@@ -313,23 +340,21 @@ contains
    end subroutine calculate_wannier_moments
 
 ! **************************************************************************************************
-!> \brief shifts a set of Wannier centres into the simulation cell, only orthorhombic cells
+!> \brief shifts a coordinate into the simulation cell, only orthorhombic cells
 ! **************************************************************************************************
-   subroutine wrap_wcs_to_cell(r, cell, r_wrapped)
+   subroutine wrap_to_cell(r, cell, r_wrapped)
 
      real(dp), pointer, intent(in)   :: r(:, :)
      type(cell_type), pointer        :: cell
      real(dp), pointer, intent(out)  :: r_wrapped(:, :)
 
-     integer                         :: istate, idim
+     integer                         :: idim, istate
      real(dp)                        :: abc(3)
 
      ! assumes an orthorhombic cell
      call get_cell(cell, abc=abc)
 
-     allocate(r_wrapped(size(r, 1), size(r, 2)))
-
-     do istate = 1, size(r, 2)  ! loop over centers
+     do istate = 1, size(r, 2)
         do idim = 1, size(r, 1)  ! loop over dimensions
            if(r(idim, istate) < 0.0) then
               r_wrapped(idim, istate) = r(idim, istate) + abc(idim)
@@ -341,7 +366,55 @@ contains
         end do  ! idim
      end do  ! istate
 
-   end subroutine wrap_wcs_to_cell
+   end subroutine wrap_to_cell
+
+   subroutine wrap_to_cell_1d(r, cell, r_wrapped)
+
+      real(dp), pointer, intent(in)   :: r(:)
+      type(cell_type), pointer        :: cell
+      real(dp), intent(out)           :: r_wrapped(:)
+
+      integer                         :: idim
+      real(dp)                        :: abc(3)
+
+      ! assumes an orthorhombic cell
+      call get_cell(cell, abc=abc)
+
+      do idim = 1, size(r, 1)  ! loop over dimensions
+         if(r(idim) < 0.0) then
+            r_wrapped(idim) = r(idim) + abc(idim)
+         else if(r(idim) > abc(idim)) then
+            r_wrapped(idim) = r(idim) - abc(idim)
+         else
+            r_wrapped(idim) = r(idim)
+         end if
+      end do  ! idim
+
+   end subroutine wrap_to_cell_1d
+
+   subroutine wrap_to_cell_d(r, cell, r_wrapped)
+
+      real(dp), intent(in)      :: r(:)
+      type(cell_type), pointer  :: cell
+      real(dp), intent(out)     :: r_wrapped(:)
+
+      integer                         :: idim
+      real(dp)                        :: abc(3)
+
+      ! assumes an orthorhombic cell
+      call get_cell(cell, abc=abc)
+
+      do idim = 1, size(r, 1)  ! loop over dimensions
+         if(r(idim) < 0.0) then
+            r_wrapped(idim) = r(idim) + abc(idim)
+         else if(r(idim) > abc(idim)) then
+            r_wrapped(idim) = r(idim) - abc(idim)
+         else
+            r_wrapped(idim) = r(idim)
+         end if
+      end do  ! idim
+
+   end subroutine wrap_to_cell_d
 
 ! **************************************************************************************************
 !> \brief maps the Wannier centres to their nearest ions
