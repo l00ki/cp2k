@@ -216,7 +216,7 @@ contains
                call cp_fm_to_cfm(nao_tmp, nao_null, moments_op(idim)%matrix)
             end do
          else
-            allocate(tmp_moments_op(2))  ! the Berry operator is split into cos and sin
+            allocate(tmp_moments_op(2*ndims))  ! the Berry operator is split into cos and sin
             call cp_fm_create(cosmat, nao_struct)
             call cp_fm_create(sinmat, nao_struct)
             do idim = 1, 2*ndims
@@ -227,10 +227,10 @@ contains
             end do
             do idim = 1, ndims
                kvec(:)  = twopi * cell%h_inv(idim, :)
-               call build_berry_moment_matrix(qs_env, tmp_moments_op(1)%matrix, &
-                    tmp_moments_op(2)%matrix, kvec)
-               call copy_dbcsr_to_fm(tmp_moments_op(1)%matrix, cosmat)
-               call copy_dbcsr_to_fm(tmp_moments_op(2)%matrix, sinmat)
+               call build_berry_moment_matrix(qs_env, tmp_moments_op(2*idim-1)%matrix, &
+                    tmp_moments_op(2*idim)%matrix, kvec)
+               call copy_dbcsr_to_fm(tmp_moments_op(2*idim-1)%matrix, cosmat)
+               call copy_dbcsr_to_fm(tmp_moments_op(2*idim)%matrix, sinmat)
                call cp_cfm_create(moments_op(idim)%matrix, nao_struct)
                call cp_fm_to_cfm(cosmat, sinmat, moments_op(idim)%matrix)
             end do
@@ -311,12 +311,21 @@ contains
          call cp_cfm_release(mvector)
          call cp_cfm_release(omvector)
          call cp_cfm_release(momv)
+         if (.not. is_periodic) then
+            do idim = 1, ndims
+               call dbcsr_release(tmp_moments_op(idim)%matrix)
+               deallocate(tmp_moments_op(idim)%matrix)
+            end do
+         else
+            do idim = 1, 2*ndims
+               call dbcsr_release(tmp_moments_op(idim)%matrix)
+               deallocate(tmp_moments_op(idim)%matrix)
+            end do
+         end if
+         deallocate(tmp_moments_op)
          do idim = 1, ndims
-            call dbcsr_release(tmp_moments_op(idim)%matrix)
-            deallocate(tmp_moments_op(idim)%matrix)
             call cp_cfm_release(moments_op(idim)%matrix)
          end do
-         deallocate(tmp_moments_op)
          deallocate(moments_op)
          deallocate(coeffs)
          deallocate(rions)
