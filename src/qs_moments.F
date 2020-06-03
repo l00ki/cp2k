@@ -132,7 +132,7 @@ CONTAINS
                                                             nsgfa, nsgfb
       INTEGER, DIMENSION(:, :), POINTER                  :: first_sgfa, first_sgfb
       LOGICAL                                            :: found
-      REAL(KIND=dp)                                      :: dab
+      REAL(KIND=dp)                                      :: dab, rab2
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: work
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: mab
       REAL(KIND=dp), DIMENSION(3)                        :: ra, rab, rac, rb, rbc, rc
@@ -257,15 +257,24 @@ CONTAINS
          ELSE
             rc(:) = 0._dp
          END IF
-         ! using PBC here might screw a molecule that fits the box (but e.g. hasn't been shifted by center_molecule)
-         ! by folding around the center, such screwing can be avoided for a proper choice of center.
-         ra(:) = pbc(particle_set(iatom)%r(:) - rc, cell) + rc
-         rb(:) = pbc(particle_set(jatom)%r(:) - rc, cell) + rc
-         ! we dont use PBC at this point
-         rab(:) = ra(:) - rb(:)
-         rac(:) = ra(:) - rc(:)
-         rbc(:) = rb(:) - rc(:)
-         dab = NORM2(rab)
+         !! using PBC here might screw a molecule that fits the box (but e.g. hasn't been shifted by center_molecule)
+         !! by folding around the center, such screwing can be avoided for a proper choice of center.
+         !ra(:) = pbc(particle_set(iatom)%r(:) - rc, cell) + rc
+         !rb(:) = pbc(particle_set(jatom)%r(:) - rc, cell) + rc
+         !! we dont use PBC at this point
+         !rab(:) = ra(:) - rb(:)
+         !rac(:) = ra(:) - rc(:)
+         !rbc(:) = rb(:) - rc(:)
+         !dab = NORM2(rab)
+
+         ! PBC fix by Edward Ditler
+         ra(:) = particle_set(iatom)%r(:)
+         rb(:) = particle_set(jatom)%r(:)
+         rab(:) = pbc(rb, ra, cell)
+         rac(:) = ra - rc
+         rbc(:) = rb - rc
+         rab2 = rab(1)*rab(1) + rab(2)*rab(2) + rab(3)*rab(3)
+         dab = SQRT(rab2)
 
          DO iset = 1, nseta
 
@@ -1834,6 +1843,7 @@ CONTAINS
             nlcom_rxrv = 0._dp
          ENDIF
          ! Calculate non local correction terms
+         PRINT *, "calculate non local correction terms"
          CALL calculate_commutator_nl_terms(qs_env, nlcom_rv, nlcom_rxrv, nlcom_rrv, rcc)
       ENDIF
 

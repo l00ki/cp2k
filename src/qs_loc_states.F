@@ -7,6 +7,8 @@
 !> \brief
 ! **************************************************************************************************
 MODULE qs_loc_states
+   USE cell_types,                      ONLY: cell_type, &
+                                              pbc
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
                                               cp_cfm_release,&
@@ -87,6 +89,7 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER                     :: lstates, marked_states_spin
       LOGICAL                                            :: do_homo, mos_are_complex
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: scenter
+      TYPE(cell_type), POINTER  :: cell
       TYPE(cp_cfm_type), POINTER                         :: tmp_complex_coeffs
       TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: ks_rmpv, matrix_s
@@ -100,7 +103,7 @@ CONTAINS
       NULLIFY (mos, ks_rmpv, dft_control, loc_print_section, marked_states_spin, &
            matrix_s, scenter, wc, tmp_complex_coeffs)
       CALL get_qs_env(qs_env, mos=mos, matrix_ks=ks_rmpv, molecule_set=molecule_set, &
-                      dft_control=dft_control, matrix_s=matrix_s)
+                      dft_control=dft_control, matrix_s=matrix_s, cell=cell)
       logger => cp_get_default_logger()
       output_unit = cp_logger_get_default_io_unit(logger)
       loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
@@ -219,9 +222,8 @@ CONTAINS
       ENDIF
       ! print moments of Wannier functions
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
-                                           "WANNIER_MOMENTS"), cp_p_file)) THEN
-         CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
-         CALL calculate_wannier_moments(qs_env, qs_loc_env, loc_print_section, mos_are_complex)
+           "WANNIER_MOMENTS"), cp_p_file)) THEN
+         CALL calculate_wannier_moments(qs_env, qs_loc_env, loc_print_section, molecule_set, mos_are_complex)
       END IF
      
       CALL cp_cfm_release(tmp_complex_coeffs)

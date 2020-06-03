@@ -879,12 +879,6 @@ CONTAINS
                           usage="ORDER {integer}", default_i_val=1, type_of_var=integer_t)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
-      CALL keyword_create(keyword, __LOCATION__, name="PERIODIC", &
-                          description="Use the Berry phase operator for periodic systems", &
-                          usage="PERIODIC", default_l_val=.FALSE., &
-                          lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(subsection, keyword)
-      CALL keyword_release(keyword)
       CALL section_add_subsection(print_section, subsection)
       CALL section_release(subsection)
       ! Molecular States with wannier
