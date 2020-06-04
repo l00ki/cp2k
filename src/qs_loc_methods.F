@@ -28,6 +28,7 @@ MODULE qs_loc_methods
                                               cp_cfm_p_type,&
                                               cp_cfm_release,&
                                               cp_cfm_set_all,&
+                                              cp_cfm_to_cfm,&
                                               cp_cfm_to_fm,&
                                               cp_cfm_type,&
                                               cp_cfm_write_formatted,&
@@ -294,6 +295,8 @@ CONTAINS
             CALL cp_cfm_to_fm(tmp_complex_vectors, vectors, nullmat)
             CALL cp_fm_release(nullmat)
             CALL cp_cfm_release(tmp_complex_vectors)
+         ELSE
+            CALL cp_cfm_to_cfm(tmp_complex_vectors, complex_vectors)
          END IF
 
       CASE (do_loc_none)

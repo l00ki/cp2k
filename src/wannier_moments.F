@@ -125,6 +125,7 @@ module wannier_moments
       real(dp), pointer                     :: rcentres(:, :), rions(:, :), ref_point(:)
       type(cell_type), pointer              :: cell
       type(cp_cfm_type), pointer            :: opvec, vec, vec_conj, momv, coeffs, cfm_moments_op
+      type(cp_cfm_p_type), pointer          :: complex_moloc_coeff(:)
       type(cp_fm_struct_type), pointer      :: vec_struct, one_struct, op_struct
       type(cp_fm_p_type), pointer           :: moloc_coeff(:)
       type(cp_fm_type), pointer             :: fm_moments_op
@@ -156,7 +157,8 @@ module wannier_moments
       if (BTEST(cp_print_key_should_output(logger%iter_info, print_key, "WANNIER_MOMENTS", &
            first_time=first_time), cp_p_file)) then
          call get_qs_env(qs_env, cell=cell, dft_control=dft_control, matrix_s=matrix_s, rtp=rtp)
-         call get_qs_loc_env(qs_loc_env, moloc_coeff=moloc_coeff, particle_set=particles)
+         call get_qs_loc_env(qs_loc_env, complex_moloc_coeff=complex_moloc_coeff, &
+              moloc_coeff=moloc_coeff, particle_set=particles)
          nions = size(particles)
          nm = ncoset(order) - 1  ! total number of moments (e.g. 3 for dipoles, 12 for qupoles)
          nspins = dft_control%nspins
@@ -209,7 +211,8 @@ module wannier_moments
          do ispin = 1, nspins
             ! get coeffs
             if (mos_are_complex) then
-               call cp_fm_to_cfm(moloc_coeff(2*ispin-1)%matrix, moloc_coeff(2*ispin)%matrix, coeffs)
+               !call cp_fm_to_cfm(moloc_coeff(2*ispin-1)%matrix, moloc_coeff(2*ispin)%matrix, coeffs)
+               call cp_cfm_to_cfm(complex_moloc_coeff(ispin)%matrix, coeffs)
             else
                call cp_fm_to_cfm(moloc_coeff(ispin)%matrix, mtarget=coeffs)
             end if
@@ -217,9 +220,11 @@ module wannier_moments
             moments = 0.0_dp
             do istate = 1, nstates
                call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ref_point=ref_point)
+               rcc = pbc(rcc, cell)
                call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
-               ! get the Wannier orbital
+               ! get the single Wannier orbital
                call cp_cfm_to_cfm(coeffs, vec, 1, istate, 1)
+               !call cp_cfm_write_formatted(vec, 6, "vec")
                do im = 1, nm
                   call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
                   call cp_fm_to_cfm(fm_moments_op, mtarget=cfm_moments_op)
@@ -233,7 +238,7 @@ module wannier_moments
             end do
             if (unit_nr > 0) then
                if (first_time) then
-                  write(unit_nr, "(a)") "# iter_level, molecule, moments [a.u.]"
+                  write(unit_nr, "(a)") "# iter_level, ispin, molecule, moments [a.u.]"
                end if
                do isubsys = 1, nsubsys
                   write(unit_nr, fmt="(a10,i3,1X,a20,39es26.16)") iter(1:10), ispin, &

@@ -132,7 +132,7 @@ CONTAINS
                                                             nsgfa, nsgfb
       INTEGER, DIMENSION(:, :), POINTER                  :: first_sgfa, first_sgfb
       LOGICAL                                            :: found
-      REAL(KIND=dp)                                      :: dab, rab2
+      REAL(KIND=dp)                                      :: dab
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: work
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: mab
       REAL(KIND=dp), DIMENSION(3)                        :: ra, rab, rac, rb, rbc, rc
@@ -267,15 +267,22 @@ CONTAINS
          !rbc(:) = rb(:) - rc(:)
          !dab = NORM2(rab)
 
-         ! PBC fix by Edward Ditler
-         ra(:) = particle_set(iatom)%r(:)
-         rb(:) = particle_set(jatom)%r(:)
-         rab(:) = pbc(rb, ra, cell)
-         rac(:) = ra - rc
-         rbc(:) = rb - rc
-         rab2 = rab(1)*rab(1) + rab(2)*rab(2) + rab(3)*rab(3)
-         dab = SQRT(rab2)
+         !! PBC fix by Edward Ditler
+         !ra(:) = particle_set(iatom)%r(:)
+         !rb(:) = particle_set(jatom)%r(:)
+         !rab(:) = pbc(rb, ra, cell)
+         !rac(:) = ra - rc
+         !rbc(:) = rb - rc
+         !dab = NORM2(rab)
 
+         ! my PBC fix
+         ra(:) = pbc(particle_set(iatom)%r(:) - rc, cell) + rc
+         rb(:) = pbc(particle_set(jatom)%r(:) - rc, cell) + rc
+         rab(:) = pbc(rb, ra, cell)
+         rac(:) = pbc(rc, ra, cell)
+         rbc(:) = pbc(rc, rb, cell)
+         dab = NORM2(rab)
+         
          DO iset = 1, nseta
 
             ncoa = npgfa(iset)*ncoset(la_max(iset))
@@ -1843,7 +1850,6 @@ CONTAINS
             nlcom_rxrv = 0._dp
          ENDIF
          ! Calculate non local correction terms
-         PRINT *, "calculate non local correction terms"
          CALL calculate_commutator_nl_terms(qs_env, nlcom_rv, nlcom_rxrv, nlcom_rrv, rcc)
       ENDIF
 
