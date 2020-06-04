@@ -124,7 +124,7 @@ module wannier_moments
       real(dp), allocatable                 :: moments(:, :)
       real(dp), pointer                     :: rcentres(:, :), rions(:, :), ref_point(:)
       type(cell_type), pointer              :: cell
-      type(cp_cfm_type), pointer            :: opvec, vec, vec_conj, momv, coeffs, cfm_moments_op
+      type(cp_cfm_type), pointer            :: opvec, vec, momv, coeffs, cfm_moments_op
       type(cp_cfm_p_type), pointer          :: complex_moloc_coeff(:)
       type(cp_fm_struct_type), pointer      :: vec_struct, one_struct, op_struct
       type(cp_fm_p_type), pointer           :: moloc_coeff(:)
@@ -194,7 +194,6 @@ module wannier_moments
          call cp_fm_create(fm_moments_op, op_struct)
          call cp_cfm_create(cfm_moments_op, op_struct)
          call cp_cfm_create(vec, vec_struct)
-         call cp_cfm_create(vec_conj, vec_struct)
          call cp_cfm_create(opvec, vec_struct)
          call cp_cfm_create(momv, one_struct)
          
@@ -224,7 +223,7 @@ module wannier_moments
                call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
                ! get the single Wannier orbital
                call cp_cfm_to_cfm(coeffs, vec, 1, istate, 1)
-               !call cp_cfm_write_formatted(vec, 6, "vec")
+               call cp_cfm_write_formatted(vec, 6, "vec")
                do im = 1, nm
                   call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
                   call cp_fm_to_cfm(fm_moments_op, mtarget=cfm_moments_op)
@@ -247,7 +246,21 @@ module wannier_moments
             end if
          end do
 
-         deallocate(moments)
+         do im = 1, nm
+            call dbcsr_release(moments_op(im)%matrix)
+            deallocate(moments_op(im)%matrix)
+         end do
+         deallocate(moments_op)
+         call cp_fm_struct_release(op_struct)
+         call cp_fm_struct_release(vec_struct)
+         call cp_fm_struct_release(one_struct)
+         call cp_fm_release(fm_moments_op)
+         call cp_cfm_release(coeffs)
+         call cp_cfm_release(cfm_moments_op)
+         call cp_cfm_release(vec)
+         call cp_cfm_release(opvec)
+         call cp_cfm_release(momv)
+         deallocate(rcentres, wcs_ions_map, wcs_subsys_map, rions, moments)
       end if
 
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
