@@ -98,7 +98,7 @@ module wannier_moments
 
 ! *** body ***
    
- contains
+contains
 
 ! **************************************************************************************************
 !> \brief calculates and prints the expectation values of electric moments of Wannier functions
