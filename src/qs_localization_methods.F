@@ -2481,7 +2481,7 @@ CONTAINS
 
       INTEGER                            :: i, nstate
 #if defined(__SCALAPACK)
-      INTEGER, DIMENSTION(9)             :: desc
+      INTEGER, DIMENSION(9)              :: desc
 #else
       INTEGER                            :: stride
 #endif
