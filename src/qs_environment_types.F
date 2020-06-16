@@ -303,6 +303,7 @@ MODULE qs_environment_types
       TYPE(kg_environment_type), POINTER                    :: kg_env
       TYPE(wannier_centres_type), POINTER, DIMENSION(:)     :: WannierCentres => NULL()
       TYPE(wannier_centres_type), POINTER, DIMENSION(:)     :: WannierOrigins
+      INTEGER, DIMENSION(:), POINTER                        :: wcs_ions_map
       TYPE(molecular_scf_guess_env_type)                    :: molecular_scf_guess_env
       ! Subsystem densities
       TYPE(qs_rho_p_type), DIMENSION(:), POINTER            :: subsys_dens
@@ -527,7 +528,7 @@ CONTAINS
                          se_taper, se_store_int_env, se_nddo_mpole, se_nonbond_env, admm_env, admm_dm, &
                          lri_env, lri_density, ec_env, dispersion_env, gcp_env, vee, rho_external, external_vxc, mask, &
                          mp2_env, kg_env, WannierCentres, &
-                         WannierOrigins, atprop, ls_scf_env, do_transport, transport_env, v_hartree_rspace, &
+                         WannierOrigins, wcs_ions_map, atprop, ls_scf_env, do_transport, transport_env, v_hartree_rspace, &
                          s_mstruct_changed, rho_changed, potential_changed, forces_up_to_date, mscfg_env, almo_scf_env, &
                          gradient_history, variable_history, embed_pot, spin_embed_pot, polar_env, mos_last_converged, rhs)
       TYPE(qs_environment_type), POINTER                 :: qs_env
@@ -650,6 +651,7 @@ CONTAINS
       TYPE(kg_environment_type), OPTIONAL, POINTER       :: kg_env
       TYPE(wannier_centres_type), DIMENSION(:), &
          OPTIONAL, POINTER                               :: WannierCentres, WannierOrigins
+      INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: wcs_ions_map
       TYPE(atprop_type), OPTIONAL, POINTER               :: atprop
       TYPE(ls_scf_env_type), OPTIONAL, POINTER           :: ls_scf_env
       LOGICAL, OPTIONAL                                  :: do_transport
@@ -775,6 +777,7 @@ CONTAINS
       IF (PRESENT(efield)) efield => qs_env%efield
       IF (PRESENT(WannierCentres)) WannierCentres => qs_env%WannierCentres
       IF (PRESENT(WannierOrigins)) WannierOrigins => qs_env%WannierOrigins
+      IF (PRESENT(wcs_ions_map)) wcs_ions_map => qs_env%wcs_ions_map
 
       CALL get_ks_env(qs_env%ks_env, &
                       v_hartree_rspace=v_hartree_rspace, &
@@ -947,6 +950,7 @@ CONTAINS
       NULLIFY (qs_env%kg_env)
       NULLIFY (qs_env%WannierCentres)
       NULLIFY (qs_env%WannierOrigins)
+      NULLIFY (qs_env%wcs_ions_map)
 
       qs_env%outer_scf_ihistory = 0
       qs_env%broyden_adaptive_sigma = -1.0_dp
@@ -1083,7 +1087,8 @@ CONTAINS
                          se_taper, se_store_int_env, se_nddo_mpole, se_nonbond_env, admm_env, ls_scf_env, &
                          do_transport, transport_env, lri_env, lri_density, ec_env, dispersion_env, &
                          gcp_env, mp2_env, kg_env, force, &
-                         kpoints, WannierCentres, WannierOrigins, almo_scf_env, gradient_history, variable_history, embed_pot, &
+                         kpoints, WannierCentres, WannierOrigins, wcs_ions_map, almo_scf_env, gradient_history, &
+                         variable_history, embed_pot, &
                          spin_embed_pot, polar_env, mos_last_converged, rhs)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
@@ -1153,6 +1158,7 @@ CONTAINS
       TYPE(kpoint_type), OPTIONAL, POINTER               :: kpoints
       TYPE(wannier_centres_type), DIMENSION(:), &
          OPTIONAL, POINTER                               :: WannierCentres, WannierOrigins
+      INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: wcs_ions_map
       TYPE(almo_scf_env_type), OPTIONAL, POINTER         :: almo_scf_env
       REAL(KIND=dp), DIMENSION(:, :), OPTIONAL, POINTER  :: gradient_history, variable_history
       TYPE(pw_p_type), OPTIONAL, POINTER                 :: embed_pot, spin_embed_pot
@@ -1338,6 +1344,7 @@ CONTAINS
       IF (PRESENT(gcp_env)) qs_env%gcp_env => gcp_env
       IF (PRESENT(WannierCentres)) qs_env%WannierCentres => WannierCentres
       IF (PRESENT(WannierOrigins)) qs_env%WannierOrigins => WannierOrigins
+      IF (PRESENT(wcs_ions_map)) qs_env%wcs_ions_map => wcs_ions_map
       IF (PRESENT(kpoints)) CALL set_ks_env(qs_env%ks_env, kpoints=kpoints)
 
       ! Resp charges
@@ -1598,6 +1605,7 @@ CONTAINS
                ENDDO
                DEALLOCATE (qs_env%WannierOrigins)
             ENDIF
+            IF (ASSOCIATED(qs_env%wcs_ions_map)) DEALLOCATE (qs_env%wcs_ions_map)
             ! Resp charges
             IF (ASSOCIATED(qs_env%rhs)) DEALLOCATE (qs_env%rhs)
             ! now we are ready to deallocate the full structure

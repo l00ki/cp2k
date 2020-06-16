@@ -80,6 +80,7 @@ MODULE qs_scf_post_gpw
                                               section_vals_get_subs_vals,&
                                               section_vals_type,&
                                               section_vals_val_get
+   USE kg_moments,                      ONLY: calculate_kg_moments
    USE kinds,                           ONLY: default_path_length,&
                                               default_string_length,&
                                               dp
@@ -1107,7 +1108,7 @@ CONTAINS
       CHARACTER(LEN=default_path_length)                 :: filename
       INTEGER                                            :: handle, maxmom, reference, unit_nr
       LOGICAL                                            :: com_nl, do_kpoints, magnetic, periodic, &
-                                                            second_ref_point, vel_reprs
+                                                            second_ref_point, vel_reprs, do_kg
       REAL(KIND=dp), DIMENSION(:), POINTER               :: ref_point
       TYPE(section_vals_type), POINTER                   :: print_key
 
@@ -1132,6 +1133,8 @@ CONTAINS
                                    keyword_name="DFT%PRINT%MOMENTS%COM_NL")
          second_ref_point = section_get_lval(section_vals=input, &
                                              keyword_name="DFT%PRINT%MOMENTS%SECOND_REFERENCE_POINT")
+         do_kg = section_get_lval(section_vals=input, &
+                                  keyword_name="DFT%PRINT%MOMENTS%KG")
 
          NULLIFY (ref_point)
          CALL section_vals_val_get(input, "DFT%PRINT%MOMENTS%REF_POINT", r_vals=ref_point)
@@ -1159,6 +1162,9 @@ CONTAINS
                CALL qs_moment_berry_phase(qs_env, magnetic, maxmom, reference, ref_point, unit_nr)
             ELSE
                CALL qs_moment_locop(qs_env, magnetic, maxmom, reference, ref_point, unit_nr, vel_reprs, com_nl)
+            END IF
+            IF (do_kg) THEN
+               CALL calculate_kg_moments(qs_env, maxmom, reference, ref_point, input, logger)
             END IF
          END IF
 
