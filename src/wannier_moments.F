@@ -178,7 +178,9 @@ contains
             rions(:, iion) = particles(iion)%r
          end do
          if (.not. associated(wcs_ions_map)) then
+            print *, "new map!"
             call map_wcs_to_ions(rcentres, rions, wcs_ions_map)
+            call set_qs_env(qs_env, wcs_ions_map=wcs_ions_map)
          end if
          
          ! map states to subsystems
@@ -290,7 +292,7 @@ contains
          call cp_cfm_release(vec)
          call cp_cfm_release(opvec)
          call cp_cfm_release(momv)
-         deallocate(rcentres, wcs_ions_map, wcs_subsys_map, rions, moments)
+         deallocate(rcentres, wcs_subsys_map, rions, moments)
       end if
 
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
