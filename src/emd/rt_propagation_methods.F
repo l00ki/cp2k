@@ -56,7 +56,9 @@ MODULE rt_propagation_methods
                                               do_loc_homo,&
                                               do_loc_lumo,&
                                               do_pade,&
-                                              do_taylor
+                                              do_taylor,&
+                                              rtp_localize_each,&
+                                              rtp_localize_once
    USE input_section_types,             ONLY: section_get_ival,&
                                               section_vals_get_subs_vals,&
                                               section_vals_type
@@ -870,10 +872,11 @@ CONTAINS
 !> \par History 03/2020 created [LS]
 !> \author Lukas Schreder
 ! **************************************************************************************************
-   SUBROUTINE rtp_localize(qs_env, rtp)
+   SUBROUTINE rtp_localize(qs_env, rtp, localize_method)
 
-     TYPE(qs_environment_type), POINTER, INTENT(IN)    :: qs_env
-     TYPE(rt_prop_type), POINTER, INTENT(IN), OPTIONAL :: rtp
+     TYPE(qs_environment_type), POINTER, INTENT(IN)  :: qs_env
+     TYPE(rt_prop_type), POINTER, INTENT(IN)         :: rtp
+     INTEGER, INTENT(IN)                             :: localize_method
 
      CHARACTER(len=*), PARAMETER :: routineN = "rtp_localize", &
         routineP = moduleN//":"//routineN
@@ -1000,9 +1003,11 @@ CONTAINS
            CALL qs_loc_control_init(qs_loc_env_homo, loc_section, do_homo=do_homo)
            CALL qs_loc_init(qs_env, qs_loc_env_homo, loc_section, homo_localized, do_homo, &
                             do_mo_cubes)
-           CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, wf_r, &
-                                      wf_g, particles, occupied_orbs, occupied_evals, marked_states)
-
+           IF (localize_method == rtp_localize_each) THEN
+              CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, wf_r, &
+                                         wf_g, particles, occupied_orbs, occupied_evals, marked_states)
+           END IF
+           
            CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
            
            ! memory cleanup

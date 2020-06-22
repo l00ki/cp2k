@@ -35,6 +35,7 @@ MODULE rt_propagation
    USE global_types,                    ONLY: global_environment_type
    USE input_constants,                 ONLY: real_time_propagation,&
                                               rtp_localize_each,&
+                                              rtp_localize_once,&
                                               use_restart_wfn,&
                                               use_rt_restart,&
                                               use_scf_wfn
@@ -346,8 +347,9 @@ CONTAINS
             time_iter_start = time_iter_stop
             CALL rt_prop_output(qs_env, real_time_propagation, delta_iter=rtp%delta_iter, used_time=used_time)
             CALL rt_write_input_restart(force_env=force_env)
-            IF (rtp_control%localize == rtp_localize_each) THEN
-               CALL rtp_localize(qs_env, rtp)
+            IF (rtp_control%localize == rtp_localize_each .OR. &
+                rtp_control%localize == rtp_localize_once) THEN
+               CALL rtp_localize(qs_env, rtp, rtp_control%localize)
             END IF
             IF (should_stop) EXIT
          ELSE
