@@ -11,6 +11,7 @@
 MODULE rt_propagation
    USE bibliography,                    ONLY: Andermatt2016,&
                                               cite_reference
+   USE cp_cfm_types,                    ONLY: cp_cfm_to_fm
    USE cp_control_types,                ONLY: dft_control_type,&
                                               rtp_control_type
    USE cp_external_control,             ONLY: external_control
@@ -220,10 +221,17 @@ CONTAINS
                   CALL apply_delta_pulse(qs_env, mos_old, mos_new)
                ENDIF
             ELSE
-               DO i = 1, SIZE(mos)
-                  CALL cp_fm_to_fm(mos(i)%mo_set%mo_coeff, mos_old(2*i - 1)%matrix)  ! real parts
-                  CALL cp_fm_set_all(mos_old(2*i)%matrix, zero, zero)  ! imaginary parts
-               END DO
+               IF (rtp_control%localize == rtp_localize_once) THEN
+                  DO i = 1, SIZE(mos)
+                     CALL cp_cfm_to_fm(mos(i)%mo_set%wannier_coeff, mos_old(2*i-1)%matrix, &
+                                       mos_old(2*i)%matrix)
+                  END DO
+               ELSE
+                  DO i = 1, SIZE(mos)
+                     CALL cp_fm_to_fm(mos(i)%mo_set%mo_coeff, mos_old(2*i - 1)%matrix)  ! real parts
+                     CALL cp_fm_set_all(mos_old(2*i)%matrix, zero, zero)  ! imaginary parts
+                  END DO
+               END IF
             ENDIF
          END IF
 

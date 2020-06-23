@@ -1004,8 +1004,15 @@ CONTAINS
            CALL qs_loc_init(qs_env, qs_loc_env_homo, loc_section, homo_localized, do_homo, &
                             do_mo_cubes)
            IF (localize_method == rtp_localize_each) THEN
-              CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, wf_r, &
-                                         wf_g, particles, occupied_orbs, occupied_evals, marked_states)
+              ! localize the MOs at each RTP step
+              CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, &
+                                         wf_r, wf_g, particles, occupied_orbs, occupied_evals, &
+                                         marked_states)
+           ELSE IF (localize_method == rtp_localize_once) THEN
+              ! don't localize, but run analysis on propagated Wannier functions
+              CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, &
+                                         wf_r, wf_g, particles, occupied_orbs, occupied_evals, &
+                                         marked_states, do_once=.TRUE.)
            END IF
            
            CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)

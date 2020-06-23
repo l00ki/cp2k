@@ -23,11 +23,15 @@ MODULE qs_scf_post_gpw
    USE cell_types,                      ONLY: cell_type
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
    USE cp_blacs_env,                    ONLY: cp_blacs_env_type
-   USE cp_control_types,                ONLY: dft_control_type
+   USE cp_control_types,                ONLY: dft_control_type, &
+                                              rtp_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm,&
                                               dbcsr_deallocate_matrix_set
    USE cp_dbcsr_output,                 ONLY: cp_dbcsr_write_sparse_matrix
    USE cp_ddapc_util,                   ONLY: get_ddapc
+   USE cp_cfm_types,                    ONLY: cp_cfm_create,&
+                                              cp_cfm_to_cfm,&
+                                              cp_fm_to_cfm
    USE cp_fm_diag,                      ONLY: choose_eigv_solver
    USE cp_fm_struct,                    ONLY: cp_fm_struct_create,&
                                               cp_fm_struct_release,&
@@ -71,7 +75,8 @@ MODULE qs_scf_post_gpw
                                               radius_covalent,&
                                               radius_user,&
                                               ref_charge_atomic,&
-                                              ref_charge_mulliken
+                                              ref_charge_mulliken,&
+                                              rtp_localize_none
    USE input_section_types,             ONLY: section_get_ival,&
                                               section_get_ivals,&
                                               section_get_lval,&
@@ -168,7 +173,8 @@ MODULE qs_scf_post_gpw
                                               make_mo_eig
    USE qs_mo_occupation,                ONLY: set_mo_occupation
    USE qs_mo_types,                     ONLY: get_mo_set,&
-                                              mo_set_p_type
+                                              mo_set_p_type,&
+                                              set_mo_set
    USE qs_moments,                      ONLY: qs_moment_berry_phase,&
                                               qs_moment_locop
    USE qs_neighbor_list_types,          ONLY: get_iterator_info,&
@@ -276,6 +282,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
       TYPE(qs_subsys_type), POINTER                      :: subsys
+      TYPE(rtp_control_type), POINTER                    :: rtp_control
       TYPE(scf_control_type), POINTER                    :: scf_control
       TYPE(section_vals_type), POINTER                   :: dft_section, input, loc_print_section, &
                                                             localize_section, print_key, &
@@ -329,6 +336,7 @@ CONTAINS
                       particle_set=particle_set, &
                       atomic_kind_set=atomic_kind_set, &
                       qs_kind_set=qs_kind_set)
+      rtp_control => dft_control%rtp_control
       CALL qs_subsys_get(subsys, particles=particles)
 
       CALL qs_rho_get(rho, rho_ao_kp=rho_ao)
@@ -510,7 +518,18 @@ CONTAINS
             CALL qs_loc_init(qs_env, qs_loc_env_homo, localize_section, homo_localized, do_homo, &
                              do_mo_cubes, mo_loc_history=mo_loc_history)
             CALL get_localization_info(qs_env, qs_loc_env_homo, localize_section, homo_localized, &
-                                       wf_r, wf_g, particles, occupied_orbs, occupied_evals, marked_states)
+                 wf_r, wf_g, particles, occupied_orbs, occupied_evals, marked_states)
+
+            PRINT *, "rtp_control%localize", rtp_control%localize
+            IF (rtp_control%localize /= rtp_localize_none) THEN
+               ! write the localized orbitals into qs_env for later use in rtp_localize
+               DO ispin = 1, dft_control%nspins
+                  CALL cp_cfm_create(mos(ispin)%mo_set%wannier_coeff, &
+                                     matrix_struct=homo_localized(ispin)%matrix%matrix_struct)
+                  CALL cp_fm_to_cfm(homo_localized(ispin)%matrix, &
+                                    mtarget=mos(ispin)%mo_set%wannier_coeff)
+               END DO
+            END IF
 
             !retain the homo_localized for future use
             IF (qs_loc_env_homo%localized_wfn_control%use_history) THEN
