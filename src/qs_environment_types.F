@@ -1407,6 +1407,7 @@ CONTAINS
 
       INTEGER                                            :: i
 
+      PRINT *, "qs_env_release"
       IF (ASSOCIATED(qs_env)) THEN
          CPASSERT(qs_env%ref_count > 0)
          qs_env%ref_count = qs_env%ref_count - 1
@@ -1599,11 +1600,6 @@ CONTAINS
                DEALLOCATE (qs_env%WannierCentres)
             ENDIF
             IF (ASSOCIATED(qs_env%WannierOrigins)) THEN
-               DO i = 1, SIZE(qs_env%WannierOrigins)
-                  DEALLOCATE (qs_env%WannierOrigins(i)%WannierHamDiag)
-                  DEALLOCATE (qs_env%WannierOrigins(i)%centres)
-               ENDDO
-               DEALLOCATE (qs_env%WannierOrigins)
             ENDIF
             IF (ASSOCIATED(qs_env%wcs_ions_map)) DEALLOCATE (qs_env%wcs_ions_map)
             ! Resp charges

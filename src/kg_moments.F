@@ -9,7 +9,14 @@
 module kg_moments
 
    use cp_control_types,      only: dft_control_type
-   use cp_dbcsr_operations,   only: dbcsr_allocate_matrix_set
+   use cp_dbcsr_operations,   only: copy_dbcsr_to_fm, &
+                                    dbcsr_allocate_matrix_set
+   use cp_fm_struct,          only: cp_fm_struct_create, &
+                                    cp_fm_struct_type
+   use cp_fm_types,           only: cp_fm_create, &
+                                    cp_fm_get_info, &
+                                    cp_fm_p_type, &
+                                    cp_fm_to_fm_submat
    use cp_log_handling,       only: cp_logger_type
    use cp_output_handling,    only: cp_iter_string, &
                                     cp_p_file, &
@@ -18,6 +25,8 @@ module kg_moments
                                     cp_print_key_unit_nr
    use dbcsr_api,             only: dbcsr_copy, &
                                     dbcsr_dot, &
+                                    dbcsr_get_block_p, &
+                                    dbcsr_get_info, &
                                     dbcsr_p_type, &
                                     dbcsr_print, &
                                     dbcsr_release, &
@@ -26,7 +35,8 @@ module kg_moments
    use kg_environment_types,  only: kg_environment_type
    use kinds,                 only: default_string_length, &
                                     dp
-   use molecule_types,        only: molecule_type
+   use molecule_types,        only: get_molecule, &
+                                    molecule_type
    use moments_utils,         only: get_reference_point
    use orbital_pointers,      only: current_maxl
    use pw_types,              only: pw_p_type
@@ -73,17 +83,20 @@ contains
            routineP = moduleN//":"//routineN
 
       character(len=default_string_length)  :: iter
-      integer                               :: handle, im, ispin, isubsys, nm, nspins, nsubsys, &
-                                               unit_nr
+      integer                               :: handle, im, ispin, isubsys, nao, nm, nspins, &
+                                               nsubsys, unit_nr
+      integer, allocatable                  :: nstates(:), first_state(:)
       logical                               :: first_time
       real(dp)                              :: rcc(3), strace, trace
-      real(dp), allocatable                 :: moments(:,:)
-      type(dbcsr_p_type), pointer           :: density_matrix(:), matrix_s(:), moments_op(:), rho_ao(:)
+      real(dp), allocatable                 :: moments(:, :)
+      type(cp_fm_struct_type), pointer      :: density_fm_struct, mo_coeff_struct
+      type(cp_fm_p_type), pointer           :: density_fm(:), density_slices(:, :)
+      type(dbcsr_p_type), pointer           :: density_matrix(:), matrix_s(:), &
+                                               moments_op(:)
       type(dft_control_type), pointer       :: dft_control
       type(kg_environment_type), pointer    :: kg_env
-      type(molecule_type), pointer          :: molecules(:)
-      type(pw_p_type), pointer              :: rho_r(:)
-      type(qs_rho_type), pointer            :: rho_old, rho_struct
+      type(molecule_type), pointer          :: molecules(:), molecule
+      type(qs_rho_type), pointer            :: rho_old
 
       call timeset(routineN, handle)
       
@@ -95,32 +108,41 @@ contains
            middle_name="KG_MOMENTS")
       iter = cp_iter_string(logger%iter_info)
       
-      call get_qs_env(qs_env, dft_control=dft_control, kg_env=kg_env, matrix_s=matrix_s, molecule_set=molecules, &
-           rho=rho_old)
+      call get_qs_env(qs_env, dft_control=dft_control, kg_env=kg_env, matrix_s=matrix_s, &
+           molecule_set=molecules, rho=rho_old)
       call get_reference_point(rcc, qs_env=qs_env, reference=reference, ref_point=ref_point)
       ! number of all moments (e.g. 3 for dipole)
       nm = (6 + 11 * nmoments + 6 * nmoments**2 + nmoments**3) / 6 - 1
       nspins = dft_control%nspins
       nsubsys = kg_env%nsubsets
-
-      ! get density matrix
-      call qs_rho_get(rho_old, rho_ao=density_matrix)
-      ! initialize new density
-      call qs_rho_create(rho_struct)
-      ! set density matrix to the blocked matrix
-      call qs_rho_set(rho_struct, rho_ao=density_matrix)
-      call qs_rho_rebuild(rho_struct, qs_env, rebuild_ao=.false., rebuild_grids=.true.)
-      ! full density kinetic energy term
-      call qs_rho_update_rho(rho_struct, qs_env)
-      ! get blocked density on the grid
-      call qs_rho_get(rho_struct, rho_r=rho_r)
+      call cp_fm_get_info(qs_env%mos(1)%mo_set%mo_coeff, matrix_struct=mo_coeff_struct, &
+           nrow_global=nao)
+      call cp_fm_struct_create(density_fm_struct, template_fmstruct=mo_coeff_struct, &
+           nrow_global=nao, ncol_global=nao)
 
       if (btest(cp_print_key_should_output(logger%iter_info, input, "DFT%PRINT%MOMENTS", &
            first_time=first_time), cp_p_file)) then
 
-         allocate(moments(nsubsys+1, nm))
-         allocate(moments_op(nm))
+         ! get density matrix and translate it to a full matrix
+         call qs_rho_get(rho_old, rho_ao=density_matrix)
+         allocate(density_fm(nspins))
+         do ispin = 1, nspins
+            call cp_fm_create(density_fm(ispin)%matrix, density_fm_struct)
+            call copy_dbcsr_to_fm(density_matrix(ispin)%matrix, density_fm(ispin)%matrix)
+         end do
+         ! initialize new density
+         !call qs_rho_create(rho_struct)
+         ! set density matrix to the blocked matrix
+         !call qs_rho_set(rho_struct, rho_ao=density_matrix)
+         !call qs_rho_rebuild(rho_struct, qs_env, rebuild_ao=.false., rebuild_grids=.true.)
+         ! full density kinetic energy term
+         !call qs_rho_update_rho(rho_struct, qs_env)
+         ! get blocked density on the grid
+         !call qs_rho_get(rho_struct, rho_r=rho_r)  ! probably not neccessary
+
          ! build the moments operator
+         allocate(moments(nsubsys, nm))
+         allocate(moments_op(nm))
          do im = 1, nm
             allocate(moments_op(im)%matrix)
             call dbcsr_copy(moments_op(im)%matrix, matrix_s(1)%matrix, "moments operator")
@@ -128,18 +150,31 @@ contains
          end do
          call build_local_moment_matrix(qs_env, moments_op, nmoments, ref_point=rcc)
 
+         ! slice and dice the density matrix
+         allocate(density_slices(nsubsys, nspins), nstates(nsubsys), first_state(nsubsys))
          do isubsys = 1, nsubsys
-            ! calculates the density of the subsystem
-            call qs_rho_update_rho(rho_struct, qs_env, &
-                 task_list_external=kg_env%subset(isubsys)%task_list)
-            call qs_rho_get(rho_struct, rho_ao=rho_ao)
-            
-            ! calculate eigenvalues
+            ! get the Kim-Gordon blocks
+            molecule => molecules(isubsys)
+            do ispin = 1, nspins
+               nstates(isubsys) = molecule%lmi(ispin)%nstates
+               ! get the list of states belonging to this subsystem
+               ! get the block from the total density matrix and put it into an empty one
+               allocate(density_slices(isubsys, ispin)%matrix)
+               call cp_fm_create(density_slices(isubsys, ispin)%matrix, &
+                    density_fm(ispin)%matrix%matrix_struct)
+               call cp_fm_to_fm_submat(density_fm(ispin)%matrix, &
+                    density_slices(isubsys, ispin)%matrix, &
+                    nstates(isubsys), nstates(isubsys), &
+                    first_state(isubsys), first_state(isubsys), &
+                    first_state(isubsys), first_state(isubsys))
+            end do
+         end do
+
+         ! calculate eigenvalues
+         do isubsys = 1, nsubsys
             do im = 1, nm
                trace = 0.0_dp
                do ispin = 1, nspins
-                  call dbcsr_print(rho_ao(ispin)%matrix, unit_nr=666)
-                  call dbcsr_dot(rho_ao(ispin)%matrix, moments_op(im)%matrix, strace)
                   trace = trace + strace
                end do
                moments(isubsys, im) = trace
