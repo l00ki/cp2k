@@ -96,7 +96,7 @@ contains
                                       routineP = moduleN//":"//routineN
 
       character(len=default_string_length)  :: iter
-      integer                               :: handle, ibasis, im, ispin, isubsys, nao, &
+      integer                               :: handle, ibasis, im, ispin, isubsys, nao, nions, &
                                                nm, nspins, nsubsys, unit_nr
       integer, allocatable                  :: nbasis(:)
       logical                               :: first_time
@@ -123,8 +123,8 @@ contains
       iter = cp_iter_string(logger%iter_info)
       
       call get_qs_env(qs_env, cell=cell, dft_control=dft_control, kg_env=kg_env, &
-           matrix_s=matrix_s, molecule_set=molecules, rho=rho)
-      call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ref_point=ref_point)
+           matrix_s=matrix_s, molecule_set=molecules, rho=rho, natom=nions)
+      call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ifirst=1, ilast=nions, ref_point=ref_point)
       rcc = pbc(rcc, cell)
       call cp_fm_get_info(qs_env%mos(1)%mo_set%mo_coeff, matrix_struct=mo_coeff_struct, &
            nrow_global=nao)

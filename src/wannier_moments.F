@@ -227,7 +227,7 @@ contains
             moments = 0.0_dp
             do istate = 1, nstates
                call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ifirst=1, ilast=nions, ref_point=ref_point)
-               !rcc = pbc(wos(ispin)%centres(:, istate), cell)
+               rcc = pbc(rcc, cell)
                call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
                ! get the single Wannier orbital
                call cp_cfm_to_cfm(coeffs, vec, 1, istate, 1)
