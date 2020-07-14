@@ -879,6 +879,11 @@ CONTAINS
                           usage="ORDER {integer}", default_i_val=1, type_of_var=integer_t)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
+      CALL keyword_create(keyword, __LOCATION__, name="PERIODIC", &
+                          description="Use the Berry phase approach to the electronic dipole moment.", &
+                          default_l_val=.TRUE., lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(subsection, keyword)
+      CALL keyword_release(keyword)
       CALL section_add_subsection(print_section, subsection)
       CALL section_release(subsection)
       ! Molecular States with wannier

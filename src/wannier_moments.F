@@ -51,6 +51,7 @@ module wannier_moments
                                     dbcsr_deallocate_matrix, &
                                     dbcsr_get_info, &
                                     dbcsr_p_type, &
+                                    dbcsr_type, &
                                     dbcsr_release, &
                                     dbcsr_set
    use input_constants,       only: use_mom_ref_com, &
@@ -120,7 +121,7 @@ contains
            nstates, nsubsys, order, unit_nr, akind, lx, ly, lz
       integer, allocatable                  :: wcs_subsys_map(:)
       integer, pointer                      :: wcs_ions_map(:)
-      logical                               :: first_time, floating, ghost
+      logical                               :: first_time, floating, ghost, is_periodic
       real(dp)                              :: zwfc, rcc(3), r(3), ria(3), zeff
       real(dp), allocatable                 :: moments(:, :)
       real(dp), pointer                     :: rcentres(:, :), rions(:, :), ref_point(:)
@@ -147,6 +148,7 @@ contains
            middle_name="WANNIER_MOMENTS")
       iter = cp_iter_string(logger%iter_info)
       call section_vals_val_get(print_key, "WANNIER_MOMENTS%ORDER", i_val=order)
+      call section_vals_val_get(print_key, "WANNIER_MOMENTS%PERIODIC", l_val=is_periodic)
       call get_qs_env(qs_env, wanniercentres=wcs)
       if (.not. associated(qs_env%wannierorigins)) then
          call set_qs_env(qs_env, wannierorigins=wcs)
@@ -228,23 +230,28 @@ contains
             do istate = 1, nstates
                call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ifirst=1, ilast=nions, ref_point=ref_point)
                rcc = pbc(rcc, cell)
-               call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
                ! get the single Wannier orbital
                call cp_cfm_to_cfm(coeffs, vec, 1, istate, 1)
-               !print *, "Wannier orbital coeffs", istate
-               !call cp_cfm_write_formatted(vec, 6, "vec")
-               r = pbc(wcs(ispin)%centres(:, istate), cell)
-               do im = 1, nm
-                  call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
-                  call cp_fm_to_cfm(fm_moments_op, mtarget=cfm_moments_op)
-                  call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), cfm_moments_op, vec, &
-                       (0.0_dp, 0.0_dp), opvec)
-                  call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), vec, opvec, &
-                       (0.0_dp, 0.0_dp), momv)
-                  moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
-                       - zwfc * real(sum(momv%local_data), dp)
-                       !- zwfc * r(im)
-               end do
+               if (is_periodic) then
+                  do im = 1, nm
+                     moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
+                          - zwfc * wcs(ispin)%centres(im, istate)
+                  end do
+               else
+                  call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
+                  !print *, "Wannier orbital coeffs", istate
+                  r = pbc(wcs(ispin)%centres(:, istate), cell)
+                  do im = 1, nm
+                     call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
+                     call cp_fm_to_cfm(fm_moments_op, mtarget=cfm_moments_op)
+                     call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), cfm_moments_op, vec, &
+                          (0.0_dp, 0.0_dp), opvec)
+                     call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), vec, opvec, &
+                          (0.0_dp, 0.0_dp), momv)
+                     moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
+                          - zwfc * real(sum(momv%local_data), dp)
+                  end do
+               end if
             end do
 
             ! nuclear contribution
