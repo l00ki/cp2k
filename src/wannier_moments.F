@@ -124,7 +124,7 @@ contains
       integer, allocatable                  :: wcs_subsys_map(:)
       integer, pointer                      :: wcs_ions_map(:)
       logical                               :: first_time, floating, ghost, is_periodic
-      real(dp)                              :: ci(3), gvec(3), theta, zwfc, rcc(3), ria(3), zeff
+      real(dp)                              :: ci(3), gvec(3), theta, zwfc, rcc(3), ria(3), zeff, r(3)
       real(dp), allocatable                 :: moments(:, :)
       real(dp), pointer                     :: rcentres(:, :), rions(:, :), ref_point(:)
       complex(dp)                           :: ggamma(3), zeta
@@ -235,16 +235,17 @@ contains
                !molecule => molecules(wcs_subsys_map(istate))
                !call get_molecule(molecule, first_atom=first_atom, last_atom=last_atom)
                call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
-                    ifirst=1, ilast=nions, ref_point=ref_point)
-               rcc = pbc(rcc, cell)
+                    ref_point=ref_point)
                ! get the single Wannier orbital
                call cp_cfm_to_cfm(coeffs, vec, 1, istate, 1)
                if (is_periodic) then
+                  r = pbc(rcc, cell)
                   do im = 1, nm
                      ! use only WCs
                      moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
-                          - zwfc * wcs(ispin)%centres(im, istate)
+                          - zwfc * (r(im) - rcentres(im, istate)) !(wcs(ispin)%centres(im, istate) - r(im))
                   end do
+                  
                   !call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
                   !do im = 1, nm
                   !   call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
@@ -258,6 +259,7 @@ contains
                   !     - zwfc * cell%hmat(im, im) / twopi * aimag(cmplx(0.0, 1.0, dp) &
                   !     * cell%h_inv(im, im) * twopi * real(sum(momv%local_data), dp))
                else
+                  rcc = pbc(rcc, cell)
                   call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
                   do im = 1, nm
                      call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
@@ -266,8 +268,14 @@ contains
                           (0.0_dp, 0.0_dp), opvec)
                      call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), vec, opvec, &
                           (0.0_dp, 0.0_dp), momv)
+                     !moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
+                     !     - zwfc * real(sum(momv%local_data), dp)
+                     !moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
+                     !     + zwfc * cell%hmat(im, im) / twopi * log(exp(aimag( &
+                     !     cmplx(0.0, -1.0, dp) * cell%h_inv(im, im) * twopi * real(sum(momv%local_data), dp))))
                      moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
-                          - zwfc * real(sum(momv%local_data), dp)
+                          + zwfc * cell%hmat(im, im) / twopi * log(exp(aimag(cmplx(0.0, -1.0, dp) &
+                          * cell%h_inv(im, im) * twopi * real(sum(momv%local_data), dp))))
                   end do
                end if
             end do
