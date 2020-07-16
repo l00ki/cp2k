@@ -2531,7 +2531,7 @@ CONTAINS
       CALL cp_cfm_get_info(rmat, nrow_global=nrow)
 #if defined(__SCALAPACK)
       desc(:) = rmat%matrix_struct%descriptor(:)
-      CALL pzrot(nstate, rmat%local_data(1, 1), 1, istate, desc, 1 &
+      CALL pzrot(nrow, rmat%local_data(1, 1), 1, istate, desc, 1, &
            rmat%local_data(1, 1), 1, jstate, desc, 1, c, s)
 #else
       CALL zrot(nrow, rmat%local_data(1, istate), 1, &

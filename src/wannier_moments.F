@@ -64,7 +64,8 @@ module wannier_moments
    use kinds,                 only: default_string_length, &
                                     dp
    use mathconstants,         only: twopi
-   use molecule_types,        only: molecule_type
+   use molecule_types,        only: get_molecule, &
+                                    molecule_type
    use moments_utils,         only: get_reference_point
    use orbital_pointers,      only: current_maxl, &
                                     indco, &
@@ -117,14 +118,16 @@ contains
            routineP = moduleN//":"//routineN
 
       character(len=default_string_length)  :: iter
-      integer                               :: handle, iion, im, ispin, istate, isubsys, nao, nions, nm, nspins, &
-           nstates, nsubsys, order, unit_nr, akind, lx, ly, lz
+      integer                               :: first_atom, last_atom, handle, iion, im, ispin, &
+           istate, isubsys, nao, nions, nm, nspins, nstates, nsubsys, order, unit_nr, akind, lx, &
+           ly, lz
       integer, allocatable                  :: wcs_subsys_map(:)
       integer, pointer                      :: wcs_ions_map(:)
       logical                               :: first_time, floating, ghost, is_periodic
-      real(dp)                              :: zwfc, rcc(3), r(3), ria(3), zeff
+      real(dp)                              :: ci(3), gvec(3), theta, zwfc, rcc(3), ria(3), zeff
       real(dp), allocatable                 :: moments(:, :)
       real(dp), pointer                     :: rcentres(:, :), rions(:, :), ref_point(:)
+      complex(dp)                           :: ggamma(3), zeta
       type(atomic_kind_type), pointer       :: atomic_kind
       type(cell_type), pointer              :: cell
       type(cp_cfm_type), pointer            :: opvec, vec, momv, coeffs, cfm_moments_op
@@ -135,6 +138,7 @@ contains
       type(cp_logger_type), pointer         :: logger
       type(dbcsr_p_type), pointer           :: matrix_s(:), moments_op(:)
       type(dft_control_type), pointer       :: dft_control
+      type(molecule_type), pointer          :: molecule
       type(particle_type), pointer          :: particles(:)
       type(rt_prop_type), pointer           :: rtp
       type(qs_kind_type), pointer           :: qs_kind_set(:)
@@ -228,19 +232,33 @@ contains
                
             moments = 0.0_dp
             do istate = 1, nstates
-               call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ifirst=1, ilast=nions, ref_point=ref_point)
+               !molecule => molecules(wcs_subsys_map(istate))
+               !call get_molecule(molecule, first_atom=first_atom, last_atom=last_atom)
+               call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                    ifirst=1, ilast=nions, ref_point=ref_point)
                rcc = pbc(rcc, cell)
                ! get the single Wannier orbital
                call cp_cfm_to_cfm(coeffs, vec, 1, istate, 1)
                if (is_periodic) then
                   do im = 1, nm
+                     ! use only WCs
                      moments(wcs_subsys_map(istate), im) = moments(wcs_subsys_map(istate), im) &
                           - zwfc * wcs(ispin)%centres(im, istate)
                   end do
+                  !call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
+                  !do im = 1, nm
+                  !   call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
+                  !   call cp_fm_to_cfm(fm_moments_op, mtarget=cfm_moments_op)
+                  !   call cp_cfm_gemm("N", "N", nao, 1, nao, (1.0_dp, 0.0_dp), cfm_moments_op, vec, &
+                  !        (0.0_dp, 0.0_dp), opvec)
+                  !   call cp_cfm_gemm("C", "N", 1, 1, nao, (1.0_dp, 0.0_dp), vec, opvec, &
+                  !        (0.0_dp, 0.0_dp), momv)
+                  !end do
+                  !moments(wcs_subsys_map(istate), :) = moments(wcs_subsys_map(istate), im) &
+                  !     - zwfc * cell%hmat(im, im) / twopi * aimag(cmplx(0.0, 1.0, dp) &
+                  !     * cell%h_inv(im, im) * twopi * real(sum(momv%local_data), dp))
                else
                   call build_local_moment_matrix(qs_env, moments_op, order, ref_point=rcc)
-                  !print *, "Wannier orbital coeffs", istate
-                  r = pbc(wcs(ispin)%centres(:, istate), cell)
                   do im = 1, nm
                      call copy_dbcsr_to_fm(moments_op(im)%matrix, fm_moments_op)
                      call cp_fm_to_cfm(fm_moments_op, mtarget=cfm_moments_op)
