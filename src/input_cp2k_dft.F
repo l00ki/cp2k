@@ -872,7 +872,7 @@ CONTAINS
       ! Wannier moments
       CALL cp_print_key_section_create(subsection, __LOCATION__, name="WANNIER_MOMENTS", &
                                        description="Section controlling the calculation of "// &
-                                                   "multipole moments from Wannier functions", &
+                                                   "multipole moments from Wannier functions.", &
                                        print_level=debug_print_level + 1, filename="__STD_OUT__")
       CALL keyword_create(keyword, __LOCATION__, name="ORDER", &
                           description="Maximum order of multimpole expansion", &
@@ -882,6 +882,13 @@ CONTAINS
       CALL keyword_create(keyword, __LOCATION__, name="PERIODIC", &
                           description="Use the Berry phase approach to the electronic dipole moment.", &
                           default_l_val=.TRUE., lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(subsection, keyword)
+      CALL keyword_release(keyword)
+      CALL keyword_create(keyword, __LOCATION__, name="ORBITALS", &
+                          description="Ignore molecules and instead calculate the moment for "// &
+                          "each Wannier orbital. The nuclear dipole is then printed "// &
+                          "as a separate subsystem.", &
+                          default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
       CALL section_add_subsection(print_section, subsection)
