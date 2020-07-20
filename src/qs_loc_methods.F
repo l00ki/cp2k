@@ -1000,7 +1000,7 @@ CONTAINS
 !>      08.2005 created [MI]
 !> \author MI
 !> \note
-!>      This routine shoul not be in this module
+!>      This routine should not be in this module
 ! **************************************************************************************************
    SUBROUTINE qs_print_cubes(qs_env, nstates, state_list, centers, &
         print_key, root, mo_coeff, complex_mo_coeff, ispin, idir, state0, &

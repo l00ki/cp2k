@@ -16,7 +16,7 @@ MODULE eri_mme_lattice_summation
    USE ao_util, ONLY: exp_radius
    USE eri_mme_gaussian, ONLY: create_gaussian_overlap_dist_to_hermite, &
                                create_hermite_to_cartesian, &
-                               exp_radius_fast, eri_mme_coulomb, eri_mme_yukawa, &
+                               eri_mme_coulomb, eri_mme_yukawa, &
                                eri_mme_longrange
    USE kinds, ONLY: dp, &
                     int_8
@@ -84,8 +84,8 @@ CONTAINS
       G_res = 0.5_dp*G_min
       R_res = 0.5_dp*R_min
 
-      IF (PRESENT(G_rad)) G_rad = exp_radius(l_max, alpha_G, sum_precision, 1.0_dp, epsin=G_res)
-      IF (PRESENT(R_rad)) R_rad = exp_radius(l_max, alpha_R, sum_precision, 1.0_dp, epsin=R_res)
+      IF (PRESENT(G_rad)) G_rad = exp_radius(l_max, alpha_G, sum_precision, 1.0_dp, epsabs=G_res)
+      IF (PRESENT(R_rad)) R_rad = exp_radius(l_max, alpha_R, sum_precision, 1.0_dp, epsabs=R_res)
 
    END SUBROUTINE
 
@@ -136,9 +136,9 @@ CONTAINS
       ! sum method 2
       IF (PRESENT(R_rads_2)) THEN
          R_res = 0.5_dp*R_min
-         R_rads_2(1) = exp_radius(lb_max + lc_max, 0.25_dp/(beta + gamma), sum_precision, 1.0_dp, epsin=R_res)
-         R_rads_2(2) = exp_radius(lc_max + la_max, 0.25_dp/(alpha + gamma), sum_precision, 1.0_dp, epsin=R_res)
-         R_rads_2(3) = exp_radius(lb_max + la_max, 0.25_dp/(alpha + beta), sum_precision, 1.0_dp, epsin=R_res)
+         R_rads_2(1) = exp_radius(lb_max + lc_max, 0.25_dp/(beta + gamma), sum_precision, 1.0_dp, epsabs=R_res)
+         R_rads_2(2) = exp_radius(lc_max + la_max, 0.25_dp/(alpha + gamma), sum_precision, 1.0_dp, epsabs=R_res)
+         R_rads_2(3) = exp_radius(lb_max + la_max, 0.25_dp/(alpha + beta), sum_precision, 1.0_dp, epsabs=R_res)
       ENDIF
 
       ! sum method 3
@@ -669,26 +669,40 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER :: routineN = 'pgf_sum_2c_gspace_1d_deltal', &
                                      routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: k, l, l_max
+      INTEGER                                            :: k, k0, k1, l, l_max
       REAL(KIND=dp)                                      :: dG, exp_tot, G, prefac
 
       prefac = prefactor*inv_lgth
-      dG = inv_lgth*twopi
+      dG = inv_lgth*twopi ! positive
       l_max = UBOUND(S_G, 1)
 
       S_G(:) = 0.0_dp
-      DO k = G_min, G_c
-         IF (k .NE. 0) THEN
-            G = k*dG
-            exp_tot = EXP(-alpha*G**2)*prefac
+      IF (0 .LT. G_min) THEN
+         k0 = G_min; k1 = 0
+      ELSE IF (G_c .LT. 0) THEN
+         k0 = 0; k1 = G_c
+      ELSE ! Gmin <= 0 /\ 0 <= Gc
+         S_G(0) = prefac
+         k0 = 1; k1 = -1
+      ENDIF
+      ! positive range
+      IF (0 .LT. k0) THEN
+         DO k = k0, G_c
+            G = k*dG; exp_tot = EXP(-alpha*G**2)*prefac
+            DO l = 0, l_max
+               S_G(l) = S_G(l) + G**(l - delta_l)*exp_tot
+            ENDDO
+         ENDDO
+      ENDIF
+      ! negative range
+      IF (k1 .LT. 0) THEN
+         DO k = G_min, k1
+            G = k*dG; exp_tot = EXP(-alpha*G**2)*prefac
             DO l = 0, l_max
                S_G(l) = S_G(l) + ABS(G)**(l - delta_l)*exp_tot
             ENDDO
-         ELSE
-            S_G(0) = S_G(0) + prefac
-         ENDIF
-      ENDDO
-
+         ENDDO
+      ENDIF
    END SUBROUTINE pgf_sum_2c_gspace_1d_deltal
 
 ! **************************************************************************************************

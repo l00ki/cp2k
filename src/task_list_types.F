@@ -22,12 +22,11 @@ MODULE task_list_types
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'task_list_types'
 
    TYPE task_type
-      INTEGER(kind=int_8)                           :: destination = 0
-      INTEGER(kind=int_8)                           :: source = 0
-      INTEGER(kind=int_8)                           :: dist_type = 0
-      INTEGER(kind=int_8)                           :: cost = 0
-      INTEGER(kind=int_8)                           :: subpatch_pattern = 0
-
+      INTEGER                                       :: destination = 0
+      INTEGER                                       :: source = 0
+      INTEGER                                       :: dist_type = 0
+      INTEGER                                       :: cost = 0
+      INTEGER                                       :: subpatch_pattern = 0
       INTEGER                                       :: grid_level = 0
       INTEGER                                       :: image = 0
       INTEGER                                       :: iatom = 0
@@ -36,21 +35,43 @@ MODULE task_list_types
       INTEGER                                       :: jset = 0
       INTEGER                                       :: ipgf = 0
       INTEGER                                       :: jpgf = 0
+      INTEGER                                       :: pair_index = 0
 
       REAL(KIND=dp), DIMENSION(3)                   :: rab = 0.0_dp
+      REAL(KIND=dp)                                 :: radius = 0.0_dp
    END TYPE task_type
+
+   TYPE atom_pair_type
+      INTEGER                                       :: rank = 0
+      INTEGER                                       :: row = 0
+      INTEGER                                       :: col = 0
+      INTEGER                                       :: image = 0
+   END TYPE atom_pair_type
 
    TYPE task_list_type
       TYPE(task_type), DIMENSION(:), POINTER        :: tasks => Null()
-      INTEGER(kind=int_8), DIMENSION(:), POINTER    :: atom_pair_send, atom_pair_recv
       INTEGER                                       :: ntasks
       INTEGER, DIMENSION(:, :), POINTER             :: taskstart, taskstop
       INTEGER, DIMENSION(:), POINTER                :: npairs
+
+      TYPE(atom_pair_type), DIMENSION(:), POINTER   :: atom_pair_send => Null()
+      INTEGER, DIMENSION(:), POINTER                :: pair_offsets_send => Null()
+      INTEGER, DIMENSION(:), POINTER                :: rank_offsets_send => Null()
+      INTEGER, DIMENSION(:), POINTER                :: rank_sizes_send => Null()
+      INTEGER                                       :: buffer_size_send = 0
+
+      TYPE(atom_pair_type), DIMENSION(:), POINTER   :: atom_pair_recv => Null()
+      INTEGER, DIMENSION(:), POINTER                :: pair_offsets_recv => Null()
+      INTEGER, DIMENSION(:), POINTER                :: rank_offsets_recv => Null()
+      INTEGER, DIMENSION(:), POINTER                :: rank_sizes_recv => Null()
+      INTEGER                                       :: buffer_size_recv = 0
+
+      REAL(KIND=dp), DIMENSION(:), POINTER          :: buffer_recv => Null()
    END TYPE task_list_type
 
-   INTEGER, PARAMETER                               :: task_size_in_int8 = 16
+   INTEGER, PARAMETER                               :: task_size_in_int8 = 17
 
-   PUBLIC :: task_type, task_list_type
+   PUBLIC :: task_type, atom_pair_type, task_list_type
    PUBLIC :: task_size_in_int8, serialize_task, deserialize_task
    PUBLIC :: allocate_task_list, deallocate_task_list, reallocate_tasks
 
@@ -122,12 +143,6 @@ CONTAINS
       IF (ASSOCIATED(task_list%tasks)) THEN
          DEALLOCATE (task_list%tasks)
       ENDIF
-      IF (ASSOCIATED(task_list%atom_pair_send)) THEN
-         DEALLOCATE (task_list%atom_pair_send)
-      ENDIF
-      IF (ASSOCIATED(task_list%atom_pair_recv)) THEN
-         DEALLOCATE (task_list%atom_pair_recv)
-      ENDIF
       IF (ASSOCIATED(task_list%taskstart)) THEN
          DEALLOCATE (task_list%taskstart)
       ENDIF
@@ -136,6 +151,35 @@ CONTAINS
       ENDIF
       IF (ASSOCIATED(task_list%npairs)) THEN
          DEALLOCATE (task_list%npairs)
+      ENDIF
+
+      IF (ASSOCIATED(task_list%atom_pair_send)) THEN
+         DEALLOCATE (task_list%atom_pair_send)
+      ENDIF
+      IF (ASSOCIATED(task_list%pair_offsets_send)) THEN
+         DEALLOCATE (task_list%pair_offsets_send)
+      ENDIF
+      IF (ASSOCIATED(task_list%rank_offsets_send)) THEN
+         DEALLOCATE (task_list%rank_offsets_send)
+      ENDIF
+      IF (ASSOCIATED(task_list%rank_sizes_send)) THEN
+         DEALLOCATE (task_list%rank_sizes_send)
+      ENDIF
+
+      IF (ASSOCIATED(task_list%atom_pair_recv)) THEN
+         DEALLOCATE (task_list%atom_pair_recv)
+      ENDIF
+      IF (ASSOCIATED(task_list%pair_offsets_recv)) THEN
+         DEALLOCATE (task_list%pair_offsets_recv)
+      ENDIF
+      IF (ASSOCIATED(task_list%rank_offsets_recv)) THEN
+         DEALLOCATE (task_list%rank_offsets_recv)
+      ENDIF
+      IF (ASSOCIATED(task_list%rank_sizes_recv)) THEN
+         DEALLOCATE (task_list%rank_sizes_recv)
+      ENDIF
+      IF (ASSOCIATED(task_list%buffer_recv)) THEN
+         DEALLOCATE (task_list%buffer_recv)
       ENDIF
 
       DEALLOCATE (task_list)
@@ -170,6 +214,7 @@ CONTAINS
       serialized_task(14) = TRANSFER(task%rab(1), mold=1_int_8)
       serialized_task(15) = TRANSFER(task%rab(2), mold=1_int_8)
       serialized_task(16) = TRANSFER(task%rab(3), mold=1_int_8)
+      serialized_task(17) = TRANSFER(task%radius, mold=1_int_8)
    END SUBROUTINE serialize_task
 
 ! **************************************************************************************************
@@ -183,11 +228,11 @@ CONTAINS
       INTEGER(KIND=int_8), &
          DIMENSION(task_size_in_int8), INTENT(IN)        :: serialized_task
 
-      task%destination = serialized_task(1)
-      task%source = serialized_task(2)
-      task%dist_type = serialized_task(3)
-      task%cost = serialized_task(4)
-      task%subpatch_pattern = serialized_task(5)
+      task%destination = INT(serialized_task(1))
+      task%source = INT(serialized_task(2))
+      task%dist_type = INT(serialized_task(3))
+      task%cost = INT(serialized_task(4))
+      task%subpatch_pattern = INT(serialized_task(5))
 
       task%grid_level = INT(serialized_task(6))
       task%image = INT(serialized_task(7))
@@ -201,6 +246,7 @@ CONTAINS
       task%rab(1) = TRANSFER(serialized_task(14), mold=1.0_dp)
       task%rab(2) = TRANSFER(serialized_task(15), mold=1.0_dp)
       task%rab(3) = TRANSFER(serialized_task(16), mold=1.0_dp)
+      task%radius = TRANSFER(serialized_task(17), mold=1.0_dp)
    END SUBROUTINE deserialize_task
 
 END MODULE task_list_types

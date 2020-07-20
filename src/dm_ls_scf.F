@@ -13,6 +13,7 @@
 MODULE dm_ls_scf
    USE arnoldi_api,                     ONLY: arnoldi_extremal
    USE bibliography,                    ONLY: Kolafa2004,&
+                                              Kuhne2007,&
                                               cite_reference
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_external_control,             ONLY: external_control
@@ -294,6 +295,7 @@ CONTAINS
          CALL ls_scf_dm_to_ks(qs_env, ls_scf_env, ls_scf_env%energy_init, iscf=0)
       CASE (aspc_guess)
          CALL cite_reference(Kolafa2004)
+         CALL cite_reference(Kuhne2007)
          naspc = MIN(ls_scf_env%scf_history%istore, ls_scf_env%scf_history%nstore)
          DO ispin = 1, SIZE(ls_scf_env%matrix_p)
             ! actual extrapolation
@@ -639,7 +641,8 @@ CONTAINS
                      CALL density_matrix_sign(ls_scf_env%matrix_p(ispin), ls_scf_env%mu_spin(ispin), ls_scf_env%fixed_mu, &
                                               ls_scf_env%sign_method, ls_scf_env%sign_order, matrix_mixing_old(ispin), &
                                               ls_scf_env%matrix_s, ls_scf_env%matrix_s_inv, nelectron_spin_real, &
-                                              ls_scf_env%eps_filter)
+                                              ls_scf_env%eps_filter, ls_scf_env%sign_symmetric, ls_scf_env%submatrix_sign_method, &
+                                              ls_scf_env%matrix_s_sqrt_inv)
                   CASE (ls_scf_tc2)
                      CALL density_matrix_tc2(ls_scf_env%matrix_p(ispin), matrix_mixing_old(ispin), ls_scf_env%matrix_s_sqrt_inv, &
                                              nelectron_spin_real, ls_scf_env%eps_filter, ls_scf_env%homo_spin(ispin), &
@@ -980,7 +983,8 @@ CONTAINS
             CALL density_matrix_sign_fixed_mu(matrix_p, trace, mu, ls_scf_env%sign_method, &
                                               ls_scf_env%sign_order, ls_scf_env%matrix_ks(ispin), &
                                               ls_scf_env%matrix_s, ls_scf_env%matrix_s_inv, &
-                                              ls_scf_env%eps_filter)
+                                              ls_scf_env%eps_filter, ls_scf_env%sign_symmetric, &
+                                              ls_scf_env%submatrix_sign_method, ls_scf_env%matrix_s_sqrt_inv)
          ENDDO
 
          t2 = m_walltime()

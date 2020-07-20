@@ -265,12 +265,13 @@ CONTAINS
          !   *** init the bibliography ***
          CALL add_all_references()
 
-         CALL pw_cuda_init()
-
          ! Initialize the DBCSR configuration
          ! Attach the time handler hooks to DBCSR
+         ! DBCSR sets the device for multi-gpu, make sure it is the first GPU call
          CALL dbcsr_init_lib(default_para_env%group, timeset_hook, timestop_hook, &
                              cp_abort_hook, cp_warn_hook, io_unit=unit_nr)
+
+         CALL pw_cuda_init()
       ELSE
          ierr = cp_failure_level
       END IF
@@ -301,14 +302,16 @@ CONTAINS
       IF (.NOT. module_initialized) THEN
          ierr = cp_failure_level
       ELSE
-         ! Finalize the DBCSR configuration
-         CALL dbcsr_finalize_lib()
-         CALL pw_cuda_finalize()
          DO ienv = n_f_envs, 1, -1
             CALL destroy_force_env(f_envs(ienv)%f_env%id_nr, ierr=ierr)
             CPASSERT(ierr == 0)
          END DO
          DEALLOCATE (f_envs)
+
+         ! Finalize the DBCSR configuration
+         CALL dbcsr_finalize_lib()
+         CALL pw_cuda_finalize()
+
          CALL cp_para_env_release(default_para_env)
          ierr = 0
          CALL cp_rm_default_logger()
@@ -1078,7 +1081,7 @@ CONTAINS
       ELSE
          exist_res = .TRUE.
       END IF
-      ! if existing (or assuming the existance) read the results
+      ! if existing (or assuming the existence) read the results
       IF (exist_res) THEN
          CALL get_results(results, description=description, n_rep=nres)
          CALL get_results(results, description=description, values=RESULT, nval=nres)

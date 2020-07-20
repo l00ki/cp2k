@@ -106,7 +106,7 @@ MODULE realspace_grid_types
 
       LOGICAL :: parallel ! whether the corresponding pw grid is distributed
       LOGICAL :: distributed ! whether the rs grid is distributed
-      ! these MPI related quantities are only meaningful depending on how the grid has been layed out
+      ! these MPI related quantities are only meaningful depending on how the grid has been laid out
       ! they are most useful for fully distributed grids, where they reflect the topology of the grid
       INTEGER :: group
       INTEGER :: my_pos
@@ -211,8 +211,8 @@ CONTAINS
          routineP = moduleN//':'//routineN
 
       INTEGER                                            :: border_size, dir, handle, i, j, k, l, &
-                                                            lb(2), n_slices(3), n_slices_tmp(3), &
-                                                            neighbours(3), nmin
+                                                            lb(2), min_npts_real, n_slices(3), &
+                                                            n_slices_tmp(3), nmin
       LOGICAL                                            :: overlap
       REAL(KIND=dp)                                      :: ratio, ratio_best, volume, volume_dist
 
@@ -243,7 +243,7 @@ CONTAINS
 
       IF (pw_grid%para%mode == PW_MODE_LOCAL) THEN
          ! The corresponding group has dimension 1
-         ! All operations will be done localy
+         ! All operations will be done locally
          desc%npts = pw_grid%npts
          desc%ngpts = PRODUCT(INT(desc%npts, KIND=int_8))
          desc%lb = pw_grid%bounds(1, :)
@@ -310,23 +310,17 @@ CONTAINS
                                   (/-1, -1, -1/) /= input_settings%distribution_layout) &
                              )) CYCLE
 
-               ! we currently can not work with a grid that has borders that overlaps with the local data of the grid itself
+               ! We can not work with a grid that has more local than global grid points.
+               ! This can happen when a halo region wraps around and overlaps with the other halo.
                overlap = .FALSE.
                DO dir = 1, 3
                   IF (n_slices_tmp(dir) > 1) THEN
-                     neighbours(dir) = HUGE(0)
                      DO l = 0, n_slices_tmp(dir) - 1
                         lb = get_limit(desc%npts(dir), n_slices_tmp(dir), l)
-                        neighbours(dir) = MIN(lb(2) - lb(1) + 1, neighbours(dir))
+                        IF (lb(2) - lb(1) + 1 + 2*nmin > desc%npts(dir)) overlap = .TRUE.
                      ENDDO
-                     desc%neighbours(dir) = (nmin + neighbours(dir) - 1)/neighbours(dir)
-                     IF (desc%neighbours(dir) .GE. n_slices_tmp(dir)) overlap = .TRUE.
-                  ELSE
-                     neighbours(dir) = 0
                   ENDIF
                ENDDO
-               ! XXXXXXX I think the overlap criterion / neighbour calculation is too conservative
-               ! write(*,*) n_slices_tmp,desc % neighbours, overlap
                IF (overlap) CYCLE
 
                ! a heuristic optimisation to reduce the memory usage
@@ -459,12 +453,12 @@ CONTAINS
             DO dir = 1, 3
                desc%neighbours(dir) = 0
                IF ((n_slices(dir) > 1) .OR. (border_size > 0)) THEN
-                  neighbours(dir) = HUGE(0)
+                  min_npts_real = HUGE(0)
                   DO l = 0, n_slices(dir) - 1
                      lb = get_limit(desc%npts(dir), n_slices(dir), l)
-                     neighbours(dir) = MIN(lb(2) - lb(1) + 1, neighbours(dir))
+                     min_npts_real = MIN(lb(2) - lb(1) + 1, min_npts_real)
                   END DO
-                  desc%neighbours(dir) = (desc%border + neighbours(dir) - 1)/neighbours(dir)
+                  desc%neighbours(dir) = (desc%border + min_npts_real - 1)/min_npts_real
                END IF
             END DO
 
@@ -1121,7 +1115,7 @@ CONTAINS
                      ENDIF
                   ENDDO
 
-                  ! post the recieve
+                  ! post the receive
                   ALLOCATE (recv_buf_3d_down(lb_recv_down(1):ub_recv_down(1), &
                                              lb_recv_down(2):ub_recv_down(2), lb_recv_down(3):ub_recv_down(3)))
                   CALL mp_irecv(recv_buf_3d_down, source_down, rs%desc%group, req(1))
@@ -1181,7 +1175,7 @@ CONTAINS
                      ENDIF
                   ENDDO
 
-                  ! post the recieve
+                  ! post the receive
                   ALLOCATE (recv_buf_3d_up(lb_recv_up(1):ub_recv_up(1), &
                                            lb_recv_up(2):ub_recv_up(2), lb_recv_up(3):ub_recv_up(3)))
                   CALL mp_irecv(recv_buf_3d_up, source_up, rs%desc%group, req(2))
@@ -1774,7 +1768,7 @@ CONTAINS
                   ALLOCATE (recv_buf_3d_down(lb_recv_down(1):ub_recv_down(1), &
                                              lb_recv_down(2):ub_recv_down(2), lb_recv_down(3):ub_recv_down(3)))
 
-                  ! recv buffer is now ready, so post the recieve
+                  ! recv buffer is now ready, so post the receive
                   CALL mp_irecv(recv_buf_3d_down, source_down, rs%desc%group, req(1))
 
                   ! now allocate,pack and send the send buffer
@@ -1837,7 +1831,7 @@ CONTAINS
                   ALLOCATE (recv_buf_3d_up(lb_recv_up(1):ub_recv_up(1), &
                                            lb_recv_up(2):ub_recv_up(2), lb_recv_up(3):ub_recv_up(3)))
 
-                  ! recv buffer is now ready, so post the recieve
+                  ! recv buffer is now ready, so post the receive
 
                   CALL mp_irecv(recv_buf_3d_up, source_up, rs%desc%group, req(2))
 

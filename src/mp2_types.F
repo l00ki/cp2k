@@ -109,12 +109,11 @@ MODULE mp2_types
    TYPE ri_rpa_im_time_type
       INTEGER                  :: cut_memory
       LOGICAL                  :: memory_info
-      REAL(KIND=dp)            :: eps_filter_im_time, cutoff, &
-                                  exp_kpoints
-      INTEGER                  :: group_size_P, group_size_3c, num_points_per_magnitude
+      REAL(KIND=dp)            :: eps_filter, cutoff, &
+                                  exp_kpoints, eps_filter_factor
+      INTEGER                  :: group_size_P, group_size_3c
       INTEGER, DIMENSION(:), POINTER     :: kp_grid
       LOGICAL                  :: do_im_time_kpoints
-      REAL(KIND=dp)            :: stabilize_exp
       LOGICAL                  :: group_size_internal
       INTEGER                  :: min_bsize
    END TYPE
@@ -150,8 +149,9 @@ MODULE mp2_types
       LOGICAL                  :: do_ic_model, print_ic_values
       REAL(KIND=dp)            :: eps_dist
       REAL(KIND=dp), DIMENSION(:), POINTER               :: ic_corr_list, ic_corr_list_beta
-      INTEGER :: print_exx, num_integ_points_freq
-      LOGICAL :: do_gamma_only_sigma, do_gw_im_time_mix_minimax_clenshaw
+      INTEGER :: print_exx
+      LOGICAL :: do_gamma_only_sigma
+      LOGICAL :: update_xc_energy
    END TYPE
 
    TYPE ri_basis_opt

@@ -14,6 +14,7 @@ MODULE almo_scf_methods
    USE almo_scf_types,                  ONLY: almo_scf_env_type,&
                                               almo_scf_history_type
    USE bibliography,                    ONLY: Kolafa2004,&
+                                              Kuhne2007,&
                                               cite_reference
    USE cp_blacs_env,                    ONLY: cp_blacs_env_type
    USE cp_dbcsr_cholesky,               ONLY: cp_dbcsr_cholesky_decompose,&
@@ -2233,9 +2234,15 @@ CONTAINS
 !>       2013.01 created [Rustam Z. Khaliullin]
 !> \author Rustam Z. Khaliullin
 ! **************************************************************************************************
-   SUBROUTINE construct_domain_preconditioner(matrix_main, subm_s_inv, subm_s_inv_half, &
-                                          subm_s_half, subm_r_down, matrix_trimmer, dpattern, map, node_of_domain, preconditioner, &
-                                             bad_modes_projector_down, use_trimmer, eps_zero_eigenvalues, my_action, skip_inversion)
+   SUBROUTINE construct_domain_preconditioner(matrix_main, subm_s_inv, &
+                                              subm_s_inv_half, subm_s_half, &
+                                              subm_r_down, matrix_trimmer, &
+                                              dpattern, map, node_of_domain, &
+                                              preconditioner, &
+                                              bad_modes_projector_down, &
+                                              use_trimmer, &
+                                              eps_zero_eigenvalues, &
+                                              my_action, skip_inversion)
 
       TYPE(dbcsr_type), INTENT(INOUT)                    :: matrix_main
       TYPE(domain_submatrix_type), DIMENSION(:), &
@@ -3374,6 +3381,7 @@ CONTAINS
       ELSE !aspc_guess
 
          CALL cite_reference(Kolafa2004)
+         CALL cite_reference(Kuhne2007)
 
          naspc = MIN(xalmo_history%istore, xalmo_history%nstore)
          IF (unit_nr > 0) THEN

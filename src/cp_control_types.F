@@ -120,6 +120,9 @@ MODULE cp_control_types
       !
       CHARACTER(LEN=default_string_length), &
          DIMENSION(:, :), POINTER          :: kab_param
+      INTEGER, DIMENSION(:, :), POINTER    :: kab_types
+      INTEGER                              :: kab_nval
+      REAL, DIMENSION(:), POINTER          :: kab_vals
    END TYPE xtb_control_type
 
 ! **************************************************************************************************
@@ -356,7 +359,7 @@ MODULE cp_control_types
 !   - lumos_eigenvalues : holds the eigenvalues of the lumos (if calculated in QS)
 !
 ! \par  NOTES
-!   The lumos are helpfull in choosing a initial vector for the TDDFPT
+!   The lumos are helpful in choosing a initial vector for the TDDFPT
 !   calculation, since they can be used to construct the solutions of the
 !   TDDFPT operator without the perturbation kernel.
 ! **************************************************************************************************
@@ -496,7 +499,8 @@ MODULE cp_control_types
                                               auto_basis_aux_fit = 1, &
                                               auto_basis_lri_aux = 1, &
                                               auto_basis_ri_hxc = 1, &
-                                              auto_basis_ri_xas = 1
+                                              auto_basis_ri_xas = 1, &
+                                              auto_basis_ri_hfx = 1
       REAL(KIND=dp)                        :: relax_multiplicity, &
                                               sic_scaling_a, &
                                               sic_scaling_b, &
@@ -1110,6 +1114,8 @@ CONTAINS
       ALLOCATE (xtb_control)
 
       NULLIFY (xtb_control%kab_param)
+      NULLIFY (xtb_control%kab_vals)
+      NULLIFY (xtb_control%kab_types)
 
    END SUBROUTINE xtb_control_create
 
@@ -1126,6 +1132,12 @@ CONTAINS
       IF (ASSOCIATED(xtb_control)) THEN
          IF (ASSOCIATED(xtb_control%kab_param)) THEN
             DEALLOCATE (xtb_control%kab_param)
+         END IF
+         IF (ASSOCIATED(xtb_control%kab_vals)) THEN
+            DEALLOCATE (xtb_control%kab_vals)
+         END IF
+         IF (ASSOCIATED(xtb_control%kab_types)) THEN
+            DEALLOCATE (xtb_control%kab_types)
          END IF
          DEALLOCATE (xtb_control)
       END IF

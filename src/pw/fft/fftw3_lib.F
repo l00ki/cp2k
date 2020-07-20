@@ -672,7 +672,7 @@ CONTAINS
          !  DO loop to do the final transposition performed better than directly transposing the output.
          !  However, this might vary depending on the compiler/platform, so a potential tuning spot
          !  is to perform the final transposition within the fftw library rather than using the external loop
-         !  See comments below in Z-FFT for how to tranpose the output to avoid the final DO loop.
+         !  See comments below in Z-FFT for how to transpose the output to avoid the final DO loop.
          !
          !  Doc. for the Guru interface is in http://www.fftw.org/doc/Guru-Interface.html
          !
@@ -1089,7 +1089,7 @@ CONTAINS
 
 !$    if (my_id < plan%num_threads_needed) then
 
-         fftw_plan = plan%fftw_plan
+         fftw_plan = INT(plan%fftw_plan, KIND(fftw_plan))
 
          in_offset = 1
          out_offset = 1
@@ -1105,7 +1105,7 @@ CONTAINS
 !$       scal_offset = 1 + plan%n*plan%num_rows*my_id
 !$       IF (plan%need_alt_plan .AND. my_id .EQ. plan%num_threads_needed - 1) THEN
 !$          num_rows = plan%alt_num_rows
-!$          fftw_plan = plan%alt_fftw_plan
+!$          fftw_plan = INT(plan%alt_fftw_plan, KIND(fftw_plan))
 !$       ELSE
 !$          num_rows = plan%num_rows
 !$       ENDIF

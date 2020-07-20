@@ -2,8 +2,8 @@
 [ "${BASH_SOURCE[0]}" ] && SCRIPT_NAME="${BASH_SOURCE[0]}" || SCRIPT_NAME=$0
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_NAME")" && pwd -P)"
 
-sirius_ver="6.4.4"
-sirius_sha256="1c5de9565781847658c3cc11edcb404e6e6d1c5a9dfc81e977de7a9a7a162c8a"
+sirius_ver="6.5.4"
+sirius_sha256="5f731926b882a567d117afa5e0ed33291f1db887fce52f371ba51f014209b85d"
 
 
 source "${SCRIPT_DIR}"/common_vars.sh
@@ -12,8 +12,8 @@ source "${SCRIPT_DIR}"/signal_trap.sh
 source "${INSTALLDIR}"/toolchain.conf
 source "${INSTALLDIR}"/toolchain.env
 
-if [ "$MPI_MODE" = "no" ] && [ "$ENABLE_OMP" = "__FALSE__" ] ; then
-    report_warning $LINENO "MPI and OpenMP are disabled, skipping sirius installation"
+if [ "$MPI_MODE" = "no" ] ; then
+    report_warning $LINENO "MPI is disabled, skipping sirius installation"
     echo 'with_sirius="__FALSE__"' >> ${BUILDDIR}/setup_sirius
     exit 0
 fi
@@ -67,7 +67,7 @@ case "$with_sirius" in
         require_env SPFFT_CFLAGS
         require_env SPFFT_LDFLAGS
         require_env SPFFT_LIBS
-        ARCH=`arch`
+        ARCH=`uname -m`
         SIRIUS_OPT="-O3 -DNDEBUG -mtune=native -ftree-loop-vectorize ${MATH_CFLAGS}"
         if [ "$ARCH" = "ppc64le" ]; then
             SIRIUS_OPT="-O3 -DNDEBUG -mcpu=power8 -mtune=power8 -funroll-loops -ftree-vectorize  -mvsx  -maltivec  -mpopcntd  -mveclibabi=mass -fvect-cost-model -fpeel-loops -mcmodel=medium ${MATH_CFLAGS}"
@@ -100,12 +100,12 @@ case "$with_sirius" in
             mkdir build
             cd build
             COMPILATION_OPTIONS="-DHDF5_DIR=${HDF5_DIR}"
-            if [ -n "$ELPA_LIBS" ] ; then
-                if [ -s "$ELPAROOT" ] ; then
-                    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$ELPAROOT/lib/pkgconfig:$ELPAROOT/lib64/pkgconfig
-                fi
-                COMPILATION_OPTIONS="-DUSE_ELPA=ON -DELPA_INCLUDE_DIR=${ELPAROOT}/include/elpa-${ELPAVERSION}/elpa $COMPILATION_OPTIONS"
-            fi
+            #if [ -n "$ELPA_LIBS" ] ; then
+            #    if [ -s "$ELPAROOT" ] ; then
+            #        export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$ELPAROOT/lib/pkgconfig:$ELPAROOT/lib64/pkgconfig
+            #    fi
+            #    COMPILATION_OPTIONS="-DUSE_ELPA=ON -DELPA_INCLUDE_DIR=${ELPAROOT}/include/elpa-${ELPAVERSION} $COMPILATION_OPTIONS"
+            #fi
 
             if [ -n "$SCALAPACK_LIBS" ] ; then
                 export SCALAPACK_LIB="$SCALAPACK_LIBS"
@@ -130,10 +130,13 @@ case "$with_sirius" in
             cmake -DCMAKE_INSTALL_PREFIX=${pkg_install_dir} \
                   -DCMAKE_CXXFLAGS_RELEASE="${SIRIUS_OPT}" \
                   -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="${SIRIUS_DBG}" \
-                  -DCMAKE_CXX_COMPILER=mpic++ \
-                  -DCMAKE_C_COMPILER=mpicc \
-                  ${COMPILATION_OPTIONS} .. > compile.log 2>&1
-            make -j $NPROCS -C src >> compile.log 2>&1
+                  -DCMAKE_CXX_COMPILER="${MPICXX}" \
+                  -DCMAKE_C_COMPILER="${MPICC}" \
+		  -DBUILD_SHARED_LIBS=OFF \
+		  -DUSE_ELPA=OFF \
+		  ${COMPILATION_OPTIONS} .. > compile.log 2>&1
+            
+	    make -j $NPROCS -C src >> compile.log 2>&1 
 
             install -d ${pkg_install_dir}/include >> install.log 2>&1
             install -d ${pkg_install_dir}/lib >> install.log 2>&1
@@ -153,9 +156,11 @@ case "$with_sirius" in
                       -DCMAKE_CXXFLAGS_RELEASE="${SIRIUS_OPT}" \
                       -DCMAKE_CXX_FLAGS_RELWITHDEBINFO="${SIRIUS_DBG}" \
                       -DUSE_CUDA=ON \
+		      -DUSE_ELPA=OFF \
                       -DGPU_MODEL=P100 \
-                      -DCMAKE_CXX_COMPILER=mpic++ \
-                      -DCMAKE_C_COMPILER=mpicc ${COMPILATION_OPTIONS} .. >> compile.log 2>&1
+		      -DBUILD_SHARED_LIBS=OFF \
+                      -DCMAKE_CXX_COMPILER="${MPICXX}" \
+                      -DCMAKE_C_COMPILER="${MPICC}" ${COMPILATION_OPTIONS} .. >> compile.log 2>&1
                 make -j $NPROCS -C src >> compile.log 2>&1
                 install -d ${pkg_install_dir}/lib/cuda
                 install -d ${pkg_install_dir}/include/cuda
@@ -239,10 +244,10 @@ export SIRIUS_FFLAGS="IF_CUDA(-I${pkg_install_dir}/include/cuda|-I${pkg_install_
 export SIRIUS_LDFLAGS="-L'${pkg_install_dir}/lib' -Wl,-rpath='${pkg_install_dir}/lib'"
 export SIRIUS_CUDA_LDFLAGS="-L'${pkg_install_dir}/lib/cuda' -Wl,-rpath='${pkg_install_dir}/lib/cuda'"
 export SIRIUS_LIBS="${SIRIUS_LIBS}"
-export CP_DFLAGS="\${CP_DFLAGS} IF_MPI(IF_OMP("-D__SIRIUS"|)|)"
-export CP_CFLAGS="\${CP_CFLAGS} IF_MPI(IF_OMP("\${SIRIUS_CFLAGS}"|)|)"
-export CP_LDFLAGS="\${CP_LDFLAGS} IF_MPI(IF_OMP(IF_CUDA("\${SIRIUS_CUDA_LDFLAGS}"|"\${SIRIUS_LDFLAGS}")|)|)"
-export CP_LIBS="IF_MPI(IF_OMP("\${SIRIUS_LIBS}"|)|) \${CP_LIBS}"
+export CP_DFLAGS="\${CP_DFLAGS} IF_MPI("-D__SIRIUS"|)"
+export CP_CFLAGS="\${CP_CFLAGS} IF_MPI("\${SIRIUS_CFLAGS}"|)"
+export CP_LDFLAGS="\${CP_LDFLAGS} IF_MPI(IF_CUDA("\${SIRIUS_CUDA_LDFLAGS}"|"\${SIRIUS_LDFLAGS}")|)"
+export CP_LIBS="IF_MPI("\${SIRIUS_LIBS}"|) \${CP_LIBS}"
 EOF
 fi
 

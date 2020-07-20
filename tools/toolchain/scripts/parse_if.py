@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf8 -*-
+#!/usr/bin/env python3
 
 
 import sys
@@ -24,7 +23,7 @@ class Parser:
         """
         switch should be a tuple (key, val)
         ParseSingleIf(string, switch) will replace in string the
-        first occurance of IF_key(A|B) with A if val = True;
+        first occurrence of IF_key(A|B) with A if val = True;
         B if val = False
         """
         init = string.find("IF_" + switch[0])
@@ -136,7 +135,6 @@ if __name__ == "__main__":
     # default list of switches used by the parser
     switches = {
         "MPI": False,
-        "OMP": False,
         "CUDA": False,
         "WARNALL": False,
         "DEBUG": False,

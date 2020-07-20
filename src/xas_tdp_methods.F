@@ -47,14 +47,9 @@ MODULE xas_tdp_methods
                                               cp_print_key_unit_nr,&
                                               debug_print_level
    USE cp_para_types,                   ONLY: cp_para_env_type
-   USE dbcsr_api,                       ONLY: dbcsr_add_on_diag,&
-                                              dbcsr_copy,&
-                                              dbcsr_create,&
-                                              dbcsr_finalize,&
-                                              dbcsr_get_info,&
-                                              dbcsr_multiply,&
-                                              dbcsr_p_type,&
-                                              dbcsr_set
+   USE dbcsr_api,                       ONLY: &
+        dbcsr_add_on_diag, dbcsr_copy, dbcsr_create, dbcsr_finalize, dbcsr_get_info, &
+        dbcsr_multiply, dbcsr_p_type, dbcsr_set, dbcsr_type_no_symmetry
    USE input_constants,                 ONLY: &
         do_loc_none, do_potential_coulomb, do_potential_id, do_potential_short, &
         do_potential_truncated, op_loc_berry, state_loc_list, tddfpt_singlet, tddfpt_spin_cons, &
@@ -115,16 +110,16 @@ MODULE xas_tdp_methods
    USE xas_tdp_atom,                    ONLY: init_xas_atom_env,&
                                               integrate_fxc_atoms,&
                                               integrate_soc_atoms
+   USE xas_tdp_integrals,               ONLY: compute_ri_3c_coulomb,&
+                                              compute_ri_3c_exchange,&
+                                              compute_ri_coulomb2_int,&
+                                              compute_ri_exchange2_int
    USE xas_tdp_types,                   ONLY: &
         donor_state_create, donor_state_type, free_ds_memory, free_exat_memory, &
         read_xas_tdp_control, set_donor_state, set_xas_tdp_env, xas_atom_env_create, &
         xas_atom_env_release, xas_atom_env_type, xas_tdp_control_create, xas_tdp_control_release, &
         xas_tdp_control_type, xas_tdp_env_create, xas_tdp_env_release, xas_tdp_env_type
-   USE xas_tdp_utils,                   ONLY: compute_ri_coulomb2_int,&
-                                              compute_ri_exchange2_int,&
-                                              compute_ri_o3c_coulomb,&
-                                              compute_ri_o3c_exchange,&
-                                              include_os_soc,&
+   USE xas_tdp_utils,                   ONLY: include_os_soc,&
                                               include_rcs_soc,&
                                               setup_xas_tdp_prob,&
                                               solve_xas_tdp_prob
@@ -333,7 +328,7 @@ CONTAINS
                "# Computing the RI 3-center Coulomb integrals ..."
             CALL m_flush(output_unit)
          END IF
-         CALL compute_ri_o3c_coulomb(xas_tdp_env, qs_env)
+         CALL compute_ri_3c_coulomb(xas_tdp_env, qs_env)
 
       END IF
 
@@ -377,7 +372,7 @@ CONTAINS
                      iatom, "/", TRIM(kind_name)
                   CALL m_flush(output_unit)
                END IF
-               CALL compute_ri_o3c_exchange(iatom, xas_tdp_env, xas_tdp_control, qs_env)
+               CALL compute_ri_3c_exchange(iatom, xas_tdp_env, xas_tdp_control, qs_env)
             END IF
 
 !           Loop over states of excited atom of kind
@@ -759,11 +754,11 @@ CONTAINS
       ALLOCATE (xas_tdp_env%q_projector(nspins))
       ALLOCATE (xas_tdp_env%q_projector(1)%matrix)
       CALL dbcsr_create(xas_tdp_env%q_projector(1)%matrix, name="Q PROJECTOR ALPHA", &
-                        template=matrix_s(1)%matrix, matrix_type="N")
+                        template=matrix_s(1)%matrix, matrix_type=dbcsr_type_no_symmetry)
       IF (do_os) THEN
          ALLOCATE (xas_tdp_env%q_projector(2)%matrix)
          CALL dbcsr_create(xas_tdp_env%q_projector(2)%matrix, name="Q PROJECTOR BETA", &
-                           template=matrix_s(1)%matrix, matrix_type="N")
+                           template=matrix_s(1)%matrix, matrix_type=dbcsr_type_no_symmetry)
       END IF
 
 !     In the case of spin-restricted calculations, rho_ao includes double occupency => 0.5 prefactor
@@ -983,10 +978,6 @@ CONTAINS
 
          WRITE (UNIT=ou, FMT="(/,T3,A,F5.2,A)") &
             "XAS_TDP| RI Region's Radius: ", xas_tdp_control%ri_radius*angstrom, " Ang"
-
-         !parallelization scheme
-         WRITE (UNIT=ou, FMT="(T3,A,I4,A)") &
-            "XAS_TDP| Excited atoms distributed on batches of ", xas_tdp_control%batch_size, " procs"
 
          CALL libxc_version_info(tmpStr)
          WRITE (UNIT=ou, FMT="(T3,A,A,/,T3,A,/)") &
@@ -1358,7 +1349,7 @@ CONTAINS
 
       nspins = 1; IF (xas_tdp_control%do_uks) nspins = 2
 
-!  Contruction of a STO that fits the type of orbital we look for
+!  Construction of a STO that fits the type of orbital we look for
       ALLOCATE (zeta(1))
       ALLOCATE (lq(1))
       ALLOCATE (nq(1))
@@ -1829,7 +1820,7 @@ CONTAINS
    END SUBROUTINE print_checks
 
 ! **************************************************************************************************
-!> \brief Computes the required multipole moment in the lenght representation for a given atom
+!> \brief Computes the required multipole moment in the length representation for a given atom
 !> \param iatom index of the given atom
 !> \param xas_tdp_env ...
 !> \param xas_tdp_control ...

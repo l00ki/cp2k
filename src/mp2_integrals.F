@@ -32,6 +32,7 @@ MODULE mp2_integrals
                                               cp_fm_type
    USE cp_para_env,                     ONLY: cp_para_env_release
    USE cp_para_types,                   ONLY: cp_para_env_type
+   USE cp_units,                        ONLY: cp_unit_from_cp2k
    USE dbcsr_api,                       ONLY: &
         dbcsr_copy, dbcsr_create, dbcsr_get_info, dbcsr_multiply, dbcsr_p_type, dbcsr_release, &
         dbcsr_release_p, dbcsr_scalar, dbcsr_set, dbcsr_type, dbcsr_type_no_symmetry, &
@@ -84,13 +85,13 @@ MODULE mp2_integrals
    USE qs_neighbor_list_types,          ONLY: neighbor_list_set_p_type
    USE qs_tensors,                      ONLY: build_3c_integrals,&
                                               build_3c_neighbor_lists,&
-                                              contiguous_tensor_dist,&
-                                              neighbor_list_3c_destroy,&
-                                              pgf_block_sizes
+                                              neighbor_list_3c_destroy
    USE qs_tensors_types,                ONLY: create_3c_tensor,&
+                                              create_tensor_batches,&
                                               distribution_3d_create,&
                                               distribution_3d_type,&
-                                              neighbor_list_3c_type
+                                              neighbor_list_3c_type,&
+                                              pgf_block_sizes
    USE task_list_types,                 ONLY: task_list_type
    USE util,                            ONLY: get_limit
 
@@ -233,16 +234,17 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER :: routineN = 'mp2_ri_gpw_compute_in', &
          routineP = moduleN//':'//routineN
 
-      INTEGER :: cm, cut_memory, eri_method, gw_corr_lev_total, handle, handle2, handle4, i, &
-         i_counter, itmp(2), j, LLL, max_row_col_local, max_row_col_local_beta, &
-         max_row_col_local_gw, max_row_col_local_occ_bse, max_row_col_local_virt_bse, min_bsize, &
-         mp_comm_t3c_2, my_B_all_end, my_B_all_size, my_B_all_start, my_B_occ_bse_end, &
-         my_B_occ_bse_size, my_B_occ_bse_start, my_B_size, my_B_size_beta, my_B_virt_bse_end, &
-         my_B_virt_bse_size, my_B_virt_bse_start, my_B_virtual_end, my_B_virtual_end_beta, &
-         my_B_virtual_start, my_B_virtual_start_beta, my_group_L_end, my_group_L_size, &
-         my_group_L_start, natom
-      INTEGER :: ngroup, ngroup_im_time, ngroup_im_time_P, nimg, nkind, num_small_eigen, &
-         potential_type, ri_metric_type, virtual, virtual_beta
+      INTEGER :: cm, cut_memory, cut_memory_int, eri_method, gw_corr_lev_total, handle, handle2, &
+         handle4, i, i_counter, itmp(2), j, jcell, kcell, LLL, max_row_col_local, &
+         max_row_col_local_beta, max_row_col_local_gw, max_row_col_local_occ_bse, &
+         max_row_col_local_virt_bse, min_bsize, mp_comm_t3c_2, my_B_all_end, my_B_all_size, &
+         my_B_all_start, my_B_occ_bse_end, my_B_occ_bse_size, my_B_occ_bse_start, my_B_size, &
+         my_B_size_beta, my_B_virt_bse_end, my_B_virt_bse_size, my_B_virt_bse_start, &
+         my_B_virtual_end, my_B_virtual_end_beta, my_B_virtual_start, my_B_virtual_start_beta, &
+         my_group_L_end
+      INTEGER :: my_group_L_size, my_group_L_start, natom, ngroup, ngroup_im_time, &
+         ngroup_im_time_P, nimg, nkind, num_small_eigen, potential_type, ri_metric_type, virtual, &
+         virtual_beta
       INTEGER, ALLOCATABLE, DIMENSION(:) :: dist_AO_1, dist_AO_2, dist_RI, &
          ends_array_mc_block_int, ends_array_mc_int, sizes_AO, sizes_AO_split, sizes_RI, &
          sizes_RI_split, starts_array_mc_block_int, starts_array_mc_int, sub_proc_map
@@ -253,7 +255,7 @@ CONTAINS
                                                             do_kpoints_from_Gamma, do_svd, &
                                                             impose_split, memory_info
       REAL(KIND=dp)                                      :: cond_num, cutoff_old, eps_svd, &
-                                                            mem_for_iaK, omega_pot, &
+                                                            mem_for_iaK, omega_pot, rc_ang, &
                                                             relative_cutoff_old
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: e_cutoff_old
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: my_Lrows
@@ -264,7 +266,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env_L
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mat_munu_local_L
       TYPE(dbcsr_t_pgrid_type)                           :: pgrid_t3c_M, pgrid_t3c_overl
-      TYPE(dbcsr_t_type)                                 :: t_3c_overl_int_template
+      TYPE(dbcsr_t_type)                                 :: t_3c_overl_int_template, t_3c_tmp
       TYPE(dbcsr_t_type), ALLOCATABLE, DIMENSION(:, :)   :: t_3c_overl_int
       TYPE(dbcsr_type) :: matrix_bse_ab, matrix_bse_anu, matrix_bse_ij, matrix_bse_inu, &
          matrix_ia_jb, matrix_ia_jb_beta, matrix_ia_jnu, matrix_ia_jnu_beta, matrix_in_jm, &
@@ -431,6 +433,38 @@ CONTAINS
                             do_im_time, do_kpoints_from_Gamma .OR. do_kpoints_cubic_RPA, qs_env%mp2_env%mp2_gpw%eps_pgf_orb_S, &
                             qs_kind_set, sab_orb_sub)
 
+      IF (unit_nr > 0) THEN
+         ASSOCIATE (ri_metric=>qs_env%mp2_env%ri_metric)
+            SELECT CASE (ri_metric%potential_type)
+            CASE (do_potential_coulomb)
+               WRITE (unit_nr, FMT="(/T3,A,T74,A)") &
+                  "RI_INFO| RI metric: ", "COULOMB"
+            CASE (do_potential_short)
+               WRITE (unit_nr, FMT="(T3,A,T71,A)") &
+                  "RI_INFO| RI metric: ", "SHORTRANGE"
+               WRITE (unit_nr, '(T3,A,T61,F20.10)') &
+                  "RI_INFO| Omega:     ", ri_metric%omega
+               rc_ang = cp_unit_from_cp2k(ri_metric%cutoff_radius, "angstrom")
+               WRITE (unit_nr, '(T3,A,T61,F20.10)') &
+                  "RI_INFO| Cutoff Radius [angstrom]:     ", rc_ang
+            CASE (do_potential_long)
+               WRITE (unit_nr, FMT="(T3,A,T72,A)") &
+                  "RI_INFO| RI metric: ", "LONGRANGE"
+               WRITE (unit_nr, '(T3,A,T61,F20.10)') &
+                  "RI_INFO| Omega:     ", ri_metric%omega
+            CASE (do_potential_id)
+               WRITE (unit_nr, FMT="(T3,A,T73,A)") &
+                  "RI_INFO| RI metric: ", "IDENTITY"
+            CASE (do_potential_truncated)
+               WRITE (unit_nr, FMT="(T3,A,T72,A)") &
+                  "RI_INFO| RI metric: ", "TRUNCATED"
+               rc_ang = cp_unit_from_cp2k(ri_metric%cutoff_radius, "angstrom")
+               WRITE (unit_nr, '(T3,A,T61,F20.10)') &
+                  "RI_INFO| Cutoff Radius [angstrom]:     ", rc_ang
+            END SELECT
+         END ASSOCIATE
+      ENDIF
+
       IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
          "RI_INFO| Cholesky decomposition group size:", para_env_L%num_pe
       IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
@@ -496,7 +530,7 @@ CONTAINS
 
       CALL mp_sync(para_env%group) ! sync to see memory output
 
-      ! in case we do imaginary time, we need the overlap matrix (alpha beta P)
+      ! in case we do imaginary time, we need the overlap tensor (alpha beta P) or trunc. Coulomb tensor
       IF (.NOT. do_im_time) THEN
 
          ALLOCATE (sub_proc_map(-para_env_sub%num_pe:2*para_env_sub%num_pe - 1))
@@ -723,6 +757,7 @@ CONTAINS
 
          DEALLOCATE (sub_proc_map)
 
+         ! imag. time = low-scaling SOS-MP2, RPA, GW
       ELSE
 
          impose_split = .NOT. qs_env%mp2_env%ri_rpa_im_time%group_size_internal
@@ -757,9 +792,10 @@ CONTAINS
          CALL basis_set_list_setup(basis_set_ao, "ORB", qs_kind_set)
          CALL get_particle_set(particle_set, qs_kind_set, nsgf=sizes_AO, basis=basis_set_ao)
 
-         cut_memory = qs_env%mp2_env%ri_rpa_im_time%cut_memory
-         CALL create_contraction_batches(sizes_AO, cut_memory, starts_array_mc_int, ends_array_mc_int, &
-                                         starts_array_mc_block_int, ends_array_mc_block_int)
+         cut_memory_int = qs_env%mp2_env%ri_rpa_im_time%cut_memory
+         CALL create_tensor_batches(sizes_AO, cut_memory_int, starts_array_mc_int, ends_array_mc_int, &
+                                    starts_array_mc_block_int, ends_array_mc_block_int)
+
          DEALLOCATE (starts_array_mc_int, ends_array_mc_int)
 
          CALL create_3c_tensor(t_3c_overl_int_template, dist_RI, dist_AO_1, dist_AO_2, pgrid_t3c_overl, &
@@ -805,8 +841,8 @@ CONTAINS
          ! split blocks to improve load balancing for tensor contraction
          min_bsize = qs_env%mp2_env%ri_rpa_im_time%min_bsize
 
-         CALL pgf_block_sizes(qs_env, basis_set_ao, min_bsize, sizes_AO_split)
-         CALL pgf_block_sizes(qs_env, basis_set_ri_aux, min_bsize, sizes_RI_split)
+         CALL pgf_block_sizes(atomic_kind_set, basis_set_ao, min_bsize, sizes_AO_split)
+         CALL pgf_block_sizes(atomic_kind_set, basis_set_ri_aux, min_bsize, sizes_RI_split)
 
          IF (.NOT. impose_split) THEN
             pdims_t3c = 0
@@ -816,8 +852,8 @@ CONTAINS
          ENDIF
 
          ASSOCIATE (cut_memory=>qs_env%mp2_env%ri_rpa_im_time%cut_memory)
-            CALL create_contraction_batches(sizes_AO_split, cut_memory, starts_array_mc, ends_array_mc, &
-                                            starts_array_mc_block, ends_array_mc_block)
+            CALL create_tensor_batches(sizes_AO_split, cut_memory, starts_array_mc, ends_array_mc, &
+                                       starts_array_mc_block, ends_array_mc_block)
          END ASSOCIATE
          cut_memory = qs_env%mp2_env%ri_rpa_im_time%cut_memory
 
@@ -853,16 +889,16 @@ CONTAINS
          ! note: integrals are stored in terms of atomic blocks. To avoid a memory bottleneck,
          ! integrals are calculated in batches and copied to optimized format with subatomic blocks
 
-         DO cm = 1, cut_memory
+         DO cm = 1, cut_memory_int
             CALL build_3c_integrals(t_3c_overl_int, &
-                                    qs_env%mp2_env%mp2_gpw%eps_filter, &
+                                    qs_env%mp2_env%ri_rpa_im_time%eps_filter/2, &
                                     qs_env, &
                                     nl_3c, &
                                     basis_i=basis_set_ri_aux, &
                                     basis_j=basis_set_ao, basis_k=basis_set_ao, &
                                     potential_parameter=ri_metric, &
                                     do_kpoints=do_kpoints_cubic_RPA, &
-                                    bounds_j=[starts_array_mc_block_int(cm), ends_array_mc_block_int(cm)])
+                                    bounds_j=[starts_array_mc_block_int(cm), ends_array_mc_block_int(cm)], desymmetrize=.FALSE.)
             CALL timeset(routineN//"_copy_3c", handle4)
             ! copy integral tensor t_3c_overl_int to t_3c_O tensor optimized for contraction
             DO i = 1, SIZE(t_3c_overl_int, 1)
@@ -871,9 +907,10 @@ CONTAINS
                   CALL dbcsr_t_copy(t_3c_overl_int(i, j), t_3c_O(i, j), order=[1, 3, 2], &
                                     summation=.TRUE., move_data=.TRUE.)
                   CALL dbcsr_t_clear(t_3c_overl_int(i, j))
-                  CALL dbcsr_t_filter(t_3c_O(i, j), qs_env%mp2_env%mp2_gpw%eps_filter)
+                  CALL dbcsr_t_filter(t_3c_O(i, j), qs_env%mp2_env%ri_rpa_im_time%eps_filter/2)
                ENDDO
             ENDDO
+
             CALL timestop(handle4)
          ENDDO
 
@@ -882,8 +919,28 @@ CONTAINS
                CALL dbcsr_t_destroy(t_3c_overl_int(i, j))
             ENDDO
          ENDDO
-
          DEALLOCATE (t_3c_overl_int)
+
+         CALL timeset(routineN//"_copy_3c", handle4)
+         ! desymmetrize
+         CALL dbcsr_t_create(t_3c_O(1, 1), t_3c_tmp)
+         DO jcell = 1, nimg
+            DO kcell = 1, jcell
+               CALL dbcsr_t_copy(t_3c_O(jcell, kcell), t_3c_tmp)
+               CALL dbcsr_t_copy(t_3c_tmp, t_3c_O(kcell, jcell), order=[1, 3, 2], summation=.TRUE., move_data=.TRUE.)
+               CALL dbcsr_t_filter(t_3c_O(kcell, jcell), qs_env%mp2_env%ri_rpa_im_time%eps_filter)
+            ENDDO
+         ENDDO
+         DO jcell = 1, nimg
+            DO kcell = jcell + 1, nimg
+               CALL dbcsr_t_copy(t_3c_O(jcell, kcell), t_3c_tmp)
+               CALL dbcsr_t_copy(t_3c_tmp, t_3c_O(kcell, jcell), order=[1, 3, 2], summation=.FALSE., move_data=.TRUE.)
+               CALL dbcsr_t_filter(t_3c_O(kcell, jcell), qs_env%mp2_env%ri_rpa_im_time%eps_filter)
+            ENDDO
+         ENDDO
+         CALL dbcsr_t_destroy(t_3c_tmp)
+
+         CALL timestop(handle4)
 
          DEALLOCATE (basis_set_ri_aux, basis_set_ao)
 
@@ -936,39 +993,6 @@ CONTAINS
                                        map1_2d=map1_2d, map2_2d=map2_2d, &
                                        nsplit=ngroup, dimsplit=dimsplit)
    END FUNCTION
-
-! **************************************************************************************************
-!> \brief ...
-!> \param sizes ...
-!> \param nbatches ...
-!> \param starts_array ...
-!> \param ends_array ...
-!> \param starts_array_block ...
-!> \param ends_array_block ...
-! **************************************************************************************************
-   SUBROUTINE create_contraction_batches(sizes, nbatches, starts_array, ends_array, &
-                                         starts_array_block, ends_array_block)
-      INTEGER, DIMENSION(:), INTENT(IN)                  :: sizes
-      INTEGER, INTENT(INOUT)                             :: nbatches
-      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(OUT)    :: starts_array, ends_array, &
-                                                            starts_array_block, ends_array_block
-
-      INTEGER                                            :: bsum, imem, nblocks
-
-      nblocks = SIZE(sizes)
-
-      CALL contiguous_tensor_dist(nblocks, nbatches, sizes, limits_start=starts_array_block, limits_end=ends_array_block)
-
-      ALLOCATE (starts_array(nbatches))
-      ALLOCATE (ends_array(nbatches))
-
-      bsum = 0
-      DO imem = 1, nbatches
-         starts_array(imem) = bsum + 1
-         bsum = bsum + SUM(sizes(starts_array_block(imem):ends_array_block(imem)))
-         ends_array(imem) = bsum
-      ENDDO
-   END SUBROUTINE
 
 ! **************************************************************************************************
 !> \brief Contract (P|ai) = (R|P) x (R|ai)

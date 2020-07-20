@@ -37,10 +37,10 @@ Sub-points here discuss prerequisites needed to build CP2K. Copies of the recomm
 
 ### 2a. GNU make (required, build system)
 
-GNU make should be on your system (gmake or make on linux) and used for the build, go to https://www.gnu.org/software/make/make.html download from https://ftp.gnu.org/pub/gnu/make/ also Python (2.x) is required for building.
+GNU make should be on your system (gmake or make on linux) and used for the build, go to https://www.gnu.org/software/make/make.html download from https://ftp.gnu.org/pub/gnu/make/
 
 ### 2b. Python (required, build system)
-Python 2.7 or 3.5+ is needed to run the dependency generator. On most system Python is already installed. For more information visit: https://www.python.org/
+Python 3.5+ is needed to run the dependency generator. On most system Python is already installed. For more information visit: https://www.python.org/
 
 ### 2c. Fortran and C Compiler (required, build system)
 A Fortran 2008 compiler and matching C99 compiler should be installed on your system. We have good experience with gcc/gfortran (gcc >=4.6 works, later version recommended). Be aware that some compilers have bugs that might cause them to fail (internal compiler errors, segfaults) or, worse, yield a mis-compiled CP2K. Report bugs to compiler vendors; they (and we) have an interest in fixing them. A list of tested compiler can be found [here](https://www.cp2k.org/dev:compiler_support). Always run a `make -j test` (See point 5.) after compilation to identify these problems.
@@ -95,23 +95,24 @@ FFTW can be used to improve FFT speed on a wide range of architectures. It is st
   * `-D__MAX_CONTR=4` (default=2) can be used to compile efficient contraction kernels up to l=4, but the build time will increase accordingly.
 
 ### 2h. libsmm (optional, improved performance for matrix multiplication)
-  * A library for small matrix multiplies can be built from the included source (see tools/build_libsmm/README).  Usually only the double precision real and perhaps complex is needed.  Link to the generated libraries. For a couple of architectures prebuilt libsmm are available at https://www.cp2k.org/static/downloads/libsmm/.
+  * A library for small matrix multiplies can be built from the included source (see exts/dbcsr/tools/build_libsmm/README).  Usually only the double precision real and perhaps complex is needed.  Link to the generated libraries. For a couple of architectures prebuilt libsmm are available at https://www.cp2k.org/static/downloads/libsmm/.
   * Add `-D__HAS_smm_dnn` to the defines to make the code use the double precision real library.  Similarly use `-D__HAS_smm_snn` for single precision real and `-D__HAS_smm_znn` / `-D__HAS_smm_cnn` for double / single precision complex.
   * Add `-D__HAS_smm_vec` to enable the new vectorized interfaces of libsmm.
 
 ### 2i. libxsmm (optional, improved performance for matrix multiplication)
   * A library for matrix operations and deep learning primitives: https://github.com/hfp/libxsmm/
-  * Add `-D__LIBXSMM` to enable it (with suitable include and library paths)
+  * Add `-D__LIBXSMM` to enable it, with suitable include and library paths, e.g. `FCFLAGS += -I${LIBXSMM_DIR}/include -D__LIBXSMM` and `LIBS += -L${LIBXSMM_DIR}/lib -lxsmmf -lxsmm -ldl`
 
 ### 2j. CUDA (optional, improved performance on GPU systems)
+  * Specify NVCC (e.g. `NVCC = nvcc`) and NVFLAGS (e.g. `NVFLAGS = -O3 -g -w --std=c++11`) variables.
   * `-D__ACC` needed to enable accelerator support.
   * Use the `-D__DBCSR_ACC` to enable accelerator support for matrix multiplications.
-  * Add `-lcudart -lrt -lnvrtc` to LIBS.
-  * Specify the GPU type (e.g. `GPUVER   = P100`)
+  * Add `-lstdc++ -lcudart -lnvrtc -lcuda -lcublas` to LIBS.
+  * Specify the GPU type (e.g. `GPUVER   = P100`), possible values are K20X, K40, K80, P100, V100.
   * Specify the C++ compiler (e.g. `CXX = g++`). Remember to set the flags to support C++11 standard.
   * Use `-D__PW_CUDA` for CUDA support for PW (gather/scatter/fft) calculations.
   * CUFFT 7.0 has a known bug and is therefore disabled by default. NVIDIA's webpage list a patch (an upgraded version cufft i.e. >= 7.0.35) - use this together with `-D__HAS_PATCHED_CUFFT_70`.
-  * Use `-D__CUDA_PROFILING` to turn on Nvidia Tools Extensions.
+  * Use `-D__CUDA_PROFILING` to turn on Nvidia Tools Extensions. It requires to link `-lnvToolsExt`.
   * Link to a blas/scalapack library that accelerates large DGEMMs (e.g. libsci_acc)
 
 ### 2k. libxc (optional, wider choice of xc functionals)
@@ -182,13 +183,20 @@ SIRIUS is a domain specific library for electronic structure calculations.
   * Supports single precision and double precision fft calculations with the use of dedicated APIs.
   * Double precision is the default API chosen when set using the `-D__PW_FPGA` flag.
   * Single precision can be set using an additional `-D__PW_FPGA_SP` flag along with the `-D__PW_FPGA` flag.
-  * Kernel code has to be synthesized separately and copied to a specific location. 
+  * Kernel code has to be synthesized separately and copied to a specific location.
   * See https://github.com/pc2/fft3d-fpga for the kernel code and instructions for synthesis.
-  * Read `src/pw/fpga/README.md` for information on the specific location to copy the binaries to. 
+  * Read `src/pw/fpga/README.md` for information on the specific location to copy the binaries to.
   * Currently supported FFT3d sizes - 16^3, 32^3, 64^3.
   * Include aocl compile flags and `-D__PW_FPGA -D__PW_FPGA_SP` to `CFLAGS`, aocl linker flags to `LDFLAGS` and aocl libs to `LIBS`.
   * CUDA and FPGA are mutually exclusive. Building with both `__PW_CUDA` and  `__PW_FPGA` will throw a compilation error.
-  
+
+### 2s. COSMA (Distributed Communication-Optimal Matrix-Matrix Multiplication Algorithm)
+  * COSMA is a replacement of the pdgemm routine included in scalapack. The
+    library supports both CPU and GPUs. No specific flag during compilation is
+    needed to use the library in cp2k, excepted during linking time where the
+    library should be placed in front of the scalapack library.
+  * see https://github.com/eth-cscs/COSMA for more information.
+
 ## 3. Compile
 
 ### 3a. ARCH files
@@ -260,7 +268,6 @@ Features useful to deal with legacy systems
   * `-D__NO_IPI_DRIVER` disables the socket interface in case of troubles compiling on systems that do not support POSIX sockets.
   * `-D__HAS_IEEE_EXCEPTIONS` disables trapping temporarily for libraries like scalapack.
   * The Makefile automatically compiles in the path to the data directory via the flag `-D__DATA_DIR`. If you want to compile in a different path, set the variable `DATA_DIR` in your arch-file.
-  * `-D__HAS_NO_CUDA_STREAM_PRIORITIES` - Needed for CUDA sdk version < 5.5
   * `-D__NO_STATM_ACCESS` - Do not try to read from /proc/self/statm to get memory usage information. This is otherwise attempted on several. Linux-based architectures or using with the NAG, gfortran, compilers.
   * `-D__CHECK_DIAG` Debug option which activates an orthonormality check of the eigenvectors calculated by the selected eigensolver
 

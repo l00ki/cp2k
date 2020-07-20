@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 # Generates the CP2K Dashboard html page
 # Inspired by Iain's cp2k_page_update.sh
@@ -10,6 +9,7 @@ import sys
 import os
 import smtplib
 from email.mime.text import MIMEText
+import html
 import re
 import gzip
 from datetime import datetime, timedelta
@@ -35,10 +35,10 @@ from matplotlib.ticker import AutoMinorLocator
 # ===============================================================================
 class GitLog(list):
     def __init__(self):
-        cmd = ["git", "log", "--pretty=format:%H%n%ct%n%an%n%ae%n%s%n%b<--seperator-->"]
+        cmd = ["git", "log", "--pretty=format:%H%n%ct%n%an%n%ae%n%s%n%b<--separator-->"]
         outbytes = check_output(cmd)
         output = outbytes.decode("utf-8", errors="replace")
-        for entry in output.split("<--seperator-->")[:-1]:
+        for entry in output.split("<--separator-->")[:-1]:
             lines = entry.strip().split("\n")
             commit = dict()
             commit["git-sha"] = lines[0]
@@ -236,8 +236,8 @@ def gen_archive(config, log, outdir):
             else:
                 html_row += 2 * "<td></td>"
                 url_row = ""
-            html_row += '<td align="left">%s</td>' % commit["author-name"]
-            html_row += '<td align="left">%s</td>' % commit["msg"]
+            html_row += '<td align="left">%s</td>' % html.escape(commit["author-name"])
+            html_row += '<td align="left">%s</td>' % html.escape(commit["msg"])
             html_row += "</tr>\n\n"
             all_html_rows.append(html_row)
             all_url_rows.append(url_row)
@@ -561,11 +561,18 @@ def html_gitbox(log):
         msg = commit["msg"]
         if len(msg) > 27:
             msg = msg[:26] + "..."
-        output += '<p><a title="%s" href="%s">%s</a><br>\n' % (commit["msg"], url, msg)
+        output += '<p><a title="%s" href="%s">%s</a><br>\n' % (
+            html.escape(commit["msg"]),
+            url,
+            html.escape(msg),
+        )
         delta = now - commit["date"]
         age = delta.days * 24.0 + delta.seconds / 3600.0
         output += "<small>git:" + commit["git-sha"][:7]
-        output += "<br>\n%s %.1fh ago.</small></p>\n" % (commit["author-name"], age)
+        output += "<br>\n%s %.1fh ago.</small></p>\n" % (
+            html.escape(commit["author-name"]),
+            age,
+        )
     output += "</div>\n"
     return output
 

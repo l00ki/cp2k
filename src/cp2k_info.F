@@ -46,7 +46,7 @@ MODULE cp2k_info
 #endif
 
    CHARACTER(LEN=*), PARAMETER :: version_nr = "8.0"
-   CHARACTER(LEN=*), PARAMETER :: cp2k_year = "2019"
+   CHARACTER(LEN=*), PARAMETER :: cp2k_year = "2020"
    CHARACTER(LEN=*), PARAMETER :: cp2k_version = "CP2K version "//TRIM(version_nr)
    CHARACTER(LEN=*), PARAMETER :: cp2k_home = "https://www.cp2k.org/"
 
@@ -221,9 +221,6 @@ CONTAINS
 #endif
 #if defined __HAS_LIBGRID
       flags = TRIM(flags)//" libgrid"
-#endif
-#if defined __HAS_NO_CUDA_STREAM_PRIORITIES
-      flags = TRIM(flags)//" has_no_cuda_stream_priorities"
 #endif
 #if defined __MAX_CONTR
       CALL integer_to_string(__MAX_CONTR, tmp_str)

@@ -39,8 +39,8 @@ MODULE input_cp2k_properties_dft
    USE input_cp2k_atprop,               ONLY: create_atprop_section
    USE input_cp2k_dft,                  ONLY: create_ddapc_restraint_section,&
                                               create_interp_section,&
-                                              create_localize_section,&
                                               create_mgrid_section
+   USE input_cp2k_loc,                  ONLY: create_localize_section
    USE input_cp2k_resp,                 ONLY: create_resp_section
    USE input_cp2k_xc,                   ONLY: create_xc_section
    USE input_keyword_types,             ONLY: keyword_create,&
@@ -388,7 +388,7 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="SELECTED_STATES_ATOM_RADIUS", &
-                          description="Select all the states included in the given radius arround each atoms "// &
+                          description="Select all the states included in the given radius around each atoms "// &
                           "in SELECTED_STATES_ON_ATOM_LIST.", &
                           usage="SELECTED_STATES_ATOM_RADIUS 2.0", &
                           type_of_var=real_t, &
@@ -1443,7 +1443,7 @@ CONTAINS
                                        description="Write the NTO in Molden file format, for visualisation.", &
                                        print_level=debug_print_level + 1, add_last=add_last_numeric, filename="MOS")
       CALL keyword_create(keyword, __LOCATION__, name="NDIGITS", &
-                          description="Specifies the number of signficiant digits retained. 3 is OK for visualization.", &
+                          description="Specifies the number of significant digits retained. 3 is OK for visualization.", &
                           usage="NDIGITS {int}", &
                           default_i_val=3)
       CALL section_add_keyword(print_key, keyword)

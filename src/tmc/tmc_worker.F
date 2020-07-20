@@ -615,6 +615,7 @@ CONTAINS
       CPASSERT(conf%temp_created .GT. 0)
       CPASSERT(conf%temp_created .LE. tmc_env%params%nr_temp)
       CPASSERT(env_id .GT. 0)
+      MARK_USED(env_id)
 
       ! start the timing
       CALL timeset(routineN, handle)
@@ -691,7 +692,7 @@ CONTAINS
                           acc=.NOT. change_rejected, subbox=.TRUE., &
                           prob_opt=tmc_env%params%esimate_acc_prob)
 
-         ! calculate potential energy if neccessary
+         ! calculate potential energy if necessary
          IF (.NOT. change_rejected) THEN
             CALL calc_potential_energy(conf=conf, &
                                        env_id=tmc_env%w_env%env_id_approx, exact_approx_pot=.FALSE., &

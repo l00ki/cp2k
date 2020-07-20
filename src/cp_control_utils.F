@@ -52,6 +52,7 @@ MODULE cp_control_utils
    USE kinds,                           ONLY: default_path_length,&
                                               default_string_length,&
                                               dp
+   USE periodic_table,                  ONLY: get_ptable_info
    USE qs_cdft_utils,                   ONLY: read_cdft_control_section
    USE string_utilities,                ONLY: uppercase
    USE util,                            ONLY: sort
@@ -207,6 +208,8 @@ CONTAINS
                dft_control%auto_basis_ri_hxc = isize
             CASE ("RI_XAS")
                dft_control%auto_basis_ri_xas = isize
+            CASE ("RI_HFX")
+               dft_control%auto_basis_ri_hfx = isize
             CASE DEFAULT
                CPWARN("Unknown basis type in AUTO_BASIS keyword:"//TRIM(tmpstringlist(1)))
             END SELECT
@@ -843,7 +846,7 @@ CONTAINS
          END DO
          qs_control%mulliken_restraint_control%natoms = jj
          IF (qs_control%mulliken_restraint_control%natoms < 1) &
-            CPABORT("Need at least 1 atom to use mulliken contraints")
+            CPABORT("Need at least 1 atom to use mulliken constraints")
          ALLOCATE (qs_control%mulliken_restraint_control%atoms(qs_control%mulliken_restraint_control%natoms))
          jj = 0
          DO k = 1, n_rep
@@ -1118,13 +1121,22 @@ CONTAINS
          ! Check for bad atomic charges
          CALL section_vals_val_get(xtb_section, "CHECK_ATOMIC_CHARGES", &
                                    l_val=qs_control%xtb_control%check_atomic_charges)
+
+         qs_control%xtb_control%kab_nval = n_rep
          IF (n_rep > 0) THEN
             ALLOCATE (qs_control%xtb_control%kab_param(3, n_rep))
+            ALLOCATE (qs_control%xtb_control%kab_types(2, n_rep))
+            ALLOCATE (qs_control%xtb_control%kab_vals(n_rep))
             DO j = 1, n_rep
                CALL section_vals_val_get(xtb_parameter, "KAB_PARAM", i_rep_val=j, c_vals=clist)
                qs_control%xtb_control%kab_param(1, j) = clist(1)
+               CALL get_ptable_info(clist(1), &
+                                    ielement=qs_control%xtb_control%kab_types(1, j))
                qs_control%xtb_control%kab_param(2, j) = clist(2)
+               CALL get_ptable_info(clist(2), &
+                                    ielement=qs_control%xtb_control%kab_types(2, j))
                qs_control%xtb_control%kab_param(3, j) = clist(3)
+               READ (clist(3), '(F10.0)') qs_control%xtb_control%kab_vals(j)
             END DO
          END IF
       END IF
@@ -1850,7 +1862,7 @@ CONTAINS
                jj = jj + 1
             END DO
          END DO
-         IF (jj < 1) CPABORT("Need at least 1 atom to use ddapc contraints")
+         IF (jj < 1) CPABORT("Need at least 1 atom to use ddapc constraints")
          ddapc_restraint_control%natoms = jj
          IF (ASSOCIATED(ddapc_restraint_control%atoms)) &
             DEALLOCATE (ddapc_restraint_control%atoms)

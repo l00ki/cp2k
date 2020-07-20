@@ -49,10 +49,6 @@
         &END SCREENING
       &END HF
       &WF_CORRELATION
-        METHOD  RI_RPA_GPW
-        &RI_METRIC
-          POTENTIAL_TYPE IDENTITY
-        &END
         &LOW_SCALING
           MEMORY_CUT 1
         &END

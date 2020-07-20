@@ -43,20 +43,15 @@
       &XC_FUNCTIONAL PBE
       &END XC_FUNCTIONAL
       &WF_CORRELATION
-        METHOD  RI_RPA_GPW
-        &RI_METRIC
-          POTENTIAL_TYPE IDENTITY
-        &END
-        &WFC_GPW
-          CUTOFF  100
-          REL_CUTOFF 20
+        &INTEGRALS
           SIZE_LATTICE_SUM 3
-        &END
+        &END INTEGRALS
         MEMORY  200.
         NUMBER_PROC  1
         &LOW_SCALING
           !MEMORY_INFO
           DO_KPOINTS
+          MEMORY_CUT 2
         &END LOW_SCALING
         &RI_RPA
           RPA_NUM_QUAD_POINTS  6
@@ -71,13 +66,13 @@
       PERIODIC XYZ
     &END CELL
     &KIND H
-      BASIS_SET        DZVP-GTH
-      RI_AUX_BASIS_SET RI_DZVP-GTH
+      BASIS_SET ORB        DZVP-GTH
+      BASIS_SET RI_AUX RI_DZVP-GTH
       POTENTIAL        GTH-PBE-q1
     &END KIND
     &KIND O
-      BASIS_SET        DZVP-GTH
-      RI_AUX_BASIS_SET RI_DZVP-GTH
+      BASIS_SET ORB        DZVP-GTH
+      BASIS_SET RI_AUX RI_DZVP-GTH
       POTENTIAL        GTH-PBE-q6
     &END KIND
     &TOPOLOGY

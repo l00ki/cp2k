@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 # author: Ole Schuett
-
-from __future__ import print_function
 
 import argparse
 import re
@@ -16,6 +13,8 @@ flag_exceptions_re = re.compile(
     r"__COMPILE_REVISION|__COMPILE_DATE|__COMPILE_ARCH|__COMPILE_HOST|"
     r"__INTEL_COMPILER|__cplusplus|\$\{.*\}\$|__.*__"
 )
+
+portable_filename_re = re.compile(r"^[a-zA-Z0-9._/#~=+-]*$")
 
 BANNER_F = """\
 !--------------------------------------------------------------------------------------------------!
@@ -170,6 +169,9 @@ def validate(cp2k_dir, filelist=None, excluded_dirs=DEFAULT_EXCLUDED_DIRS):
             absfn = path.join(root, fn)
             shortfn = path.relpath(absfn, cp2k_dir)
 
+            if not portable_filename_re.match(fn):
+                warnings += ["Filename %s not portable" % shortfn]
+
             if not path.exists(absfn):
                 continue  # skip broken symlinks
 
@@ -182,19 +184,20 @@ def validate(cp2k_dir, filelist=None, excluded_dirs=DEFAULT_EXCLUDED_DIRS):
                 warnings += ["Text file %s contains DOS linebreaks" % shortfn]
 
             # check for non-ascii chars
-            if b"# -*- coding: utf-8 -*-" in content:
-                continue
+            if re.search(b"[\x80-\xFF]", content):
+                if absfn.endswith(".py"):
+                    continue  # python files are utf8 encoded by default
 
-            if not re.search(b"[\x80-\xFF]", content):
-                continue
+                if b"# -*- coding: utf-8 -*-" in content:
+                    continue
 
-            for lineno, line in enumerate(content.splitlines()):
-                m = re.search(b"[\x80-\xFF]", line)
-                if m:
-                    warnings += [
-                        "Found non-ascii char in %s line %d at position %d"
-                        % (shortfn, lineno + 1, m.start(0) + 1)
-                    ]
+                for lineno, line in enumerate(content.splitlines()):
+                    m = re.search(b"[\x80-\xFF]", line)
+                    if m:
+                        warnings += [
+                            "Found non-ascii char in %s line %d at position %d"
+                            % (shortfn, lineno + 1, m.start(0) + 1)
+                        ]
 
     return warnings
 

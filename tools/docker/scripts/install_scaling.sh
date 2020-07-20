@@ -4,7 +4,7 @@
 
 # install numpy
 apt-get update -qq
-apt-get install -qq --no-install-recommends python-numpy
+apt-get install -qq --no-install-recommends python3-numpy
 rm -rf /var/lib/apt/lists/*
 
 # setup arch files
@@ -16,7 +16,7 @@ source /opt/cp2k-toolchain/install/setup
 
 # pre-build cp2k
 cd /workspace/cp2k
-for VERSION in 'popt' 'psmp' 'ssmp'; do
+for VERSION in 'psmp' 'ssmp'; do
    echo -n "Warming cache by trying to compile cp2k.${VERSION}... "
    if make -j VERSION="${VERSION}" &> /dev/null ; then
       echo 'done.'

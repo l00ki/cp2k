@@ -13,6 +13,7 @@ MODULE pao_methods
                                               get_atomic_kind
    USE basis_set_types,                 ONLY: gto_basis_set_type
    USE bibliography,                    ONLY: Kolafa2004,&
+                                              Kuhne2007,&
                                               cite_reference
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
@@ -418,7 +419,7 @@ CONTAINS
                         template=matrix_s(1)%matrix)
       CALL dbcsr_reserve_diag_blocks(pao%matrix_H0)
 
-      ! calculate inital atomic fock matrix H0
+      ! calculate initial atomic fock matrix H0
       ! Can't use matrix_ks from ls_scf_qs_atomic_guess(), because it's not rotationally invariant.
       ! getting H0 directly from the atomic code
       CALL calculate_atomic_fock_matrix(pao%matrix_H0, &
@@ -497,7 +498,7 @@ CONTAINS
       ! calculat S, S_inv, S_sqrt, and S_sqrt_inv in the new pao basis
       CALL pao_rebuild_S(qs_env, ls_scf_env)
 
-      ! calulate the density matrix P in the pao basis
+      ! calculate the density matrix P in the pao basis
       CALL pao_dm_trs4(qs_env, ls_scf_env)
 
       ! calculate the energy from the trace(PH) in the pao basis
@@ -1018,7 +1019,7 @@ CONTAINS
 
       IF (ASSOCIATED(block_X)) THEN
          old_Xij = block_X(i, j) ! backup old block_X
-         block_X(i, j) = block_X(i, j) + eps ! add pertubation
+         block_X(i, j) = block_X(i, j) + eps ! add perturbation
       ENDIF
 
       ! calculate energy
@@ -1067,7 +1068,7 @@ CONTAINS
 
       ! We are storing the density matrix in the non-orthonormal primary basis.
       ! While the orthonormal basis would yield better extrapolations,
-      ! we simply can not affort to calculat S_sqrt in the primary basis.
+      ! we simply can not afford to calculat S_sqrt in the primary basis.
       DO ispin = 1, dft_control%nspins
          ! transform into primary basis
          CALL matrix_ls_to_qs(ls_scf_env%scf_history%matrix(ispin, istore), ls_scf_env%matrix_p(ispin), &
@@ -1138,6 +1139,7 @@ CONTAINS
       ls_mstruct => ls_scf_env%ls_mstruct
       CPASSERT(ls_scf_env%scf_history%istore > 0)
       CALL cite_reference(Kolafa2004)
+      CALL cite_reference(Kuhne2007)
       CALL get_qs_env(qs_env, dft_control=dft_control, matrix_s=matrix_s)
 
       IF (pao%iw > 0) WRITE (pao%iw, *) "PAO| Calculating initial guess with ASPC"

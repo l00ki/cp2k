@@ -67,8 +67,7 @@ MODULE mixed_cdft_methods
                                               section_vals_type,&
                                               section_vals_val_get
    USE kinds,                           ONLY: default_path_length,&
-                                              dp,&
-                                              int_8
+                                              dp
    USE machine,                         ONLY: m_walltime
    USE mathlib,                         ONLY: diamat_all
    USE memory_utilities,                ONLY: reallocate
@@ -663,7 +662,7 @@ CONTAINS
       ELSE
          DEALLOCATE (mixed_cdft%weight)
       END IF
-      ! In principle, we could reduce the memory footprint of becke_pot by only transfering the nonzero portion
+      ! In principle, we could reduce the memory footprint of becke_pot by only transferring the nonzero portion
       ! of the potential, but this would require a custom integrate_v_rspace
       CALL pw_pool_create_pw(auxbas_pw_pool, cdft_control_target%group(1)%weight%pw, &
                              use_data=REALDATA3D, in_space=REALSPACE)
@@ -957,7 +956,7 @@ CONTAINS
                          pw_env=pw_env_target)
          CALL pw_env_get(pw_env_target, auxbas_pw_pool=auxbas_pw_pool_target)
          cdft_control_target => dft_control_target%qs_control%cdft_control
-         ! The constraint can be transfered only when the constraint defitions are identical in all CDFT states
+         ! The constraint can be transferred only when the constraint defitions are identical in all CDFT states
          IF (mixed_cdft%identical_constraints) THEN
             ! Weight function
             DO igroup = 1, SIZE(cdft_control_target%group)
@@ -1056,7 +1055,7 @@ CONTAINS
    END SUBROUTINE mixed_cdft_transfer_weight
 
 ! **************************************************************************************************
-!> \brief In case CDFT states are treated in paralle, sets flags so that each CDFT state
+!> \brief In case CDFT states are treated in parallel, sets flags so that each CDFT state
 !>        builds their own weight functions and gradients
 !> \param force_env the force_env that holds the CDFT sub_force_envs
 !> \par History
@@ -2559,7 +2558,7 @@ CONTAINS
          NULLIFY (rs_cavity)
          CALL pw_env_get(pw_env=mixed_cdft%pw_env, auxbas_rs_grid=rs_cavity, &
                          auxbas_pw_pool=auxbas_pw_pool)
-         ! be careful in parallel nsmax is choosen with multigrid in mind!
+         ! be careful in parallel nsmax is chosen with multigrid in mind!
          CALL rs_grid_retain(rs_cavity)
          CALL rs_grid_zero(rs_cavity)
          ALLOCATE (pab(1, 1))
@@ -2608,7 +2607,7 @@ CONTAINS
                                                 rs_cavity, cell, mixed_cdft%pw_env%cube_info(1), &
                                                 radius=radius, ga_gb_function=GRID_FUNC_AB, &
                                                 use_subpatch=.TRUE., &
-                                                subpatch_pattern=0_int_8)
+                                                subpatch_pattern=0)
                   ENDIF
                END DO
             END DO

@@ -1957,7 +1957,7 @@ CONTAINS
 
 ! **************************************************************************************************
 !> \brief the direct way to split a communicator each color is a sub_comm,
-!>        the rank order is accoring to the order in the orig comm
+!>        the rank order is according to the order in the orig comm
 !> \param comm ...
 !> \param sub_comm ...
 !> \param color ...
@@ -3669,7 +3669,7 @@ CONTAINS
       type_descriptor%type_handle = 0
 
 #if defined(__parallel)
-      CALL MPI_Type_create_hindexed(count, lengths, displs, MPI_CHARACTER, &
+      CALL MPI_Type_create_hindexed(count, lengths, INT(displs, KIND=address_kind), MPI_CHARACTER, &
                                     type_descriptor%type_handle, ierr)
       IF (ierr /= 0) &
          CPABORT("MPI_Type_create_hindexed @ "//routineN)
@@ -4331,7 +4331,7 @@ CONTAINS
       ! -------------------------------------------------------------------------------------------
       CALL MPI_BARRIER(comm, ierror)
       IF (ionode .AND. output_unit > 0) THEN
-         WRITE (output_unit, *) "Testing truely point to point communication (i with j only)"
+         WRITE (output_unit, *) "Testing truly point to point communication (i with j only)"
          WRITE (output_unit, *) "  is there some different connection between i j (e.g. shared memory comm)"
       ENDIF
       ncount = 10**npow

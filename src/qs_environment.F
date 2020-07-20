@@ -27,7 +27,8 @@ MODULE qs_environment
                                               gto_basis_set_type
    USE bibliography,                    ONLY: Iannuzzi2006,&
                                               Iannuzzi2007,&
-                                              cite_reference
+                                              cite_reference,&
+                                              cp2kqs2020
    USE cell_types,                      ONLY: cell_type
    USE cp_blacs_env,                    ONLY: cp_blacs_env_create,&
                                               cp_blacs_env_release,&
@@ -96,10 +97,10 @@ MODULE qs_environment
         do_method_gapw_xc, do_method_gpw, do_method_lrigpw, do_method_mndo, do_method_mndod, &
         do_method_ofgpw, do_method_pdg, do_method_pm3, do_method_pm6, do_method_pm6fm, &
         do_method_pnnl, do_method_rigpw, do_method_rm1, do_method_xtb, do_qmmm_gauss, &
-        do_qmmm_swave, general_roks, kg_tnadd_embed_ri, rel_none, rel_trans_atom, ri_mp2_laplace, &
-        ri_mp2_method_gpw, ri_rpa_method_gpw, vdw_pairpot_dftd3, vdw_pairpot_dftd3bj, wfi_aspc_nr, &
-        wfi_linear_ps_method_nr, wfi_linear_wf_method_nr, wfi_ps_method_nr, &
-        wfi_use_guess_method_nr, xc_vdw_fun_none, xc_vdw_fun_nonloc, xc_vdw_fun_pairpot
+        do_qmmm_swave, general_roks, kg_tnadd_embed_ri, rel_none, rel_trans_atom, &
+        vdw_pairpot_dftd3, vdw_pairpot_dftd3bj, wfi_aspc_nr, wfi_linear_ps_method_nr, &
+        wfi_linear_wf_method_nr, wfi_ps_method_nr, wfi_use_guess_method_nr, xc_vdw_fun_none, &
+        xc_vdw_fun_nonloc, xc_vdw_fun_pairpot
    USE input_section_types,             ONLY: section_vals_get,&
                                               section_vals_get_subs_vals,&
                                               section_vals_type,&
@@ -254,7 +255,7 @@ CONTAINS
 
       CHARACTER(len=*), PARAMETER :: routineN = 'qs_init', routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: ikind, method_id, natom, nkind
+      INTEGER                                            :: ikind, method_id, nelectron_total, nkind
       LOGICAL                                            :: do_admm_rpa, do_et, do_exx, do_hfx, &
                                                             do_kpoints, is_semi, mp2_present, &
                                                             my_qmmm, qmmm_decoupl, silent, &
@@ -273,6 +274,7 @@ CONTAINS
       TYPE(qs_subsys_type), POINTER                      :: subsys
       TYPE(qs_wf_history_type), POINTER                  :: wf_history
       TYPE(rel_control_type), POINTER                    :: rel_control
+      TYPE(scf_control_type), POINTER                    :: scf_control
       TYPE(section_vals_type), POINTER                   :: dft_section, et_coupling_section, &
                                                             hfx_section, kpoint_section, &
                                                             mp2_section, transport_section
@@ -379,6 +381,12 @@ CONTAINS
          CALL lri_env_basis("RI", qs_env, lri_env, qs_kind_set)
       END IF
 
+      IF (my_qmmm .AND. PRESENT(qmmm_env_qm) .AND. .NOT. dft_control%qs_control%commensurate_mgrids .AND. &
+          (qmmm_env_qm%qmmm_coupl_type == do_qmmm_gauss .OR. qmmm_env_qm%qmmm_coupl_type == do_qmmm_swave)) THEN
+         CALL cp_abort(__LOCATION__, "QM/MM with coupling GAUSS or S-WAVE requires "// &
+                       "keyword FORCE_EVAL/DFT/MGRID/COMMENSURATE to be enabled.")
+      ENDIF
+
       ! more kpoint stuff
       kpoints%para_env => para_env
       CALL cp_para_env_retain(para_env)
@@ -396,12 +404,12 @@ CONTAINS
       do_hfx = .FALSE.
       hfx_section => section_vals_get_subs_vals(qs_env%input, "DFT%XC%HF")
       CALL section_vals_get(hfx_section, explicit=do_hfx)
-      CALL get_qs_env(qs_env, dft_control=dft_control)
+      CALL get_qs_env(qs_env, dft_control=dft_control, scf_control=scf_control, nelectron_total=nelectron_total)
       IF (do_hfx) THEN
          ! Retrieve particle_set and atomic_kind_set (needed for both kinds of initialization)
-         natom = SIZE(particle_set)
-         CALL hfx_create(qs_env%x_data, para_env, hfx_section, natom, atomic_kind_set, &
-                         qs_kind_set, dft_control, my_cell)
+         CALL hfx_create(qs_env%x_data, para_env, hfx_section, atomic_kind_set, &
+                         qs_kind_set, particle_set, dft_control, my_cell, do_ot=scf_control%use_ot, &
+                         nelectron_total=nelectron_total)
       END IF
 
       mp2_section => section_vals_get_subs_vals(qs_env%input, "DFT%XC%WF_CORRELATION")
@@ -415,14 +423,14 @@ CONTAINS
          CALL section_vals_get(hfx_section, explicit=do_exx)
          IF (do_exx) THEN
             ! Retrieve particle_set and atomic_kind_set (needed for both kinds of initialization)
-            natom = SIZE(particle_set)
 
             ! do_exx in call of hfx_create decides whether to go without ADMM (do_exx=.TRUE.) or with
             ! ADMM (do_exx=.FALSE.)
             CALL section_vals_val_get(mp2_section, "RI_RPA%ADMM", l_val=do_admm_rpa)
 
-            CALL hfx_create(qs_env%mp2_env%ri_rpa%x_data, para_env, hfx_section, natom, atomic_kind_set, &
-                            qs_kind_set, dft_control, my_cell, do_exx=(.NOT. do_admm_rpa))
+            CALL hfx_create(qs_env%mp2_env%ri_rpa%x_data, para_env, hfx_section, atomic_kind_set, &
+                            qs_kind_set, particle_set, dft_control, my_cell, do_exx=(.NOT. do_admm_rpa), &
+                            do_ot=scf_control%use_ot, nelectron_total=nelectron_total)
 
          END IF
       END IF
@@ -506,8 +514,8 @@ CONTAINS
          maxlppnl, method_id, multiplicity, my_ival, n_ao, n_ao_aux_fit, n_mo_add, natom, &
          nelectron, ngauss, nkind, output_unit, sort_basis, tnadd_method
       INTEGER, DIMENSION(2)                              :: n_mo, nelectron_spin
-      LOGICAL :: all_potential_present, be_silent, do_kpoints, do_wfc_im_time, e1terms, &
-         has_unit_metric, lribas, mp2_present, orb_gradient
+      LOGICAL :: all_potential_present, be_silent, do_kpoints, do_ri_hfx, do_ri_mp2, do_ri_rpa, &
+         do_ri_sos_mp2, do_wfc_im_time, e1terms, has_unit_metric, lribas, mp2_present, orb_gradient
       REAL(dp)                                           :: alpha, ccore, ewald_rcut, maxocc, &
                                                             verlet_skin, zeff_correction
       REAL(KIND=dp)                                      :: total_zeff_corr
@@ -562,6 +570,8 @@ CONTAINS
 
       be_silent = .FALSE.
       IF (PRESENT(silent)) be_silent = silent
+
+      CALL cite_reference(cp2kqs2020)
 
       ! Initialise the Quickstep environment
       NULLIFY (mos, se_taper, mos_aux_fit)
@@ -794,6 +804,26 @@ CONTAINS
          END DO
       END IF
 
+      CALL section_vals_val_get(qs_env%input, "DFT%XC%HF%RI%_SECTION_PARAMETERS_", l_val=do_ri_hfx)
+      IF (do_ri_hfx) THEN
+         CALL get_qs_env(qs_env, nkind=nkind)
+         DO ikind = 1, nkind
+            NULLIFY (ri_hfx_basis)
+            qs_kind => qs_kind_set(ikind)
+            CALL get_qs_kind(qs_kind=qs_kind, basis_set=ri_hfx_basis, &
+                             basis_type="RI_HFX")
+            IF (.NOT. (ASSOCIATED(ri_hfx_basis))) THEN
+               CALL get_qs_kind_set(qs_kind_set, maxlgto=maxlgto)
+               IF (dft_control%do_admm) THEN
+                  CALL create_ri_aux_basis_set(ri_hfx_basis, qs_kind, dft_control%auto_basis_ri_hfx, basis_type="AUX_FIT")
+               ELSE
+                  CALL create_ri_aux_basis_set(ri_hfx_basis, qs_kind, dft_control%auto_basis_ri_hfx)
+               ENDIF
+               CALL add_basis_set_to_container(qs_kind%basis_sets, ri_hfx_basis, "RI_HFX")
+            END IF
+         END DO
+      ENDIF
+
       IF (dft_control%qs_control%method_id == do_method_rigpw) THEN
          ! Check if RI_HXC basis is available, auto-generate if needed
          CALL get_qs_env(qs_env, nkind=nkind)
@@ -829,10 +859,10 @@ CONTAINS
          ! Check if RI_AUX basis (for MP2/RPA) is given, auto-generate if not
          CALL mp2_env_create(qs_env%mp2_env)
          CALL get_qs_env(qs_env, mp2_env=mp2_env, nkind=nkind)
-         CALL section_vals_val_get(mp2_section, "METHOD", i_val=mp2_env%method)
-         IF ((mp2_env%method == ri_mp2_method_gpw) .OR. &
-             (mp2_env%method == ri_rpa_method_gpw) .OR. &
-             (mp2_env%method == ri_mp2_laplace)) THEN
+         CALL section_vals_val_get(qs_env%input, "DFT%XC%WF_CORRELATION%RI_MP2%_SECTION_PARAMETERS_", l_val=do_ri_mp2)
+         CALL section_vals_val_get(qs_env%input, "DFT%XC%WF_CORRELATION%RI_SOS_MP2%_SECTION_PARAMETERS_", l_val=do_ri_sos_mp2)
+         CALL section_vals_val_get(qs_env%input, "DFT%XC%WF_CORRELATION%RI_RPA%_SECTION_PARAMETERS_", l_val=do_ri_rpa)
+         IF (do_ri_mp2 .OR. do_ri_sos_mp2 .OR. do_ri_rpa) THEN
             DO ikind = 1, nkind
                NULLIFY (ri_aux_basis_set)
                qs_kind => qs_kind_set(ikind)
@@ -1145,7 +1175,8 @@ CONTAINS
          dispersion_env%srb = .FALSE.
          dispersion_env%verbose = .FALSE.
          NULLIFY (dispersion_env%c6ab, dispersion_env%maxci, dispersion_env%r0ab, dispersion_env%rcov, &
-                  dispersion_env%r2r4, dispersion_env%cn, dispersion_env%cnkind, dispersion_env%cnlist)
+                  dispersion_env%r2r4, dispersion_env%cn, dispersion_env%cnkind, dispersion_env%cnlist, &
+                  dispersion_env%d3_exclude_pair)
          NULLIFY (dispersion_env%q_mesh, dispersion_env%kernel, dispersion_env%d2phi_dk2, &
                   dispersion_env%d2y_dx2, dispersion_env%dftd_section)
          NULLIFY (dispersion_env%sab_vdw, dispersion_env%sab_cn)
@@ -1161,6 +1192,7 @@ CONTAINS
             dispersion_env%rc_disp = dftb_control%rcdisp
             dispersion_env%exp_pre = 0._dp
             dispersion_env%scaling = 0._dp
+            dispersion_env%nd3_exclude_pair = 0
             dispersion_env%parameter_file_name = dftb_control%dispersion_parameter_file
             CALL qs_dispersion_pairpot_init(atomic_kind_set, qs_kind_set, dispersion_env, para_env=para_env)
          ELSE
@@ -1176,7 +1208,8 @@ CONTAINS
          dispersion_env%srb = .FALSE.
          dispersion_env%verbose = .FALSE.
          NULLIFY (dispersion_env%c6ab, dispersion_env%maxci, dispersion_env%r0ab, dispersion_env%rcov, &
-                  dispersion_env%r2r4, dispersion_env%cn, dispersion_env%cnkind, dispersion_env%cnlist)
+                  dispersion_env%r2r4, dispersion_env%cn, dispersion_env%cnkind, dispersion_env%cnlist, &
+                  dispersion_env%d3_exclude_pair)
          NULLIFY (dispersion_env%q_mesh, dispersion_env%kernel, dispersion_env%d2phi_dk2, &
                   dispersion_env%d2y_dx2, dispersion_env%dftd_section)
          NULLIFY (dispersion_env%sab_vdw, dispersion_env%sab_cn)
@@ -1192,6 +1225,7 @@ CONTAINS
          dispersion_env%rc_disp = xtb_control%rcdisp
          dispersion_env%exp_pre = 0._dp
          dispersion_env%scaling = 0._dp
+         dispersion_env%nd3_exclude_pair = 0
          dispersion_env%parameter_file_name = xtb_control%dispersion_parameter_file
          CALL qs_dispersion_pairpot_init(atomic_kind_set, qs_kind_set, dispersion_env, para_env=para_env)
          CALL set_qs_env(qs_env, dispersion_env=dispersion_env)
@@ -1204,7 +1238,8 @@ CONTAINS
          dispersion_env%srb = .FALSE.
          dispersion_env%verbose = .FALSE.
          NULLIFY (dispersion_env%c6ab, dispersion_env%maxci, dispersion_env%r0ab, dispersion_env%rcov, &
-                  dispersion_env%r2r4, dispersion_env%cn, dispersion_env%cnkind, dispersion_env%cnlist)
+                  dispersion_env%r2r4, dispersion_env%cn, dispersion_env%cnkind, dispersion_env%cnlist, &
+                  dispersion_env%d3_exclude_pair)
          NULLIFY (dispersion_env%q_mesh, dispersion_env%kernel, dispersion_env%d2phi_dk2, &
                   dispersion_env%d2y_dx2, dispersion_env%dftd_section)
          NULLIFY (dispersion_env%sab_vdw, dispersion_env%sab_cn)
@@ -1220,6 +1255,7 @@ CONTAINS
             dispersion_env%rc_disp = se_control%rcdisp
             dispersion_env%exp_pre = 0._dp
             dispersion_env%scaling = 0._dp
+            dispersion_env%nd3_exclude_pair = 0
             dispersion_env%parameter_file_name = se_control%dispersion_parameter_file
             CALL qs_dispersion_pairpot_init(atomic_kind_set, qs_kind_set, dispersion_env, para_env=para_env)
          ELSE

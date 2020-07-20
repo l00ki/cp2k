@@ -68,7 +68,7 @@ MODULE bibliography
                             Sabatini2013, DelBen2013, Kikuchi2009, Putrino2000, &
                             Putrino2002, Sebastiani2001, Weber2009, Tran2013, Golze2013, &
                             Golze2015, Golze2017a, Golze2017b, Tuckerman1992, Zhao1994, &
-                            Tozer1996, Goedecker2004, &
+                            Tozer1996, Goedecker2004, Rengaraj2020, &
                             Khaliullin2013, Kruse2012, Hutter2014, Bengtsson1999, Kantorovich2008, &
                             Kantorovich2008a, Wellendorff2012, Niklasson2014, Borstnik2014, &
                             Rayson2009, Grimme2011, Fattebert2002, Andreussi2012, &
@@ -84,10 +84,10 @@ MODULE bibliography
                             Stoychev2016, Futera2017, Bailey2006, Papior2017, Lehtola2018, &
                             Brieuc2016, Barca2018, Scheiber2018, Huang2011, Heaton_Burgess2007, &
                             Schuett2018, Holmberg2018, Togo2018, Staub2019, Grimme2013, Grimme2016, &
-                            Grimme2017, Kondov2007, &
+                            Grimme2017, Kondov2007, Clabaut2020, &
                             Ren2011, Ren2013, Cohen2000, Rogers2002, Filippetti2000, Paziani2006, &
                             Toulouse2004, Limpanuparb2011, Martin2003, Yin2017, Goerigk2017, &
-                            Wilhelm2016a, Wilhelm2016b, Wilhelm2017, Wilhelm2018
+                            Wilhelm2016a, Wilhelm2016b, Wilhelm2017, Wilhelm2018, Lass2018, cp2kqs2020
 
 CONTAINS
 
@@ -2016,6 +2016,26 @@ CONTAINS
                          "UT ISI:000244117400046", &
                          "ER"), &
                          DOI="10.1103/PhysRevLett.98.066401")
+
+      CALL add_reference(key=Rengaraj2020, ISI_record=s2a( &
+                         "AU Rengaraj, V", &
+                         "   Lass, M", &
+                         "   Plessl, C", &
+                         "   Kuhne, TD", &
+                         "TI Accurate Sampling with Noisy Forces from Approximate Computing", &
+                         "SO COMPUTATION", &
+                         "SN 2079-3197", &
+                         "J9 COMPUTATION", &
+                         "JI Computation", &
+                         "PD APR", &
+                         "PY 2020", &
+                         "VL 8", &
+                         "IS 2", &
+                         "AR 39", &
+                         "PG 11", &
+                         "UT ISI:000244117400046", &
+                         "ER"), &
+                         DOI="10.3390/computation8020039")
 
       CALL add_reference(key=Kunert2003, ISI_record=s2a( &
                          "AU Kunert, T", &
@@ -4027,6 +4047,24 @@ CONTAINS
                          "ER"), &
                          DOI="10.1021/acs.jctc.8b00957")
 
+      CALL add_reference(key=Clabaut2020, ISI_record=s2a( &
+                         "AU Clabaut, P", &
+                         "   Fleurat-Lessard, P", &
+                         "   Michel, C", &
+                         "   Steinmann, SN", &
+                         "AF Clabaut, P", &
+                         "   Fleurat-Lessard, P", &
+                         "   Michel, C", &
+                         "   Steinmann, SN", &
+                         "TI Ten Facets, One Force Field: The GAL19 Force Field for Water-Noble Metal Interfaces", &
+                         "SO Journal of Chemical Theory and Computation", &
+                         "SN None", &
+                         "PY 2020", &
+                         "VL None", &
+                         "DI 10.1021/acs.jctc.0c00091", &
+                         "ER"), &
+                         DOI="10.1021/acs.jctc.0c00091")
+
       CALL add_reference(key=Richters2018, ISI_record=s2a( &
                          "AU Richters, D", &
                          "   Lass, M", &
@@ -4355,8 +4393,9 @@ CONTAINS
                          "   Del Ben, Mauro", &
                          "   Hutter, Juerg", &
                          "TI GW in the Gaussian and plane waves scheme with application to linear acenes", &
-                         "JO J. Chem. Theory Comput.", &
-                         "SP 3623", &
+                         "SO JOURNAL OF CHEMICAL THEORY AND COMPUTATION", &
+                         "PD FEB", &
+                         "BP 3623", &
                          "EP 3635", &
                          "PY 2016", &
                          "VL 12", &
@@ -4364,7 +4403,7 @@ CONTAINS
                          "ER"), &
                          DOI="10.1021/acs.jctc.6b00380")
 
-      CALL add_reference(key=Wilhelm2016a, ISI_record=s2a( &
+      CALL add_reference(key=Wilhelm2016b, ISI_record=s2a( &
                          "PT J", &
                          "AU Wilhelm, J", &
                          "   Seewald, P", &
@@ -4376,8 +4415,9 @@ CONTAINS
                          "   Hutter, Juerg", &
                          "TI Large-Scale Cubic-Scaling Random Phase Approximation Correlation", &
                          "Energy Calculations Using a Gaussian Basis", &
-                         "JO J. Chem. Theory Comput.", &
-                         "SP 5851", &
+                         "SO JOURNAL OF CHEMICAL THEORY AND COMPUTATION", &
+                         "PD FEB", &
+                         "BP 5851", &
                          "EP 5859", &
                          "PY 2016", &
                          "VL 12", &
@@ -4385,22 +4425,23 @@ CONTAINS
                          "ER"), &
                          DOI="10.1021/acs.jctc.6b00840")
 
-      CALL add_reference(key=Wilhelm2016a, ISI_record=s2a( &
+      CALL add_reference(key=Wilhelm2017, ISI_record=s2a( &
                          "PT J", &
                          "AU Wilhelm, J", &
                          "   Hutter, J", &
                          "AF Wilhelm, Jan", &
                          "   Hutter, Juerg", &
                          "TI Periodic GW calculations in the Gaussian and plane-waves scheme", &
-                         "JO Phys. Rev. B", &
-                         "SP 235123", &
+                         "SO PHYSICAL REVIEW B", &
+                         "PD FEB", &
+                         "BP 235123", &
                          "PY 2017", &
                          "VL 95", &
                          "DI 10.1103/PhysRevB.95.235123", &
                          "ER"), &
                          DOI="10.1103/PhysRevB.95.235123")
 
-      CALL add_reference(key=Wilhelm2016a, ISI_record=s2a( &
+      CALL add_reference(key=Wilhelm2018, ISI_record=s2a( &
                          "PT J", &
                          "AU Wilhelm, J", &
                          "   Golze, D", &
@@ -4413,14 +4454,89 @@ CONTAINS
                          "   Hutter, Juerg", &
                          "   Pignedoli, Carlo A.", &
                          "TI Toward GW calculations on thousands of atoms", &
-                         "JO J. Phys. Chem. Lett.", &
-                         "SP 306", &
+                         "SO JOURNAL OF PHYSICAL CHEMISTRY LETTERS", &
+                         "PD FEB", &
+                         "BP 306", &
                          "EP 312", &
                          "PY 2018", &
                          "VL 9", &
                          "DI 10.1021/acs.jpclett.7b02740", &
                          "ER"), &
                          DOI="10.1021/acs.jpclett.7b02740")
+
+      CALL add_reference(key=Lass2018, ISI_record=s2a( &
+                         "PT C", &
+                         "AU Lass, M", &
+                         "   Mohr, S", &
+                         "   Wiebeler, H", &
+                         "   Kuehne, TD", &
+                         "   Plessl, C", &
+                         "TI A Massively Parallel Algorithm for the Approximate Calculation of ", &
+                         "   Inverse P-Th Roots of Large Sparse Matrices", &
+                         "SO Proceedings of the Platform for Advanced Scientific Computing (PASC)", &
+                         "   Conference", &
+                         "PY 2018", &
+                         "DI 10.1145/3218176.3218231", &
+                         "PI New York, NY, USA", &
+                         "ER"), &
+                         DOI="10.1145/3218176.3218231")
+
+      CALL add_reference(key=cp2kqs2020, ISI_record=s2a( &
+                         "TY JOUR", &
+                         "PT J", &
+                         "AU Kuehne,Thomas D.", &
+                         "   Iannuzzi,Marcella", &
+                         "   Del Ben,Mauro", &
+                         "   Rybkin,Vladimir V.", &
+                         "   Seewald,Patrick", &
+                         "   Stein,Frederick", &
+                         "   Laino,Teodoro", &
+                         "   Khaliullin,Rustam Z.", &
+                         "   Schuett,Ole", &
+                         "   Schiffmann,Florian", &
+                         "   Golze,Dorothea", &
+                         "   Wilhelm,Jan", &
+                         "   Chulkov,Sergey", &
+                         "   Bani-Hashemian,Mohammad Hossein", &
+                         "   Weber,Valery", &
+                         "   Borstnik,Urban", &
+                         "   Taillefumier,Mathieu", &
+                         "   Jakobovits,Alice Shoshana", &
+                         "   Lazzaro,Alfio", &
+                         "   Pabst,Hans", &
+                         "   Mueller,Tiziano", &
+                         "   Schade,Robert", &
+                         "   Guidon,Manuel", &
+                         "   Andermatt,Samuel", &
+                         "   Holmberg,Nico", &
+                         "   Schenter,Gregory K.", &
+                         "   Hehn,Anna", &
+                         "   Bussy,Augustin", &
+                         "   Belleflamme,Fabian", &
+                         "   Tabacchi,Gloria", &
+                         "   Gloess,Andreas", &
+                         "   Lass,Michael", &
+                         "   Bethune,Iain", &
+                         "   Mundy,Christopher J.", &
+                         "   Plessl,Christian", &
+                         "   Watkins,Matt", &
+                         "   VandeVondele,Joost", &
+                         "   Krack,Matthias", &
+                         "   Hutter,Juerg", &
+                         "TI CP2K: An electronic structure and molecular dynamics software package - ", &
+                         "   Quickstep: Efficient and accurate electronic structure calculations", &
+                         "SO The Journal of Chemical Physics", &
+                         "JF The Journal of Chemical Physics", &
+                         "JO J. Chem. Phys.", &
+                         "SN 0021-9606", &
+                         "IS 19", &
+                         "PY 2020", &
+                         "VL 152", &
+                         "SP 194103", &
+                         "DI 10.1063/5.0007045", &
+                         "PB American Institute of Physics", &
+                         "ER"), &
+                         DOI="10.1063/5.0007045")
 
    END SUBROUTINE add_all_references
 

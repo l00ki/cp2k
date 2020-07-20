@@ -418,7 +418,7 @@ CONTAINS
          ENDIF
       ENDIF
       !
-      ! initalization of the linear solver
+      ! initialization of the linear solver
       !
       ! A * x0
       CALL apply_op(qs_env, p_env, psi0_order, psi1, Ap, chc)
@@ -905,6 +905,7 @@ CONTAINS
       CPASSERT(ASSOCIATED(c0))
       CPASSERT(ASSOCIATED(v))
       CPASSERT(ASSOCIATED(Av))
+      MARK_USED(v)
 
       CPASSERT(ASSOCIATED(p_env%kpp1_env))
       CPASSERT(ASSOCIATED(p_env%kpp1))
@@ -1410,6 +1411,7 @@ CONTAINS
       CPASSERT(ASSOCIATED(c0))
       CPASSERT(ASSOCIATED(v))
       CPASSERT(ASSOCIATED(Av))
+      MARK_USED(v)
 
       CPASSERT(ASSOCIATED(p_env%kpp1_env))
       CPASSERT(ASSOCIATED(p_env%kpp1))

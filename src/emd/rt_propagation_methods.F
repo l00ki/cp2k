@@ -9,6 +9,7 @@
 ! **************************************************************************************************
 MODULE rt_propagation_methods
    USE bibliography,                    ONLY: Kolafa2004,&
+                                              Kuhne2007,&
                                               cite_reference
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
    USE cp_cfm_basic_linalg,             ONLY: cp_cfm_cholesky_decompose,&
@@ -120,7 +121,7 @@ MODULE rt_propagation_methods
 CONTAINS
 
 ! **************************************************************************************************
-!> \brief performes a single propagation step a(t+Dt)=U(t+Dt,t)*a(0)
+!> \brief performs a single propagation step a(t+Dt)=U(t+Dt,t)*a(0)
 !>        and calculates the new exponential
 !> \param qs_env ...
 !> \param rtp ...
@@ -282,7 +283,7 @@ CONTAINS
    END SUBROUTINE propagation_step
 
 ! **************************************************************************************************
-!> \brief Performes all the stuff to finish the step:
+!> \brief Performs all the stuff to finish the step:
 !>        convergence checks
 !>        copying stuff into right place for the next step
 !>        updating the history for extrapolation
@@ -711,6 +712,7 @@ CONTAINS
       NULLIFY (rho_hist)
       CALL timeset(routineN, handle)
       CALL cite_reference(Kolafa2004)
+      CALL cite_reference(Kuhne2007)
 
       IF (rtp%linear_scaling) THEN
          CALL get_rtp(rtp=rtp, rho_new=rho_new)

@@ -10,6 +10,7 @@
 ! **************************************************************************************************
 MODULE rpa_gw_im_time_util
 
+   USE atomic_kind_types,               ONLY: atomic_kind_type
    USE basis_set_types,                 ONLY: gto_basis_set_p_type
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
@@ -30,8 +31,8 @@ MODULE rpa_gw_im_time_util
         dbcsr_scalar, dbcsr_set_diag, dbcsr_type, dbcsr_type_no_symmetry
    USE dbcsr_tensor_api,                ONLY: &
         dbcsr_t_contract, dbcsr_t_copy, dbcsr_t_copy_matrix_to_tensor, dbcsr_t_create, &
-        dbcsr_t_destroy, dbcsr_t_pgrid_create, dbcsr_t_pgrid_destroy, dbcsr_t_pgrid_type, &
-        dbcsr_t_type
+        dbcsr_t_default_distvec, dbcsr_t_destroy, dbcsr_t_pgrid_create, dbcsr_t_pgrid_destroy, &
+        dbcsr_t_pgrid_type, dbcsr_t_type
    USE kinds,                           ONLY: dp
    USE message_passing,                 ONLY: mp_alltoall,&
                                               mp_sum
@@ -42,10 +43,9 @@ MODULE rpa_gw_im_time_util
                                               qs_environment_type
    USE qs_integral_utils,               ONLY: basis_set_list_setup
    USE qs_kind_types,                   ONLY: qs_kind_type
-   USE qs_tensors,                      ONLY: pgf_block_sizes
    USE qs_tensors_types,                ONLY: create_2c_tensor,&
                                               create_3c_tensor,&
-                                              cyclic_tensor_dist
+                                              pgf_block_sizes
    USE rpa_communication,               ONLY: communicate_buffer
 #include "./base/base_uses.f90"
 
@@ -117,6 +117,7 @@ CONTAINS
                                                             sizes_MO_p1, sizes_MO_p2
       LOGICAL                                            :: memory_info, my_do_beta
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: norm
+      TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
       TYPE(cp_fm_type), POINTER                          :: fm_mat_mo_coeff_gw
       TYPE(dbcsr_distribution_type)                      :: dist, dist_templ
       TYPE(dbcsr_t_pgrid_type)                           :: pgrid, pgrid_2d, pgrid_ic
@@ -142,7 +143,7 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-      CALL get_qs_env(qs_env, nkind=nkind, qs_kind_set=qs_kind_set, particle_set=particle_set)
+      CALL get_qs_env(qs_env, nkind=nkind, qs_kind_set=qs_kind_set, particle_set=particle_set, atomic_kind_set=atomic_kind_set)
 
       NULLIFY (fm_mat_mo_coeff_gw)
       CALL cp_fm_create(fm_mat_mo_coeff_gw, mo_coeff%matrix_struct)
@@ -183,8 +184,9 @@ CONTAINS
       CALL get_particle_set(particle_set, qs_kind_set, nsgf=sizes_AO, basis=basis_set_ao)
 
       min_bsize = qs_env%mp2_env%ri_rpa_im_time%min_bsize
-      CALL pgf_block_sizes(qs_env, basis_set_ao, min_bsize, sizes_AO_split)
-      CALL pgf_block_sizes(qs_env, basis_set_ri_aux, min_bsize, sizes_RI_split)
+
+      CALL pgf_block_sizes(atomic_kind_set, basis_set_ao, min_bsize, sizes_AO_split)
+      CALL pgf_block_sizes(atomic_kind_set, basis_set_ri_aux, min_bsize, sizes_RI_split)
 
       DEALLOCATE (basis_set_ao, basis_set_ri_aux)
 
@@ -277,8 +279,8 @@ CONTAINS
          CALL dbcsr_distribution_get(dist_templ, nprows=nprows, npcols=npcols)
 
          ALLOCATE (distp_1(size_MO), distp_2(size_MO))
-         CALL cyclic_tensor_dist(size_MO, nprows, sizes_MO_blocked, distp_1)
-         CALL cyclic_tensor_dist(size_MO, npcols, sizes_MO_blocked, distp_2)
+         CALL dbcsr_t_default_distvec(size_MO, nprows, sizes_MO_blocked, distp_1)
+         CALL dbcsr_t_default_distvec(size_MO, npcols, sizes_MO_blocked, distp_2)
          CALL dbcsr_distribution_new(dist, template=dist_templ, row_dist=distp_1, col_dist=distp_2, reuse_arrays=.TRUE.)
 
          ALLOCATE (sizes_MO_p1(size_MO))

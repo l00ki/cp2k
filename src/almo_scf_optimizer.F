@@ -850,7 +850,7 @@ CONTAINS
 !> \param quench_t ...
 !> \param matrix_t_in ...
 !> \param matrix_t_out ...
-!> \param assume_t0_q0x - since it is extrememly difficult to converge the iterative
+!> \param assume_t0_q0x - since it is extremely difficult to converge the iterative
 !>                        procedure using T as an optimized variable, assume
 !>                        T = T_0 + (1-R_0)*X and optimize X
 !>                        T_0 is assumed to be the zero-delocalization reference
@@ -955,7 +955,7 @@ CONTAINS
       optimize_theta = almo_scf_env%logical05
       eps_skip_gradients = almo_scf_env%real01
 
-      ! penalty amplitude adjusts the strenght of volume conservation
+      ! penalty amplitude adjusts the strength of volume conservation
       energy_coeff = 1.0_dp !optimizer%opt_penalty%energy_coeff
       localiz_coeff = 0.0_dp !optimizer%opt_penalty%occ_loc_coeff
       penalty_amplitude = 0.0_dp !optimizer%opt_penalty%occ_vol_coeff
@@ -1394,7 +1394,6 @@ CONTAINS
 
                DO ispin = 1, nspins
 
-                  ! RZK-warning: z2 supplied as input seems to be deallocated
                   CALL compute_gradient( &
                      m_grad_out=grad(ispin), &
                      m_ks=almo_scf_env%matrix_ks(ispin), &
@@ -1426,8 +1425,7 @@ CONTAINS
                      op_sm_set=op_sm_set_almo, &
                      weights=weights, &
                      energy_coeff=energy_coeff, &
-                     localiz_coeff=localiz_coeff, &
-                     z2=z2)
+                     localiz_coeff=localiz_coeff)
 
                ENDDO ! ispin
 
@@ -5948,7 +5946,6 @@ CONTAINS
 !> \param weights ...
 !> \param energy_coeff ...
 !> \param localiz_coeff ...
-!> \param z2 ...
 !> \par History
 !>       2015.03 created [Rustam Z Khaliullin]
 !> \author Rustam Z Khaliullin
@@ -5960,7 +5957,7 @@ CONTAINS
                                normalize_orbitals, penalty_occ_vol, penalty_occ_local, &
                                penalty_occ_vol_prefactor, envelope_amplitude, eps_filter, spin_factor, &
                                special_case, m_sig_sqrti_ii, op_sm_set, weights, energy_coeff, &
-                               localiz_coeff, z2)
+                               localiz_coeff)
 
       TYPE(dbcsr_type), INTENT(INOUT)                    :: m_grad_out
       TYPE(dbcsr_type), INTENT(IN)                       :: m_ks, m_s, m_t, m_t0, m_siginv, &
@@ -5983,12 +5980,11 @@ CONTAINS
          POINTER                                         :: op_sm_set
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: weights
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: energy_coeff, localiz_coeff
-      REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: z2
 
       CHARACTER(len=*), PARAMETER :: routineN = 'compute_gradient', &
          routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: dim0, handle, idim0, ielem, nao, reim
+      INTEGER                                            :: dim0, handle, idim0, nao, reim
       LOGICAL                                            :: my_penalty_local
       REAL(KIND=dp)                                      :: coeff, energy_g_norm, my_energy_coeff, &
                                                             my_localiz_coeff, &
@@ -6134,11 +6130,13 @@ CONTAINS
 
             SELECT CASE (2) ! allows for selection of different spread functionals
             CASE (1) ! functional =  -W_I * log( |z_I|^2 )
-               coeff = -(weights(idim0)/z2(ielem))
+               CPABORT("Localization function is not implemented")
+               !coeff = -(weights(idim0)/z2(ielem))
             CASE (2) ! functional =  W_I * ( 1 - |z_I|^2 )
                coeff = -weights(idim0)
             CASE (3) ! functional =  W_I * ( 1 - |z_I| )
-               coeff = -(weights(idim0)/(2.0_dp*z2(ielem)))
+               CPABORT("Localization function is not implemented")
+               !coeff = -(weights(idim0)/(2.0_dp*z2(ielem)))
             END SELECT
             CALL dbcsr_add(temp2, temp1, 1.0_dp, coeff)
             !CALL dbcsr_add(grad_loc, temp1, 1.0_dp, 1.0_dp)
@@ -7003,7 +7001,8 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'compute_preconditioner', &
          routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: handle, precond_domain_projector
+      INTEGER                                            :: handle, ndim, precond_domain_projector
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: nn_diagonal
       TYPE(dbcsr_type)                                   :: m_tmp_nn_1, m_tmp_no_3
 
       CALL timeset(routineN, handle)
@@ -7103,14 +7102,26 @@ CONTAINS
       IF (special_case .EQ. xalmo_case_block_diag) THEN ! non-overlapping diagonal blocks
 
          IF (skip_inversion) THEN
-            CPABORT("NYI: impose blk structure on m_prec_out first")
+
+            ! impose block-diagonal structure
+            CALL dbcsr_get_info(m_s, nfullrows_total=ndim)
+            ALLOCATE (nn_diagonal(ndim))
+            CALL dbcsr_get_diag(m_s, nn_diagonal)
+            CALL dbcsr_set(m_prec_out, 0.0_dp)
+            CALL dbcsr_set_diag(m_prec_out, nn_diagonal)
+            CALL dbcsr_filter(m_prec_out, eps_filter)
+            DEALLOCATE (nn_diagonal)
+
             CALL dbcsr_copy(m_prec_out, m_tmp_nn_1, keep_sparsity=.TRUE.)
+
          ELSE
+
             CALL pseudo_invert_diagonal_blk( &
                matrix_in=m_tmp_nn_1, &
                matrix_out=m_prec_out, &
                nocc=nocc_of_domain(:) &
                )
+
          ENDIF
 
       ELSE IF (special_case .EQ. xalmo_case_fully_deloc) THEN ! the entire system is a block
@@ -8032,6 +8043,11 @@ CONTAINS
       CPASSERT(SIZE(m_s) >= 0)
       CPASSERT(SIZE(m_g_full) >= 0)
       CPASSERT(SIZE(m_FTsiginv) >= 0)
+      MARK_USED(m_siginvTFTsiginv)
+      MARK_USED(m_STsiginv)
+      MARK_USED(m_FTsiginv)
+      MARK_USED(m_g_full)
+      MARK_USED(m_s)
 
       nspins = SIZE(m_ks)
 
@@ -8359,6 +8375,9 @@ CONTAINS
       !JHU use and test for unused debug variables
       CPASSERT(ASSOCIATED(blacs_env))
       CPASSERT(ASSOCIATED(para_env))
+      MARK_USED(blacs_env)
+      MARK_USED(para_env)
+
       CALL dbcsr_get_info(m_s, row_blk_size=ao_blk_sizes)
       CALL dbcsr_get_info(matrix_S_vo, row_blk_size=ao_blk_sizes)
       CALL dbcsr_get_info(matrix_F_vo, row_blk_size=ao_blk_sizes)
@@ -9150,7 +9169,7 @@ CONTAINS
          WRITE (unit_nr, '(T2,A)') REPEAT("-", 79)
       ENDIF
 
-      ! penalty amplitude adjusts the strenght of volume conservation
+      ! penalty amplitude adjusts the strength of volume conservation
       penalty_occ_vol = .FALSE.
       !(almo_scf_env%penalty%occ_vol_method .NE. almo_occ_vol_penalty_none .AND. &
       !                   my_special_case .EQ. xalmo_case_fully_deloc)
@@ -9291,35 +9310,38 @@ CONTAINS
                map=almo_scf_env%domain_map(ispin), &
                node_of_domain=almo_scf_env%cpu_of_domain)
 
-         ELSE IF (my_special_case .EQ. xalmo_case_block_diag) THEN
-
-            CALL dbcsr_create(m_s_inv, &
-                              template=almo_scf_env%matrix_s(1), &
-                              matrix_type=dbcsr_type_no_symmetry)
-            CALL invert_Hotelling(m_s_inv, &
-                                  almo_scf_env%matrix_s_blk(1), &
-                                  threshold=almo_scf_env%eps_filter, &
-                                  filter_eps=almo_scf_env%eps_filter)
-
-         ELSE IF (my_special_case .EQ. xalmo_case_fully_deloc) THEN
-
-            ! invert S using cholesky
-            CALL dbcsr_create(m_s_inv, &
-                              template=almo_scf_env%matrix_s(1), &
-                              matrix_type=dbcsr_type_no_symmetry)
-            CALL dbcsr_desymmetrize(almo_scf_env%matrix_s(1), m_s_inv)
-            CALL cp_dbcsr_cholesky_decompose(m_s_inv, &
-                                             para_env=almo_scf_env%para_env, &
-                                             blacs_env=almo_scf_env%blacs_env)
-            CALL cp_dbcsr_cholesky_invert(m_s_inv, &
-                                          para_env=almo_scf_env%para_env, &
-                                          blacs_env=almo_scf_env%blacs_env, &
-                                          upper_to_full=.TRUE.)
-            CALL dbcsr_filter(m_s_inv, eps=almo_scf_env%eps_filter)
-
          ENDIF
 
       ENDDO ! ispin
+
+      ! invert metric for special case where metric is spin independent
+      IF (my_special_case .EQ. xalmo_case_block_diag) THEN
+
+         CALL dbcsr_create(m_s_inv, &
+                           template=almo_scf_env%matrix_s(1), &
+                           matrix_type=dbcsr_type_no_symmetry)
+         CALL invert_Hotelling(m_s_inv, &
+                               almo_scf_env%matrix_s_blk(1), &
+                               threshold=almo_scf_env%eps_filter, &
+                               filter_eps=almo_scf_env%eps_filter)
+
+      ELSE IF (my_special_case .EQ. xalmo_case_fully_deloc) THEN
+
+         ! invert S using cholesky
+         CALL dbcsr_create(m_s_inv, &
+                           template=almo_scf_env%matrix_s(1), &
+                           matrix_type=dbcsr_type_no_symmetry)
+         CALL dbcsr_desymmetrize(almo_scf_env%matrix_s(1), m_s_inv)
+         CALL cp_dbcsr_cholesky_decompose(m_s_inv, &
+                                          para_env=almo_scf_env%para_env, &
+                                          blacs_env=almo_scf_env%blacs_env)
+         CALL cp_dbcsr_cholesky_invert(m_s_inv, &
+                                       para_env=almo_scf_env%para_env, &
+                                       blacs_env=almo_scf_env%blacs_env, &
+                                       upper_to_full=.TRUE.)
+         CALL dbcsr_filter(m_s_inv, eps=almo_scf_env%eps_filter)
+
+      ENDIF ! s_inv
 
       radius_max = optimizer%max_trust_radius
       radius_current = MIN(optimizer%initial_trust_radius, radius_max)
@@ -9912,8 +9934,10 @@ CONTAINS
                      eps_filter_in=almo_scf_env%eps_filter &
                      )
                   IF (unit_nr > 0 .AND. debug_mode) WRITE (unit_nr, *) "...Step size to border: ", step_size
-                  IF (step_size .GE. 1.0_dp .OR. step_size .LE. 0.0_dp) THEN
-                     CPABORT("Wrong dog-leg step, should not be here")
+                  IF (step_size .GT. 1.0_dp .OR. step_size .LT. 0.0_dp) THEN
+                     IF (unit_nr > 0) &
+                        WRITE (unit_nr, *) "Step size (", step_size, ") must lie inside (0,1)"
+                     CPABORT("Wrong dog leg step. We should never end up here.")
                   ENDIF
 
                   DO ispin = 1, nspins
@@ -10200,6 +10224,11 @@ CONTAINS
          CALL release_submatrices(domain_r_down(:, ispin))
          CALL release_submatrices(domain_model_hessian_inv(:, ispin))
       ENDDO ! ispin
+
+      IF (my_special_case .EQ. xalmo_case_block_diag .OR. &
+          my_special_case .EQ. xalmo_case_fully_deloc) THEN
+         CALL dbcsr_release(m_s_inv)
+      ENDIF
 
       DEALLOCATE (m_model_hessian)
       DEALLOCATE (m_model_hessian_inv)
@@ -10522,7 +10551,7 @@ CONTAINS
       discrim_sign = 1.0_dp
       nsolutions_found = 0
       DO isol = 1, nsolutions
-         solution = -coef(2) + discrim_sign*SQRT(discriminant)/(2.0_dp*coef(1))
+         solution = (-coef(2) + discrim_sign*SQRT(discriminant))/(2.0_dp*coef(1))
          IF (solution .GT. 0.0_dp) THEN
             nsolutions_found = nsolutions_found + 1
             step_size_out = solution
@@ -10693,7 +10722,7 @@ CONTAINS
       ENDDO ! ispin
 
       !RZK-critical: do we need to multiply by the spin factor?
-      !my_reduction = spin_factor*my_reduction
+      my_reduction = spin_factor*my_reduction
 
       reduction_out = my_reduction
 

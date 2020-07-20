@@ -8,6 +8,10 @@
 ! **************************************************************************************************
 
 MODULE qs_tensors_types
+   USE atomic_kind_types,               ONLY: atomic_kind_type,&
+                                              get_atomic_kind_set
+   USE basis_set_types,                 ONLY: get_gto_basis_set,&
+                                              gto_basis_set_p_type
    USE cp_array_utils,                  ONLY: cp_1d_i_p_type
    USE cp_blacs_env,                    ONLY: cp_blacs_env_create,&
                                               cp_blacs_env_release,&
@@ -17,6 +21,7 @@ MODULE qs_tensors_types
    USE cp_para_types,                   ONLY: cp_para_env_type
    USE dbcsr_api,                       ONLY: dbcsr_type_real_8
    USE dbcsr_tensor_api,                ONLY: dbcsr_t_create,&
+                                              dbcsr_t_default_distvec,&
                                               dbcsr_t_distribution_destroy,&
                                               dbcsr_t_distribution_new,&
                                               dbcsr_t_distribution_type,&
@@ -41,10 +46,14 @@ MODULE qs_tensors_types
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'qs_tensors_types'
 
    PUBLIC :: distribution_3d_type, neighbor_list_3c_type, neighbor_list_3c_iterator_type, &
-             distribution_2d_create, distribution_3d_create, distribution_3d_destroy, cyclic_tensor_dist, &
-             split_block_sizes, create_3c_tensor, create_2c_tensor
+             distribution_2d_create, distribution_3d_create, distribution_3d_destroy, &
+             split_block_sizes, create_3c_tensor, create_2c_tensor, contiguous_tensor_dist, pgf_block_sizes, &
+             create_tensor_batches
 
    INTEGER, PARAMETER, PUBLIC :: symmetric_none = 0, symmetric_ij = 1, symmetric_jk = 2, symmetrik_ik = 3, symmetric_ijk = 4
+
+   INTEGER, PARAMETER, PUBLIC :: default_block_size = 64
+   !! default block size for dense tensors, this block size should be covered by DBCSR/libcusmm
 
    TYPE distribution_3d_type
       TYPE(distribution_2d_type), POINTER :: dist_2d_1 => NULL(), dist_2d_2 => NULL()
@@ -235,35 +244,68 @@ CONTAINS
    END SUBROUTINE
 
 ! **************************************************************************************************
-!> \brief cyclic distribution of weighted elements
+!> \brief contiguous distribution of weighted elements
 !> \param nel ...
 !> \param nbin ...
 !> \param weights ...
+!> \param limits_start ...
+!> \param limits_end ...
 !> \param dist ...
 ! **************************************************************************************************
-   SUBROUTINE cyclic_tensor_dist(nel, nbin, weights, dist)
-      INTEGER, INTENT(IN)                                :: nel, nbin
+   SUBROUTINE contiguous_tensor_dist(nel, nbin, weights, limits_start, limits_end, dist)
+      INTEGER, INTENT(IN)                                :: nel
+      INTEGER, INTENT(INOUT)                             :: nbin
       INTEGER, DIMENSION(nel), INTENT(IN)                :: weights
-      INTEGER, DIMENSION(nel), INTENT(OUT)               :: dist
+      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(OUT), &
+         OPTIONAL                                        :: limits_start, limits_end
+      INTEGER, DIMENSION(nel), INTENT(OUT), OPTIONAL     :: dist
 
-      INTEGER                                            :: ibin, iel, niter
-      INTEGER, DIMENSION(nbin)                           :: occup
+      INTEGER                                            :: el_end, el_start, end_weight, ibin, &
+                                                            nel_div, nel_rem, nel_split, nel_w, &
+                                                            w_partialsum
+      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: lim_e, lim_s
 
-      occup(:) = 0
-      ibin = 0
-      DO iel = 1, nel
-         niter = 0
-         ibin = MOD(ibin + 1, nbin)
-         DO WHILE (occup(ibin + 1) + weights(iel) .GE. MAXVAL(occup))
-            IF (MINLOC(occup, DIM=1) == ibin + 1) EXIT
-            ibin = MOD(ibin + 1, nbin)
-            niter = niter + 1
+      ALLOCATE (lim_s(nbin), lim_e(nbin))
+      lim_s = 0; lim_e = 0
+
+      nel_w = SUM(weights)
+      nel_div = nel_w/nbin
+      nel_rem = MOD(nel_w, nbin)
+
+      w_partialsum = 0
+      el_end = 0
+      end_weight = 0
+      DO ibin = 1, nbin
+         nel_split = nel_div
+         IF (ibin <= nel_rem) THEN
+            nel_split = nel_split + 1
+         ENDIF
+         el_start = el_end + 1
+         el_end = el_start
+         w_partialsum = w_partialsum + weights(el_end)
+         end_weight = end_weight + nel_split
+         DO WHILE (w_partialsum < end_weight)
+            !IF (ABS(w_partialsum + weights(el_end) - end_weight) > ABS(w_partialsum - end_weight)) EXIT
+            el_end = el_end + 1
+            w_partialsum = w_partialsum + weights(el_end)
+            IF (el_end == nel) EXIT
          ENDDO
-         dist(iel) = ibin
-         occup(ibin + 1) = occup(ibin + 1) + weights(iel)
+
+         IF (PRESENT(dist)) dist(el_start:el_end) = ibin - 1
+         lim_s(ibin) = el_start
+         lim_e(ibin) = el_end
+
+         IF (el_end == nel) EXIT
       ENDDO
 
-   END SUBROUTINE cyclic_tensor_dist
+      IF (PRESENT(limits_start) .AND. PRESENT(limits_end)) THEN
+         ALLOCATE (limits_start(ibin)); limits_start(:ibin) = lim_s(:ibin)
+         ALLOCATE (limits_end(ibin)); limits_end(:ibin) = lim_e(:ibin)
+      ENDIF
+
+      nbin = ibin
+
+   END SUBROUTINE contiguous_tensor_dist
 
 ! **************************************************************************************************
 !> \brief ...
@@ -331,37 +373,37 @@ CONTAINS
       IF (mem_aware_1) THEN
          DO imem = 1, nbatches_1
             size_cut = ends_array_block_1(imem) - starts_array_block_1(imem) + 1
-            CALL cyclic_tensor_dist( &
+            CALL dbcsr_t_default_distvec( &
                size_cut, pdims(1), &
                sizes_1(starts_array_block_1(imem):ends_array_block_1(imem)), &
                dist_1(starts_array_block_1(imem):ends_array_block_1(imem)))
          ENDDO
       ELSE
-         CALL cyclic_tensor_dist(size_1, pdims(1), sizes_1, dist_1)
+         CALL dbcsr_t_default_distvec(size_1, pdims(1), sizes_1, dist_1)
       ENDIF
 
       IF (mem_aware_2) THEN
          DO imem = 1, nbatches_2
             size_cut = ends_array_block_2(imem) - starts_array_block_2(imem) + 1
-            CALL cyclic_tensor_dist( &
+            CALL dbcsr_t_default_distvec( &
                size_cut, pdims(2), &
                sizes_2(starts_array_block_2(imem):ends_array_block_2(imem)), &
                dist_2(starts_array_block_2(imem):ends_array_block_2(imem)))
          ENDDO
       ELSE
-         CALL cyclic_tensor_dist(size_2, pdims(2), sizes_2, dist_2)
+         CALL dbcsr_t_default_distvec(size_2, pdims(2), sizes_2, dist_2)
       ENDIF
 
       IF (mem_aware_3) THEN
          DO imem = 1, nbatches_3
             size_cut = ends_array_block_3(imem) - starts_array_block_3(imem) + 1
-            CALL cyclic_tensor_dist( &
+            CALL dbcsr_t_default_distvec( &
                size_cut, pdims(3), &
                sizes_3(starts_array_block_3(imem):ends_array_block_3(imem)), &
                dist_3(starts_array_block_3(imem):ends_array_block_3(imem)))
          ENDDO
       ELSE
-         CALL cyclic_tensor_dist(size_3, pdims(3), sizes_3, dist_3)
+         CALL dbcsr_t_default_distvec(size_3, pdims(3), sizes_3, dist_3)
       ENDIF
 
       CALL dbcsr_t_distribution_new(dist, pgrid, dist_1, dist_2, dist_3)
@@ -414,8 +456,8 @@ CONTAINS
       ALLOCATE (dist_1(size_1))
       ALLOCATE (dist_2(size_2))
 
-      CALL cyclic_tensor_dist(size_1, pdims(1), sizes_1, dist_1)
-      CALL cyclic_tensor_dist(size_2, pdims(2), sizes_2, dist_2)
+      CALL dbcsr_t_default_distvec(size_1, pdims(1), sizes_1, dist_1)
+      CALL dbcsr_t_default_distvec(size_2, pdims(2), sizes_2, dist_2)
 
       CALL dbcsr_t_distribution_new(dist, pgrid, dist_1, dist_2)
       CALL dbcsr_t_create(t2c, name, dist, [order_in(1)], [order_in(2)], dbcsr_type_real_8, sizes_1, sizes_2)
@@ -458,5 +500,95 @@ CONTAINS
       ENDDO
 
    END SUBROUTINE split_block_sizes
+
+! **************************************************************************************************
+!> \brief ...
+!> \param atomic_kind_set ...
+!> \param basis ...
+!> \param min_blk_size ...
+!> \param pgf_blk_sizes ...
+! **************************************************************************************************
+   SUBROUTINE pgf_block_sizes(atomic_kind_set, basis, min_blk_size, pgf_blk_sizes)
+      TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
+      TYPE(gto_basis_set_p_type), DIMENSION(:), &
+         INTENT(IN)                                      :: basis
+      INTEGER, INTENT(IN)                                :: min_blk_size
+      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(OUT)    :: pgf_blk_sizes
+
+      INTEGER                                            :: blk_count, blk_count_prev, blk_size, &
+                                                            iatom, ikind, iset, natom, nblk, nset
+      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: kind_of, pgf_blk_sizes_tmp
+      INTEGER, DIMENSION(:), POINTER                     :: nsgf_set
+
+      CALL get_atomic_kind_set(atomic_kind_set, natom=natom)
+      ALLOCATE (kind_of(natom))
+      CALL get_atomic_kind_set(atomic_kind_set, kind_of=kind_of)
+
+      nblk = 0
+      DO iatom = 1, natom
+         ikind = kind_of(iatom)
+         CALL get_gto_basis_set(basis(ikind)%gto_basis_set, nset=nset)
+         nblk = nblk + nset
+      ENDDO
+
+      ALLOCATE (pgf_blk_sizes_tmp(nblk)); pgf_blk_sizes_tmp = 0
+
+      blk_count = 0
+      blk_size = 0
+      DO iatom = 1, natom
+         blk_count_prev = blk_count
+         ikind = kind_of(iatom)
+         CALL get_gto_basis_set(basis(ikind)%gto_basis_set, nset=nset, nsgf_set=nsgf_set)
+         DO iset = 1, nset
+            blk_size = blk_size + nsgf_set(iset)
+            IF (blk_size >= min_blk_size) THEN
+               blk_count = blk_count + 1
+               pgf_blk_sizes_tmp(blk_count) = pgf_blk_sizes_tmp(blk_count) + blk_size
+               blk_size = 0
+            ENDIF
+         ENDDO
+         IF (blk_size > 0) THEN
+            IF (blk_count == blk_count_prev) blk_count = blk_count + 1
+            pgf_blk_sizes_tmp(blk_count) = pgf_blk_sizes_tmp(blk_count) + blk_size
+            blk_size = 0
+         ENDIF
+      ENDDO
+
+      ALLOCATE (pgf_blk_sizes(blk_count))
+      pgf_blk_sizes(:) = pgf_blk_sizes_tmp(:blk_count)
+   END SUBROUTINE
+
+! **************************************************************************************************
+!> \brief ...
+!> \param sizes ...
+!> \param nbatches ...
+!> \param starts_array ...
+!> \param ends_array ...
+!> \param starts_array_block ...
+!> \param ends_array_block ...
+! **************************************************************************************************
+   SUBROUTINE create_tensor_batches(sizes, nbatches, starts_array, ends_array, &
+                                    starts_array_block, ends_array_block)
+      INTEGER, DIMENSION(:), INTENT(IN)                  :: sizes
+      INTEGER, INTENT(INOUT)                             :: nbatches
+      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(OUT)    :: starts_array, ends_array, &
+                                                            starts_array_block, ends_array_block
+
+      INTEGER                                            :: bsum, imem, nblocks
+
+      nblocks = SIZE(sizes)
+
+      CALL contiguous_tensor_dist(nblocks, nbatches, sizes, limits_start=starts_array_block, limits_end=ends_array_block)
+
+      ALLOCATE (starts_array(nbatches))
+      ALLOCATE (ends_array(nbatches))
+
+      bsum = 0
+      DO imem = 1, nbatches
+         starts_array(imem) = bsum + 1
+         bsum = bsum + SUM(sizes(starts_array_block(imem):ends_array_block(imem)))
+         ends_array(imem) = bsum
+      ENDDO
+   END SUBROUTINE
 
 END MODULE

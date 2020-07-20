@@ -858,7 +858,7 @@ CONTAINS
 !> \param matrix_struct ...
 !> \param para_env ...
 !> \note
-!>       see also cp_fm_struct for explaination
+!>       see also cp_fm_struct for explanation
 !>       - nrow_local, ncol_local, row_indices, col_indices, local_data are hooks for efficient
 !>         access to the local blacs block
 ! **************************************************************************************************
@@ -1870,6 +1870,7 @@ CONTAINS
       CALL timeset(routineN, handle)
 
       CPASSERT(ASSOCIATED(source))
+      MARK_USED(source)
 
       IF (.NOT. cp2k_is_parallel) THEN
          ! Don't do anything - no MPI state for the serial case
@@ -1963,7 +1964,7 @@ CONTAINS
          ! check whether source is available on this process
          IF (ASSOCIATED(source)) THEN
             desca = source%matrix_struct%descriptor
-            IF (source%use_sp) CPABORT("only DP kind implemnted")
+            IF (source%use_sp) CPABORT("only DP kind implemented")
             IF (nrows .GT. source%matrix_struct%nrow_global) &
                CPABORT("nrows is greater than nrow_global of source")
             IF (ncols .GT. source%matrix_struct%ncol_global) &
@@ -1976,7 +1977,7 @@ CONTAINS
          ! check destination is available on this process
          IF (ASSOCIATED(destination)) THEN
             descb = destination%matrix_struct%descriptor
-            IF (destination%use_sp) CPABORT("only DP kind implemnted")
+            IF (destination%use_sp) CPABORT("only DP kind implemented")
             IF (nrows .GT. destination%matrix_struct%nrow_global) &
                CPABORT("nrows is greater than nrow_global of destination")
             IF (ncols .GT. destination%matrix_struct%ncol_global) &
@@ -2361,7 +2362,7 @@ CONTAINS
 
 ! **************************************************************************************************
 !> \brief wrapper to scalapack function INDXG2P that computes the process
-!>         coordinate which posseses the entry of a distributed matrix specified
+!>         coordinate which possesses the entry of a distributed matrix specified
 !>         by a global index INDXGLOB.
 !>
 !>  Arguments

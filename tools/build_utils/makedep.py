@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 import re
 import sys
@@ -46,7 +45,7 @@ def main(out_fn, project_name, mod_format, mode, archive_ext, src_dir, src_files
         parse_file(parsed_files, fn, src_dir)  # parses also included files
     messages.append("Parsed %d files" % len(parsed_files))
 
-    # create table mapping fortan module-names to file-name
+    # create table mapping fortran module-names to file-name
     mod2fn = dict()
     for fn in src_files:
         for m in parsed_files[fn]["module"]:

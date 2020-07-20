@@ -563,6 +563,7 @@ CONTAINS
       CPASSERT(ind_start .GT. 0 .AND. ind_start .LT. SIZE(pos))
       CPASSERT(ind_end .GT. 0 .AND. ind_end .LT. SIZE(pos))
       CPASSERT(ASSOCIATED(move_types))
+      MARK_USED(move_types)
 
       ! calculate rotation matrix (using quanternions)
       rnd = rng_stream%next()
@@ -633,7 +634,7 @@ CONTAINS
       ! using detailed balance, velocity sign changes are necessary,
       ! which are done randomly and
       ! can be switched of using MD_vel_invert
-      ! without still the balance condition should be fullfilled
+      ! without still the balance condition should be fulfilled
 
       rnd3 = rng_stream%next()
       IF (rnd3 .GE. 0.5 .AND. rnd_sign_change) THEN
@@ -1168,7 +1169,7 @@ CONTAINS
          END IF
       ELSE
          ! the volume move in box length space (dL)
-         ! increase / decrease box lenght in this direction
+         ! increase / decrease box length in this direction
          ! l_n = l_o +- rnd * mv_size
          IF (tmc_params%v_isotropic) THEN
             rnd = rng_stream%next()

@@ -41,7 +41,8 @@ MODULE qs_kind_types
         read_gto_basis_set, read_sto_basis_set, sto_basis_set_type, write_gto_basis_set, &
         write_orb_basis_set
    USE cp_control_types,                ONLY: dft_control_type,&
-                                              qs_control_type
+                                              qs_control_type,&
+                                              xtb_control_type
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_get_default_io_unit,&
                                               cp_logger_type
@@ -1426,9 +1427,9 @@ CONTAINS
       CHARACTER(LEN=2)                                   :: element_symbol
       CHARACTER(len=default_path_length)                 :: kg_potential_fn_kind, &
                                                             potential_file_name, potential_fn_kind
-      CHARACTER(LEN=default_string_length) :: akind_name, aux_basis_set_name, &
-         aux_fit_basis_set_name, basis_type, keyword, kgpot_name, kgpot_type, lri_basis_set_name, &
-         orb_basis_set_name, potential_name, potential_type, ri_aux_basis_set_name, tmp
+      CHARACTER(LEN=default_string_length)               :: akind_name, basis_type, keyword, &
+                                                            kgpot_name, kgpot_type, &
+                                                            potential_name, potential_type, tmp
       CHARACTER(LEN=default_string_length), DIMENSION(4) :: description
       CHARACTER(LEN=default_string_length), &
          DIMENSION(:), POINTER                           :: tmpstringlist
@@ -1436,8 +1437,7 @@ CONTAINS
          DIMENSION(maxbas)                               :: basis_set_form, basis_set_name, &
                                                             basis_set_type
       INTEGER :: handle, i, i_rep, iounit, ipaodesc, ipaopot, ipos, j, jj, k_rep, l, m, n_rep, &
-         nb_rep, nexp, ngauss, nlcc, nloc, nnl, norbitals, npaodesc, npaopot, nppnl, nspin, &
-         sort_basis, z
+         nb_rep, nexp, ngauss, nlcc, nloc, nnl, norbitals, npaodesc, npaopot, nppnl, nspin, z
       INTEGER, DIMENSION(:), POINTER                     :: add_el, elec_conf, orbitals
       LOGICAL :: check, explicit, explicit_basis, explicit_kgpot, explicit_potential, nobasis, &
          section_enabled, subsection_enabled, update_input
@@ -1468,9 +1468,6 @@ CONTAINS
       basis_set_name(:) = ""
       basis_set_type(:) = ""
       basis_set_form(:) = ""
-      aux_basis_set_name = ""
-      ri_aux_basis_set_name = ""
-      orb_basis_set_name = ""
       potential_name = ""
       potential_type = ""
       kgpot_name = ""
@@ -1578,53 +1575,14 @@ CONTAINS
                basis_set_form(i) = tmpstringlist(2)
                basis_set_name(i) = tmpstringlist(3)
             ELSE
-               CPABORT("")
+               CALL cp_abort(__LOCATION__, &
+                             "invalid number of BASIS_SET keyword parameters: BASIS_SET [<TYPE>] [<FORM>] <NAME>")
             END IF
             ! check that we have a valid basis set form
             IF (basis_set_form(i) /= "GTO" .AND. basis_set_form(i) /= "STO") THEN
-               CPABORT("BASIS_SET_FORM invalid")
+               CPABORT("invalid BASIS_SET FORM parameter")
             END IF
          END DO
-
-         ! Deprecated keywords
-         DO i = 1, nb_rep
-            IF (basis_set_type(i) == "ORB") THEN
-               orb_basis_set_name = basis_set_name(i)
-               EXIT
-            END IF
-         END DO
-         !
-         CALL section_vals_val_get(kind_section, i_rep_section=k_rep, &
-                                   keyword_name="AUX_FIT_BASIS_SET", c_val=aux_fit_basis_set_name)
-         IF (aux_fit_basis_set_name /= "") THEN
-            CPWARN("AUX_FIT_BASIS_SET Keyword cannot be used any longer, use BASIS_SET AUX_FIT")
-            CPABORT("AUX_FIT_BASIS_SET")
-         END IF
-         !
-         CALL section_vals_val_get(kind_section, i_rep_section=k_rep, &
-                                   keyword_name="AUX_BASIS_SET", c_val=aux_basis_set_name)
-         IF (aux_basis_set_name /= "") THEN
-            CPWARN("AUX_BASIS_SET Keyword cannot be used any longer, use BASIS_SET AUX")
-            CPABORT("AUX_BASIS_SET")
-         END IF
-         !
-         CALL section_vals_val_get(kind_section, i_rep_section=k_rep, &
-                                   keyword_name="LRI_BASIS_SET", c_val=lri_basis_set_name)
-         IF (lri_basis_set_name /= "") THEN
-            CPWARN("LRI_BASIS_SET Keyword cannot be used any longer, use BASIS_SET LRI")
-            CPABORT("LRI_BASIS_SET")
-         END IF
-         !
-         CALL section_vals_val_get(kind_section, i_rep_section=k_rep, &
-                                   keyword_name="RI_AUX_BASIS_SET", c_val=ri_aux_basis_set_name)
-         IF (ri_aux_basis_set_name /= "") THEN
-            nb_rep = nb_rep + 1
-            CPASSERT(nb_rep <= maxbas)
-            basis_set_type(nb_rep) = "RI_AUX"
-            basis_set_form(nb_rep) = "GTO"
-            basis_set_name(nb_rep) = ri_aux_basis_set_name
-         END IF
-         ! end of deprecated input
 
          ! parse PAO_BASIS_SIZE
          CALL section_vals_val_get(kind_section, keyword_name="PAO_BASIS_SIZE", i_rep_section=k_rep, &
@@ -2009,7 +1967,7 @@ CONTAINS
                          "Information provided in the input file regarding POTENTIAL for KIND <"// &
                          TRIM(qs_kind%name)//"> will be ignored!")
 
-         check = ((orb_basis_set_name /= '') .OR. explicit_basis)
+         check = ((nb_rep > 0) .OR. explicit_basis)
          IF (check) &
             CALL cp_warn(__LOCATION__, &
                          "Information provided in the input file regarding BASIS for KIND <"// &
@@ -2042,7 +2000,7 @@ CONTAINS
                          "Information provided in the input file regarding POTENTIAL for KIND <"// &
                          TRIM(qs_kind%name)//"> will be ignored!")
 
-         check = ((orb_basis_set_name /= '') .OR. explicit_basis)
+         check = ((nb_rep > 0) .OR. explicit_basis)
          IF (check) &
             CALL cp_warn(__LOCATION__, &
                          "Information provided in the input file regarding BASIS for KIND <"// &
@@ -2075,7 +2033,7 @@ CONTAINS
                          "Information provided in the input file regarding POTENTIAL for KIND <"// &
                          TRIM(qs_kind%name)//"> will be ignored!")
 
-         check = ((orb_basis_set_name /= '') .OR. explicit_basis)
+         check = ((nb_rep > 0) .OR. explicit_basis)
          IF (check) &
             CALL cp_warn(__LOCATION__, &
                          "Information provided in the input file regarding BASIS for KIND <"// &
@@ -2164,7 +2122,7 @@ CONTAINS
                NULLIFY (tmp_basis_set)
                CALL allocate_gto_basis_set(tmp_basis_set)
                CALL read_gto_basis_set(qs_kind%element_symbol, basis_type, &
-                                       tmp_basis_set, basis_section, i)
+                                       tmp_basis_set, basis_section, i, dft_section)
                tmp = basis_type
                CALL uppercase(tmp)
                CALL add_basis_set_to_container(qs_kind%basis_sets, tmp_basis_set, tmp)
@@ -2191,17 +2149,6 @@ CONTAINS
             END DO
             NULLIFY (sup_basis_set)
          END DO
-
-         ! register that basis should be sorted
-         ! actual sorting is taking place later (once set radii have been initialized)
-         CALL section_vals_val_get(dft_section, "SORT_BASIS", i_val=sort_basis)
-         DO i = 1, SIZE(qs_kind%basis_sets)
-            NULLIFY (tmp_basis_set)
-            CALL get_basis_from_container(qs_kind%basis_sets, basis_set=tmp_basis_set, &
-                                          inumbas=i, basis_type=basis_type)
-            IF (basis_type == "") CYCLE
-            tmp_basis_set%sort = sort_basis
-         ENDDO
 
          ! check that we have an orbital basis set
          nobasis = .TRUE.
@@ -2613,7 +2560,8 @@ CONTAINS
             CALL check_qs_kind(qs_kind, dft_control, subsys_section)
          END DO
          IF (dft_control%qs_control%xtb) THEN
-            CALL write_xtb_kab_param(qs_kind_set, subsys_section)
+            CALL write_xtb_kab_param(qs_kind_set, subsys_section, &
+                                     dft_control%qs_control%xtb_control)
          END IF
       ELSE
          CPABORT("The pointer qs_kind_set is not associated")
@@ -2625,11 +2573,13 @@ CONTAINS
 !> \brief ...
 !> \param qs_kind_set ...
 !> \param subsys_section ...
+!> \param xtb_control ...
 ! **************************************************************************************************
-   SUBROUTINE write_xtb_kab_param(qs_kind_set, subsys_section)
+   SUBROUTINE write_xtb_kab_param(qs_kind_set, subsys_section, xtb_control)
 
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
       TYPE(section_vals_type), POINTER                   :: subsys_section
+      TYPE(xtb_control_type), POINTER                    :: xtb_control
 
       CHARACTER(len=*), PARAMETER :: routineN = 'write_xtb_kab_param', &
          routineP = moduleN//':'//routineN
@@ -2659,7 +2609,7 @@ CONTAINS
                   CALL get_qs_kind(qs_kindb, xtb_parameter=xtb_parameter_b)
                   CALL get_xtb_atom_param(xtb_parameter_b, aname=bname, z=zb)
                   WRITE (io_unit, "(A,T10,A15,T25,A15,T71,F10.3)") &
-                     "    Kab:", TRIM(aname), TRIM(bname), xtb_set_kab(za, zb)
+                     "    Kab:", TRIM(aname), TRIM(bname), xtb_set_kab(za, zb, xtb_control)
                END DO
             END DO
             WRITE (io_unit, *)
@@ -2806,6 +2756,8 @@ CONTAINS
                   bstring = "LRI Basis Set"
                CASE ("RI_XAS")
                   bstring = "RI XAS Basis Set"
+               CASE ("RI_HFX")
+                  bstring = "RI HFX Basis Set"
                END SELECT
 
                CALL write_orb_basis_set(tmp_basis, output_unit, bstring)
@@ -2994,6 +2946,8 @@ CONTAINS
                      bstring = "Auxiliary Fit Basis Set"
                   CASE ("LRI_AUX")
                      bstring = "LRI Basis Set"
+                  CASE ("RI_HFX")
+                     bstring = "RI HFX Basis Set"
                   END SELECT
 
                   CALL write_gto_basis_set(tmp_basis, output_unit, bstring)

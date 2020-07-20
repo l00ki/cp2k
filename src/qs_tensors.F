@@ -9,15 +9,15 @@
 MODULE qs_tensors
    USE ai_contraction,                  ONLY: block_add
    USE ai_contraction_sphi,             ONLY: ab_contract,&
-                                              abc_contract
+                                              libxsmm_abc_contract
    USE ai_overlap,                      ONLY: overlap_ab
-   USE ai_overlap3,                     ONLY: overlap3
-   USE atomic_kind_types,               ONLY: atomic_kind_type,&
-                                              get_atomic_kind_set
+   USE atomic_kind_types,               ONLY: atomic_kind_type
    USE basis_set_types,                 ONLY: get_gto_basis_set,&
-                                              gto_basis_set_p_type
+                                              gto_basis_set_p_type,&
+                                              gto_basis_set_type
    USE block_p_types,                   ONLY: block_p_type
    USE cell_types,                      ONLY: cell_type
+   USE cp_array_utils,                  ONLY: cp_2d_r_p_type
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_cp2k_link,              ONLY: cp_dbcsr_alloc_block_from_nbl
    USE cp_files,                        ONLY: close_file,&
@@ -30,15 +30,31 @@ MODULE qs_tensors
                                               dbcsr_type,&
                                               dbcsr_type_real_8
    USE dbcsr_tensor_api,                ONLY: &
-        dbcsr_t_blk_sizes, dbcsr_t_copy, dbcsr_t_create, dbcsr_t_destroy, &
-        dbcsr_t_distribution_destroy, dbcsr_t_distribution_new, dbcsr_t_distribution_type, &
-        dbcsr_t_filter, dbcsr_t_get_block, dbcsr_t_get_info, dbcsr_t_get_mapping_info, &
-        dbcsr_t_get_nze_total, dbcsr_t_get_stored_coordinates, dbcsr_t_mp_environ_pgrid, &
-        dbcsr_t_ndims, dbcsr_t_pgrid_type, dbcsr_t_put_block, dbcsr_t_reserve_blocks, &
-        dbcsr_t_type, dbcsr_t_write_split_info
+        dbcsr_t_blk_sizes, dbcsr_t_clear, dbcsr_t_copy, dbcsr_t_create, dbcsr_t_default_distvec, &
+        dbcsr_t_destroy, dbcsr_t_distribution_destroy, dbcsr_t_distribution_new, &
+        dbcsr_t_distribution_type, dbcsr_t_filter, dbcsr_t_get_block, dbcsr_t_get_info, &
+        dbcsr_t_get_mapping_info, dbcsr_t_get_num_blocks, dbcsr_t_get_nze_total, &
+        dbcsr_t_get_stored_coordinates, dbcsr_t_iterator_blocks_left, dbcsr_t_iterator_next_block, &
+        dbcsr_t_iterator_start, dbcsr_t_iterator_stop, dbcsr_t_iterator_type, &
+        dbcsr_t_mp_environ_pgrid, dbcsr_t_nblks_total, dbcsr_t_ndims, dbcsr_t_ndims_matrix_column, &
+        dbcsr_t_ndims_matrix_row, dbcsr_t_pgrid_type, dbcsr_t_put_block, dbcsr_t_reserve_blocks, &
+        dbcsr_t_reserved_block_indices, dbcsr_t_type, dbcsr_t_write_split_info
    USE distribution_1d_types,           ONLY: distribution_1d_type
    USE distribution_2d_types,           ONLY: distribution_2d_type
    USE gamma,                           ONLY: init_md_ftable
+   USE hfx_compression_methods,         ONLY: hfx_add_mult_cache_elements,&
+                                              hfx_add_single_cache_element,&
+                                              hfx_decompress_first_cache,&
+                                              hfx_flush_last_cache,&
+                                              hfx_get_mult_cache_elements,&
+                                              hfx_get_single_cache_element,&
+                                              hfx_reset_cache_and_container
+   USE hfx_types,                       ONLY: alloc_containers,&
+                                              dealloc_containers,&
+                                              hfx_cache_type,&
+                                              hfx_compression_type,&
+                                              hfx_container_type,&
+                                              hfx_init_container
    USE input_constants,                 ONLY: do_potential_coulomb,&
                                               do_potential_id,&
                                               do_potential_short,&
@@ -76,9 +92,9 @@ MODULE qs_tensors
                                               local_atoms_type,&
                                               pair_radius_setup
    USE qs_tensors_types,                ONLY: &
-        cyclic_tensor_dist, distribution_3d_destroy, distribution_3d_type, &
-        neighbor_list_3c_iterator_type, neighbor_list_3c_type, symmetric_ij, symmetric_ijk, &
-        symmetric_jk, symmetric_none, symmetrik_ik
+        distribution_3d_destroy, distribution_3d_type, neighbor_list_3c_iterator_type, &
+        neighbor_list_3c_type, symmetric_ij, symmetric_ijk, symmetric_jk, symmetric_none, &
+        symmetrik_ik
    USE t_c_g0,                          ONLY: get_lmax_init,&
                                               init
 #include "./base/base_uses.f90"
@@ -92,13 +108,15 @@ MODULE qs_tensors
    PUBLIC :: build_3c_neighbor_lists, &
              neighbor_list_3c_destroy, neighbor_list_3c_iterate, neighbor_list_3c_iterator_create, &
              neighbor_list_3c_iterator_destroy, get_3c_iterator_info, build_3c_integrals, &
-             contiguous_tensor_dist, &
              build_2c_neighbor_lists, build_2c_integrals, cutoff_screen_factor, tensor_change_pgrid, &
-             pgf_block_sizes, get_tensor_occupancy
+             get_tensor_occupancy, compress_tensor, decompress_tensor
 
    TYPE one_dim_int_array
       INTEGER, DIMENSION(:), ALLOCATABLE    :: array
    END TYPE
+
+   ! cache size for integral compression
+   INTEGER, PARAMETER, PRIVATE :: cache_size = 1024
 
 CONTAINS
 
@@ -464,6 +482,19 @@ CONTAINS
          IF (iter_stat /= 0) THEN
             RETURN
          ENDIF
+
+         CALL get_iterator_info(iterator%iter_ij, iatom=iatom, jatom=jatom)
+         skip_this = .FALSE.
+         IF ((iterator%bounds_i(1) > 0 .AND. iatom < iterator%bounds_i(1)) &
+             .OR. (iterator%bounds_i(2) > 0 .AND. iatom > iterator%bounds_i(2))) skip_this = .TRUE.
+         IF ((iterator%bounds_j(1) > 0 .AND. jatom < iterator%bounds_j(1)) &
+             .OR. (iterator%bounds_j(2) > 0 .AND. jatom > iterator%bounds_j(2))) skip_this = .TRUE.
+
+         IF (skip_this) THEN
+            iter_stat = neighbor_list_3c_iterate(iterator)
+            RETURN
+         ENDIF
+
       ENDIF
       iter_stat = nl_sub_iterate(iterator%iter_jk, iterator%iter_ij)
       IF (iter_stat /= 0) THEN
@@ -483,10 +514,6 @@ CONTAINS
       jatom = jatom_1
 
       skip_this = .FALSE.
-      IF ((iterator%bounds_i(1) > 0 .AND. iatom < iterator%bounds_i(1)) &
-          .OR. (iterator%bounds_i(2) > 0 .AND. iatom > iterator%bounds_i(2))) skip_this = .TRUE.
-      IF ((iterator%bounds_j(1) > 0 .AND. jatom < iterator%bounds_j(1)) &
-          .OR. (iterator%bounds_j(2) > 0 .AND. jatom > iterator%bounds_j(2))) skip_this = .TRUE.
       IF ((iterator%bounds_k(1) > 0 .AND. katom < iterator%bounds_k(1)) &
           .OR. (iterator%bounds_k(2) > 0 .AND. katom > iterator%bounds_k(2))) skip_this = .TRUE.
 
@@ -851,9 +878,10 @@ CONTAINS
          routineP = moduleN//':'//routineN
 
       INTEGER :: block_end_i, block_end_j, block_end_k, block_start_i, block_start_j, &
-         block_start_k, handle, handle2, i, iatom, ibasis, ikind, imax, iset, jatom, jcell, jkind, &
-         jset, katom, kcell, kkind, kset, m_max, maxli, maxlj, maxlk, natom, ncoi, ncoj, ncok, &
-         nimg, nseti, nsetj, nsetk, op_ij, op_jk, op_pos_prv, sgfi, sgfj, sgfk, unit_id
+         block_start_k, egfi, handle, handle2, i, iatom, ibasis, ikind, ilist, imax, iset, jatom, &
+         jcell, jkind, jset, katom, kcell, kkind, kset, m_max, max_ncoi, max_ncoj, max_ncok, &
+         max_nset, max_nsgfi, max_nsgfj, max_nsgfk, maxli, maxlj, maxlk, natom, nbasis, ncoi, &
+         ncoj, ncok, nimg, nseti, nsetj, nsetk, op_ij, op_jk, op_pos_prv, sgfi, sgfj, sgfk, unit_id
       INTEGER, DIMENSION(3)                              :: blk_size, cell_j, cell_k, &
                                                             kp_index_lbounds, kp_index_ubounds, sp
       INTEGER, DIMENSION(:), POINTER                     :: lmax_i, lmax_j, lmax_k, lmin_i, lmin_j, &
@@ -865,9 +893,9 @@ CONTAINS
                                                             do_kpoints_prv, found
       REAL(KIND=dp)                                      :: dij, dik, djk, dr_ij, dr_ik, dr_jk, &
                                                             kind_radius_i, kind_radius_j, &
-                                                            kind_radius_k, max_contraction_val, &
-                                                            prefac
-      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: max_contraction_i, max_contraction_j, &
+                                                            kind_radius_k, prefac, sijk_ext
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: ccp_buffer, cpp_buffer, &
+                                                            max_contraction_i, max_contraction_j, &
                                                             max_contraction_k
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: block_t, dummy_block_t, sijk, sijk_contr
       REAL(KIND=dp), DIMENSION(3)                        :: ri, rij, rik, rj, rjk, rk
@@ -875,10 +903,12 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: rpgf_i, rpgf_j, rpgf_k, sphi_i, sphi_j, &
                                                             sphi_k, zeti, zetj, zetk
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
+      TYPE(cp_2d_r_p_type), DIMENSION(:, :), POINTER     :: spi, spk, tspj
       TYPE(cp_libint_t)                                  :: lib
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(dbcsr_t_type)                                 :: t_3c_tmp
       TYPE(dft_control_type), POINTER                    :: dft_control
+      TYPE(gto_basis_set_type), POINTER                  :: basis_set
       TYPE(kpoint_type), POINTER                         :: kpoints
       TYPE(neighbor_list_3c_iterator_type)               :: nl_3c_iter
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
@@ -950,23 +980,88 @@ CONTAINS
 
       CPASSERT(ALL(SHAPE(t3c) == [nimg, nimg]))
 
-      !Need the max l for each basis for libint
+      !Need the max l for each basis for libint and max nset, nco and nsgf for LIBXSMM contraction
+      nbasis = SIZE(basis_i)
+      max_nsgfi = 0
+      max_ncoi = 0
+      max_nset = 0
       maxli = 0
-      DO ibasis = 1, SIZE(basis_i)
-         CALL get_gto_basis_set(gto_basis_set=basis_i(ibasis)%gto_basis_set, maxl=imax)
+      DO ibasis = 1, nbasis
+         CALL get_gto_basis_set(gto_basis_set=basis_i(ibasis)%gto_basis_set, maxl=imax, &
+                                nset=iset, nsgf_set=nsgfi, npgf=npgfi)
          maxli = MAX(maxli, imax)
+         max_nset = MAX(max_nset, iset)
+         max_nsgfi = MAX(max_nsgfi, MAXVAL(nsgfi))
+         max_ncoi = MAX(max_ncoi, MAXVAL(npgfi)*ncoset(maxli))
       END DO
+      max_nsgfj = 0
+      max_ncoj = 0
       maxlj = 0
-      DO ibasis = 1, SIZE(basis_j)
-         CALL get_gto_basis_set(gto_basis_set=basis_j(ibasis)%gto_basis_set, maxl=imax)
+      DO ibasis = 1, nbasis
+         CALL get_gto_basis_set(gto_basis_set=basis_j(ibasis)%gto_basis_set, maxl=imax, &
+                                nset=jset, nsgf_set=nsgfj, npgf=npgfj)
          maxlj = MAX(maxlj, imax)
+         max_nset = MAX(max_nset, jset)
+         max_nsgfj = MAX(max_nsgfj, MAXVAL(nsgfj))
+         max_ncoj = MAX(max_ncoj, MAXVAL(npgfj)*ncoset(maxlj))
       END DO
+      max_nsgfk = 0
+      max_ncok = 0
       maxlk = 0
-      DO ibasis = 1, SIZE(basis_k)
-         CALL get_gto_basis_set(gto_basis_set=basis_k(ibasis)%gto_basis_set, maxl=imax)
+      DO ibasis = 1, nbasis
+         CALL get_gto_basis_set(gto_basis_set=basis_k(ibasis)%gto_basis_set, maxl=imax, &
+                                nset=kset, nsgf_set=nsgfk, npgf=npgfk)
          maxlk = MAX(maxlk, imax)
+         max_nset = MAX(max_nset, kset)
+         max_nsgfk = MAX(max_nsgfk, MAXVAL(nsgfk))
+         max_ncok = MAX(max_ncok, MAXVAL(npgfk)*ncoset(maxlk))
       END DO
       m_max = maxli + maxlj + maxlk
+
+      !To minimize expensive memory opsand generally optimize contraction, pre-allocate buffers and
+      !contiguous sphi arrays (and transposed in the cas of sphi_i)
+      ALLOCATE (cpp_buffer(max_nsgfj*max_ncok), ccp_buffer(max_nsgfj*max_nsgfk*max_ncoi))
+
+      NULLIFY (tspj, spi, spk)
+      ALLOCATE (spi(max_nset, nbasis), tspj(max_nset, nbasis), spk(max_nset, nbasis))
+
+      DO ibasis = 1, nbasis
+         DO iset = 1, max_nset
+            NULLIFY (spi(iset, ibasis)%array)
+            NULLIFY (tspj(iset, ibasis)%array)
+
+            NULLIFY (spk(iset, ibasis)%array)
+         END DO
+      END DO
+
+      DO ilist = 1, 3
+         DO ibasis = 1, nbasis
+            IF (ilist == 1) basis_set => basis_i(ibasis)%gto_basis_set
+            IF (ilist == 2) basis_set => basis_j(ibasis)%gto_basis_set
+            IF (ilist == 3) basis_set => basis_k(ibasis)%gto_basis_set
+
+            DO iset = 1, basis_set%nset
+
+               ncoi = basis_set%npgf(iset)*ncoset(basis_set%lmax(iset))
+               sgfi = basis_set%first_sgf(1, iset)
+               egfi = sgfi + basis_set%nsgf_set(iset) - 1
+
+               IF (ilist == 1) THEN
+                  ALLOCATE (spi(iset, ibasis)%array(ncoi, basis_set%nsgf_set(iset)))
+                  spi(iset, ibasis)%array(:, :) = basis_set%sphi(1:ncoi, sgfi:egfi)
+
+               ELSE IF (ilist == 2) THEN
+                  ALLOCATE (tspj(iset, ibasis)%array(basis_set%nsgf_set(iset), ncoi))
+                  tspj(iset, ibasis)%array(:, :) = TRANSPOSE(basis_set%sphi(1:ncoi, sgfi:egfi))
+
+               ELSE
+                  ALLOCATE (spk(iset, ibasis)%array(ncoi, basis_set%nsgf_set(iset)))
+                  spk(iset, ibasis)%array(:, :) = basis_set%sphi(1:ncoi, sgfi:egfi)
+               END IF
+
+            END DO !iset
+         END DO !ibasis
+      END DO !ilist
 
       !Init the truncated Coulomb operator
       IF (op_ij == do_potential_truncated .OR. op_jk == do_potential_truncated) THEN
@@ -984,10 +1079,8 @@ CONTAINS
 
       CALL init_md_ftable(nmax=m_max)
 
-      IF (op_ij /= do_potential_id .OR. op_jk /= do_potential_id) THEN
-         CALL cp_libint_init_3eri(lib, MAX(maxli, maxlj, maxlk))
-         CALL cp_libint_set_contrdepth(lib, 1)
-      ENDIF
+      CALL cp_libint_init_3eri(lib, MAX(maxli, maxlj, maxlk))
+      CALL cp_libint_set_contrdepth(lib, 1)
 
       CALL neighbor_list_3c_iterator_create(nl_3c_iter, nl_3c)
       CALL nl_3c_iter_set_bounds(nl_3c_iter, bounds_i, bounds_j, bounds_k)
@@ -1077,11 +1170,7 @@ CONTAINS
 
          CALL dbcsr_t_blk_sizes(t3c(jcell, kcell), [iatom, jatom, katom], blk_size)
 
-         IF (op_ij /= do_potential_id) THEN
-            ALLOCATE (block_t(blk_size(2), blk_size(3), blk_size(1)))
-         ELSE
-            ALLOCATE (block_t(blk_size(1), blk_size(2), blk_size(3)))
-         ENDIF
+         ALLOCATE (block_t(blk_size(2), blk_size(3), blk_size(1)))
 
          block_t = 0.0_dp
          block_not_zero = .FALSE.
@@ -1106,98 +1195,51 @@ CONTAINS
                   sgfk = first_sgf_k(1, kset)
 
                   IF (ncoj*ncok*ncoi > 0) THEN
-
-                     IF (op_ij == do_potential_id .AND. op_jk == do_potential_id) THEN ! cp2k overlap integrals
-                        ALLOCATE (sijk(ncoi, ncoj, ncok))
-                        sijk(:, :, :) = 0.0_dp
-                        CALL overlap3(lmax_i(iset), npgfi(iset), zeti(:, iset), rpgf_i(:, iset), &
-                                      lmin_i(iset), &
-                                      lmax_j(jset), npgfj(jset), zetj(:, jset), rpgf_j(:, jset), lmin_j(jset), &
-                                      lmax_k(kset), npgfk(kset), zetk(:, kset), rpgf_k(:, kset), lmin_k(kset), &
-                                      rij, dij, rik, dik, rjk, djk, sijk)
-                     ELSEIF (op_jk /= do_potential_id) THEN ! for everything else use libint
-                        ALLOCATE (sijk(ncoi, ncoj, ncok))
-                        sijk(:, :, :) = 0.0_dp
-                        !need positions for libint. Only relative positions are needed => set ri to 0.0
-                        ri = 0.0_dp
-                        rj = rij ! ri + rij
-                        rk = rik ! ri + rik
-                        CALL eri_3center(sijk, &
-                                         lmin_i(iset), lmax_i(iset), npgfi(iset), zeti(:, iset), rpgf_i(:, iset), ri, &
-                                         lmin_j(jset), lmax_j(jset), npgfj(jset), zetj(:, jset), rpgf_j(:, jset), rj, &
-                                         lmin_k(kset), lmax_k(kset), npgfk(kset), zetk(:, kset), rpgf_k(:, kset), rk, &
-                                         dij, dik, djk, lib, potential_parameter)
-                     ELSEIF (op_ij /= do_potential_id) THEN
-                        ALLOCATE (sijk(ncoj, ncok, ncoi))
-                        sijk(:, :, :) = 0.0_dp
-                        ri = 0.0_dp
-                        rj = rij ! ri + rij
-                        rk = rik ! ri + rik
-                        CALL eri_3center(sijk, &
-                                         lmin_j(jset), lmax_j(jset), npgfj(jset), zetj(:, jset), rpgf_j(:, jset), rj, &
-                                         lmin_k(kset), lmax_k(kset), npgfk(kset), zetk(:, kset), rpgf_k(:, kset), rk, &
-                                         lmin_i(iset), lmax_i(iset), npgfi(iset), zeti(:, iset), rpgf_i(:, iset), ri, &
-                                         djk, dij, dik, lib, potential_parameter)
-
-                     ENDIF
-                     max_contraction_val = max_contraction_i(iset)*max_contraction_j(jset)*max_contraction_k(kset)
+                     ALLOCATE (sijk(ncoj, ncok, ncoi))
+                     sijk(:, :, :) = 0.0_dp
+                     !need positions for libint. Only relative positions are needed => set ri to 0.0
+                     ri = 0.0_dp
+                     rj = rij ! ri + rij
+                     rk = rik ! ri + rik
+                     CALL eri_3center(sijk, &
+                                      lmin_j(jset), lmax_j(jset), npgfj(jset), zetj(:, jset), rpgf_j(:, jset), rj, &
+                                      lmin_k(kset), lmax_k(kset), npgfk(kset), zetk(:, kset), rpgf_k(:, kset), rk, &
+                                      lmin_i(iset), lmax_i(iset), npgfi(iset), zeti(:, iset), rpgf_i(:, iset), ri, &
+                                      djk, dij, dik, lib, potential_parameter, int_abc_ext=sijk_ext)
 
                      IF (PRESENT(int_eps)) THEN
-                        IF (MAXVAL(ABS(sijk))*max_contraction_val < int_eps) THEN
+                        IF (int_eps > sijk_ext*(max_contraction_i(iset)* &
+                                                max_contraction_j(jset)* &
+                                                max_contraction_k(kset))) THEN
                            DEALLOCATE (sijk)
                            CYCLE
-                        ENDIF
+                        END IF
                      ENDIF
 
                      block_not_zero = .TRUE.
 
-                     IF (op_ij /= do_potential_id) THEN
-                        ALLOCATE (sijk_contr(nsgfj(jset), nsgfk(kset), nsgfi(iset)))
-                        CALL abc_contract(sijk_contr, sijk, &
-                                          sphi_j(:, sgfj:), sphi_k(:, sgfk:), sphi_i(:, sgfi:), &
-                                          ncoj, ncok, ncoi, nsgfj(jset), nsgfk(kset), nsgfi(iset))
-                        DEALLOCATE (sijk)
+                     ALLOCATE (sijk_contr(nsgfj(jset), nsgfk(kset), nsgfi(iset)))
+                     CALL libxsmm_abc_contract(sijk_contr, sijk, tspj(jset, jkind)%array, &
+                                               spk(kset, kkind)%array, spi(iset, ikind)%array, &
+                                               ncoj, ncok, ncoi, nsgfj(jset), nsgfk(kset), &
+                                               nsgfi(iset), cpp_buffer, ccp_buffer)
+                     DEALLOCATE (sijk)
 
-                        block_start_j = sgfj
-                        block_end_j = sgfj + nsgfj(jset) - 1
-                        block_start_k = sgfk
-                        block_end_k = sgfk + nsgfk(kset) - 1
-                        block_start_i = sgfi
-                        block_end_i = sgfi + nsgfi(iset) - 1
+                     block_start_j = sgfj
+                     block_end_j = sgfj + nsgfj(jset) - 1
+                     block_start_k = sgfk
+                     block_end_k = sgfk + nsgfk(kset) - 1
+                     block_start_i = sgfi
+                     block_end_i = sgfi + nsgfi(iset) - 1
 
+                     block_t(block_start_j:block_end_j, &
+                             block_start_k:block_end_k, &
+                             block_start_i:block_end_i) = &
                         block_t(block_start_j:block_end_j, &
                                 block_start_k:block_end_k, &
-                                block_start_i:block_end_i) = &
-                           block_t(block_start_j:block_end_j, &
-                                   block_start_k:block_end_k, &
-                                   block_start_i:block_end_i) + &
-                           prefac*sijk_contr(:, :, :)
-                        DEALLOCATE (sijk_contr)
-                     ELSE
-                        ALLOCATE (sijk_contr(nsgfi(iset), nsgfj(jset), nsgfk(kset)))
-
-                        CALL abc_contract(sijk_contr, sijk, &
-                                          sphi_i(:, sgfi:), sphi_j(:, sgfj:), sphi_k(:, sgfk:), &
-                                          ncoi, ncoj, ncok, nsgfi(iset), nsgfj(jset), nsgfk(kset))
-
-                        DEALLOCATE (sijk)
-                        block_start_j = sgfj
-                        block_end_j = sgfj + nsgfj(jset) - 1
-                        block_start_k = sgfk
-                        block_end_k = sgfk + nsgfk(kset) - 1
-                        block_start_i = sgfi
-                        block_end_i = sgfi + nsgfi(iset) - 1
-
-                        block_t(block_start_i:block_end_i, &
-                                block_start_j:block_end_j, &
-                                block_start_k:block_end_k) = &
-                           block_t(block_start_i:block_end_i, &
-                                   block_start_j:block_end_j, &
-                                   block_start_k:block_end_k) + &
-                           prefac*sijk_contr(:, :, :)
-                        DEALLOCATE (sijk_contr)
-
-                     ENDIF
+                                block_start_i:block_end_i) + &
+                        prefac*sijk_contr(:, :, :)
+                     DEALLOCATE (sijk_contr)
 
                   END IF ! number of triples > 0
 
@@ -1216,16 +1258,11 @@ CONTAINS
             ENDIF
             sp = SHAPE(block_t)
 
-            IF (op_ij /= do_potential_id) THEN
+            sp([2, 3, 1]) = sp
 
-               sp([2, 3, 1]) = sp
+            CALL dbcsr_t_put_block(t3c(jcell, kcell), &
+                                   [iatom, jatom, katom], sp, RESHAPE(block_t, SHAPE=sp, ORDER=[2, 3, 1]), summation=.TRUE.)
 
-               CALL dbcsr_t_put_block(t3c(jcell, kcell), &
-                                      [iatom, jatom, katom], sp, RESHAPE(block_t, SHAPE=sp, ORDER=[2, 3, 1]), summation=.TRUE.)
-            ELSE
-               CALL dbcsr_t_put_block(t3c(jcell, kcell), &
-                                      [iatom, jatom, katom], sp, block_t, summation=.TRUE.)
-            ENDIF
             CALL timestop(handle2)
          ENDIF
 
@@ -1234,9 +1271,7 @@ CONTAINS
          DEALLOCATE (max_contraction_i, max_contraction_j, max_contraction_k)
       END DO
 
-      IF (op_ij /= do_potential_id .OR. op_jk /= do_potential_id) THEN
-         CALL cp_libint_cleanup_3eri(lib)
-      ENDIF
+      CALL cp_libint_cleanup_3eri(lib)
 
       CALL neighbor_list_3c_iterator_destroy(nl_3c_iter)
 
@@ -1277,72 +1312,19 @@ CONTAINS
          CPABORT("requested symmetric case not implemented")
       ENDIF
 
+      DO iset = 1, max_nset
+         DO ibasis = 1, nbasis
+            IF (ASSOCIATED(spi(iset, ibasis)%array)) DEALLOCATE (spi(iset, ibasis)%array)
+            IF (ASSOCIATED(tspj(iset, ibasis)%array)) DEALLOCATE (tspj(iset, ibasis)%array)
+
+            IF (ASSOCIATED(spk(iset, ibasis)%array)) DEALLOCATE (spk(iset, ibasis)%array)
+         END DO
+      END DO
+
+      DEALLOCATE (spi, tspj, spk)
+
       CALL timestop(handle)
    END SUBROUTINE
-
-! **************************************************************************************************
-!> \brief contiguous distribution of weighted elements
-!> \param nel ...
-!> \param nbin ...
-!> \param weights ...
-!> \param limits_start ...
-!> \param limits_end ...
-!> \param dist ...
-! **************************************************************************************************
-   SUBROUTINE contiguous_tensor_dist(nel, nbin, weights, limits_start, limits_end, dist)
-      INTEGER, INTENT(IN)                                :: nel
-      INTEGER, INTENT(INOUT)                             :: nbin
-      INTEGER, DIMENSION(nel), INTENT(IN)                :: weights
-      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(OUT), &
-         OPTIONAL                                        :: limits_start, limits_end
-      INTEGER, DIMENSION(nel), INTENT(OUT), OPTIONAL     :: dist
-
-      INTEGER                                            :: el_end, el_start, end_weight, ibin, &
-                                                            nel_div, nel_rem, nel_split, nel_w, &
-                                                            w_partialsum
-      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: lim_e, lim_s
-
-      ALLOCATE (lim_s(nbin), lim_e(nbin))
-      lim_s = 0; lim_e = 0
-
-      nel_w = SUM(weights)
-      nel_div = nel_w/nbin
-      nel_rem = MOD(nel_w, nbin)
-
-      w_partialsum = 0
-      el_end = 0
-      end_weight = 0
-      DO ibin = 1, nbin
-         nel_split = nel_div
-         IF (ibin <= nel_rem) THEN
-            nel_split = nel_split + 1
-         ENDIF
-         el_start = el_end + 1
-         el_end = el_start
-         w_partialsum = w_partialsum + weights(el_end)
-         end_weight = end_weight + nel_split
-         DO WHILE (w_partialsum < end_weight)
-            !IF (ABS(w_partialsum + weights(el_end) - end_weight) > ABS(w_partialsum - end_weight)) EXIT
-            el_end = el_end + 1
-            w_partialsum = w_partialsum + weights(el_end)
-            IF (el_end == nel) EXIT
-         ENDDO
-
-         IF (PRESENT(dist)) dist(el_start:el_end) = ibin - 1
-         lim_s(ibin) = el_start
-         lim_e(ibin) = el_end
-
-         IF (el_end == nel) EXIT
-      ENDDO
-
-      IF (PRESENT(limits_start) .AND. PRESENT(limits_end)) THEN
-         ALLOCATE (limits_start(ibin)); limits_start(:ibin) = lim_s(:ibin)
-         ALLOCATE (limits_end(ibin)); limits_end(:ibin) = lim_e(:ibin)
-      ENDIF
-
-      nbin = ibin
-
-   END SUBROUTINE contiguous_tensor_dist
 
 ! **************************************************************************************************
 !> \brief ...
@@ -1606,12 +1588,16 @@ CONTAINS
 !> \param ends_array_mc_block_2 ...
 !> \param starts_array_mc_block_3 ...
 !> \param ends_array_mc_block_3 ...
+!> \param blk_indices ...
+!> \param compressed ...
+!> \param eps ...
 !> \param unit_nr ...
 ! **************************************************************************************************
    SUBROUTINE tensor_change_pgrid(t_3c, pgrid, nodata, &
                                   starts_array_mc_block_1, ends_array_mc_block_1, &
                                   starts_array_mc_block_2, ends_array_mc_block_2, &
                                   starts_array_mc_block_3, ends_array_mc_block_3, &
+                                  blk_indices, compressed, eps, &
                                   unit_nr)
       TYPE(dbcsr_t_type), INTENT(INOUT)                  :: t_3c
       TYPE(dbcsr_t_pgrid_type), INTENT(IN)               :: pgrid
@@ -1619,6 +1605,11 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: starts_array_mc_block_1, &
          ends_array_mc_block_1, starts_array_mc_block_2, ends_array_mc_block_2, &
          starts_array_mc_block_3, ends_array_mc_block_3
+      INTEGER, ALLOCATABLE, DIMENSION(:, :), &
+         INTENT(INOUT), OPTIONAL                         :: blk_indices
+      TYPE(hfx_compression_type), INTENT(INOUT), &
+         OPTIONAL                                        :: compressed
+      REAL(dp), INTENT(IN), OPTIONAL                     :: eps
       INTEGER, INTENT(IN), OPTIONAL                      :: unit_nr
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'tensor_change_pgrid', &
@@ -1627,13 +1618,15 @@ CONTAINS
       CHARACTER(default_string_length)                   :: name
       INTEGER                                            :: handle, imem, memcut_1, memcut_2, &
                                                             memcut_3, size_cut
-      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: bs1, bs2, bs3, dist1, dist2, dist3, &
-                                                            map1, map2
+      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: bs1, bs2, bs3, dist1, dist2, dist3
       INTEGER, DIMENSION(3)                              :: pcoord, pcoord_ref, pdims, pdims_ref, &
                                                             tdims
-      LOGICAL                                            :: mem_aware_1, mem_aware_2, mem_aware_3
-      TYPE(dbcsr_t_distribution_type)                    :: dist
       TYPE(dbcsr_t_type)                                 :: t_tmp
+      TYPE(dbcsr_t_distribution_type)                    :: dist
+      LOGICAL                                            :: mem_aware_1, mem_aware_2, mem_aware_3
+      INTEGER, DIMENSION(dbcsr_t_ndims_matrix_row(t_3c)) :: map1
+      INTEGER, &
+         DIMENSION(dbcsr_t_ndims_matrix_column(t_3c))    :: map2
 
       CALL dbcsr_t_mp_environ_pgrid(pgrid, pdims, pcoord)
       CALL dbcsr_t_mp_environ_pgrid(t_3c%pgrid, pdims_ref, pcoord_ref)
@@ -1646,6 +1639,14 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
+      IF (PRESENT(compressed)) THEN
+         CPASSERT(PRESENT(blk_indices))
+         CPASSERT(PRESENT(eps))
+         IF (PRESENT(nodata)) THEN
+            CPASSERT(.NOT. nodata)
+         ENDIF
+      ENDIF
+
       mem_aware_1 = PRESENT(starts_array_mc_block_1) .AND. PRESENT(ends_array_mc_block_1)
       mem_aware_2 = PRESENT(starts_array_mc_block_2) .AND. PRESENT(ends_array_mc_block_2)
       mem_aware_3 = PRESENT(starts_array_mc_block_3) .AND. PRESENT(ends_array_mc_block_3)
@@ -1654,6 +1655,9 @@ CONTAINS
       IF (mem_aware_2) memcut_2 = SIZE(starts_array_mc_block_2)
       IF (mem_aware_3) memcut_3 = SIZE(starts_array_mc_block_3)
 
+      ALLOCATE (bs1(dbcsr_t_nblks_total(t_3c, 1)))
+      ALLOCATE (bs2(dbcsr_t_nblks_total(t_3c, 2)))
+      ALLOCATE (bs3(dbcsr_t_nblks_total(t_3c, 3)))
       CALL dbcsr_t_get_info(t_3c, nblks_total=tdims, blk_size_1=bs1, blk_size_2=bs2, blk_size_3=bs3, &
                             name=name)
 
@@ -1661,48 +1665,50 @@ CONTAINS
       ALLOCATE (dist2(tdims(2)))
       ALLOCATE (dist3(tdims(3)))
 
-      CALL cyclic_tensor_dist(tdims(1), pdims(1), bs1, dist1)
-
       IF (mem_aware_1) THEN
          DO imem = 1, memcut_1
             size_cut = ends_array_mc_block_1(imem) - starts_array_mc_block_1(imem) + 1
-            CALL cyclic_tensor_dist( &
+            CALL dbcsr_t_default_distvec( &
                size_cut, pdims(1), &
                bs1(starts_array_mc_block_1(imem):ends_array_mc_block_1(imem)), &
                dist1(starts_array_mc_block_1(imem):ends_array_mc_block_1(imem)))
          ENDDO
       ELSE
-         CALL cyclic_tensor_dist(tdims(1), pdims(1), bs1, dist1)
+         CALL dbcsr_t_default_distvec(tdims(1), pdims(1), bs1, dist1)
       ENDIF
 
       IF (mem_aware_2) THEN
          DO imem = 1, memcut_2
             size_cut = ends_array_mc_block_2(imem) - starts_array_mc_block_2(imem) + 1
-            CALL cyclic_tensor_dist( &
+            CALL dbcsr_t_default_distvec( &
                size_cut, pdims(2), &
                bs2(starts_array_mc_block_2(imem):ends_array_mc_block_2(imem)), &
                dist2(starts_array_mc_block_2(imem):ends_array_mc_block_2(imem)))
          ENDDO
       ELSE
-         CALL cyclic_tensor_dist(tdims(2), pdims(2), bs2, dist2)
+         CALL dbcsr_t_default_distvec(tdims(2), pdims(2), bs2, dist2)
       ENDIF
 
       IF (mem_aware_3) THEN
          DO imem = 1, memcut_3
             size_cut = ends_array_mc_block_3(imem) - starts_array_mc_block_3(imem) + 1
-            CALL cyclic_tensor_dist( &
+            CALL dbcsr_t_default_distvec( &
                size_cut, pdims(3), &
                bs3(starts_array_mc_block_3(imem):ends_array_mc_block_3(imem)), &
                dist3(starts_array_mc_block_3(imem):ends_array_mc_block_3(imem)))
          ENDDO
       ELSE
-         CALL cyclic_tensor_dist(tdims(3), pdims(3), bs3, dist3)
+         CALL dbcsr_t_default_distvec(tdims(3), pdims(3), bs3, dist3)
       ENDIF
 
       CALL dbcsr_t_get_mapping_info(t_3c%nd_index_blk, map1_2d=map1, map2_2d=map2)
       CALL dbcsr_t_distribution_new(dist, pgrid, dist1, dist2, dist3)
       CALL dbcsr_t_create(t_tmp, name, dist, map1, map2, dbcsr_type_real_8, bs1, bs2, bs3)
       CALL dbcsr_t_distribution_destroy(dist)
+
+      IF (PRESENT(compressed)) THEN
+         CALL decompress_tensor(t_3c, blk_indices, compressed, eps)
+      ENDIF
 
       IF (PRESENT(nodata)) THEN
          IF (.NOT. nodata) CALL dbcsr_t_copy(t_3c, t_tmp, move_data=.TRUE.)
@@ -1712,6 +1718,13 @@ CONTAINS
 
       CALL dbcsr_t_destroy(t_3c)
       t_3c = t_tmp
+
+      IF (PRESENT(compressed)) THEN
+         IF (ALLOCATED(blk_indices)) DEALLOCATE (blk_indices)
+         ALLOCATE (blk_indices(dbcsr_t_get_num_blocks(t_3c), 3))
+         CALL dbcsr_t_reserved_block_indices(t_3c, blk_indices)
+         CALL compress_tensor(t_3c, compressed, eps)
+      ENDIF
 
       IF (PRESENT(unit_nr)) THEN
          IF (unit_nr > 0) THEN
@@ -1726,61 +1739,188 @@ CONTAINS
 
 ! **************************************************************************************************
 !> \brief ...
-!> \param qs_env ...
-!> \param basis ...
-!> \param min_blk_size ...
-!> \param pgf_blk_sizes ...
+!> \param tensor tensor with data. Data is cleared after compression.
+!> \param compressed compressed tensor data
+!> \param eps all entries < eps are discarded
 ! **************************************************************************************************
-   SUBROUTINE pgf_block_sizes(qs_env, basis, min_blk_size, pgf_blk_sizes)
-      TYPE(qs_environment_type), POINTER                 :: qs_env
-      TYPE(gto_basis_set_p_type), DIMENSION(:), &
-         INTENT(IN)                                      :: basis
-      INTEGER, INTENT(IN)                                :: min_blk_size
-      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(OUT)    :: pgf_blk_sizes
+   SUBROUTINE compress_tensor(tensor, compressed, eps)
+      TYPE(dbcsr_t_type), INTENT(INOUT)                  :: tensor
+      TYPE(hfx_compression_type), INTENT(INOUT)          :: compressed
+      REAL(dp), INTENT(IN)                               :: eps
 
-      INTEGER                                            :: blk_count, blk_count_prev, blk_size, &
-                                                            iatom, ikind, iset, natom, nblk, nset
-      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: kind_of, pgf_blk_sizes_tmp
-      INTEGER, DIMENSION(:), POINTER                     :: nsgf_set
-      TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
+      INTEGER                                            :: blk, buffer_left, buffer_size, &
+                                                            buffer_start, i, nbits, nints, unused
+      INTEGER(int_8)                                     :: estimate_to_store_int
+      INTEGER, DIMENSION(3)                              :: ind
+      LOGICAL                                            :: found
+      REAL(dp)                                           :: spherical_estimate
+      REAL(dp), ALLOCATABLE, DIMENSION(:, :, :), TARGET  :: blk_data
+      REAL(dp), DIMENSION(:), POINTER                    :: blk_data_1d
+      TYPE(dbcsr_t_iterator_type)                        :: iter
+      TYPE(hfx_cache_type), DIMENSION(:), POINTER        :: integral_caches
+      TYPE(hfx_cache_type), POINTER                      :: maxval_cache
+      TYPE(hfx_container_type), DIMENSION(:), POINTER    :: integral_containers
+      TYPE(hfx_container_type), POINTER                  :: maxval_container
 
-      CALL get_qs_env(qs_env, natom=natom, atomic_kind_set=atomic_kind_set)
+      CALL dealloc_containers(compressed, unused)
+      CALL alloc_containers(compressed, 1)
 
-      ALLOCATE (kind_of(natom))
-      CALL get_atomic_kind_set(atomic_kind_set, kind_of=kind_of)
+      maxval_container => compressed%maxval_container(1)
+      integral_containers => compressed%integral_containers(:, 1)
 
-      nblk = 0
-      DO iatom = 1, natom
-         ikind = kind_of(iatom)
-         CALL get_gto_basis_set(basis(ikind)%gto_basis_set, nset=nset)
-         nblk = nblk + nset
-      ENDDO
+      CALL hfx_init_container(maxval_container, unused, .FALSE.)
+      DO i = 1, 64
+         CALL hfx_init_container(integral_containers(i), unused, .FALSE.)
+      END DO
 
-      ALLOCATE (pgf_blk_sizes_tmp(nblk)); pgf_blk_sizes_tmp = 0
+      maxval_cache => compressed%maxval_cache(1)
+      integral_caches => compressed%integral_caches(:, 1)
 
-      blk_count = 0
-      blk_size = 0
-      DO iatom = 1, natom
-         blk_count_prev = blk_count
-         ikind = kind_of(iatom)
-         CALL get_gto_basis_set(basis(ikind)%gto_basis_set, nset=nset, nsgf_set=nsgf_set)
-         DO iset = 1, nset
-            blk_size = blk_size + nsgf_set(iset)
-            IF (blk_size >= min_blk_size) THEN
-               blk_count = blk_count + 1
-               pgf_blk_sizes_tmp(blk_count) = pgf_blk_sizes_tmp(blk_count) + blk_size
-               blk_size = 0
-            ENDIF
-         ENDDO
-         IF (blk_size > 0) THEN
-            IF (blk_count == blk_count_prev) blk_count = blk_count + 1
-            pgf_blk_sizes_tmp(blk_count) = pgf_blk_sizes_tmp(blk_count) + blk_size
-            blk_size = 0
+      CALL dbcsr_t_iterator_start(iter, tensor)
+      DO WHILE (dbcsr_t_iterator_blocks_left(iter))
+         CALL dbcsr_t_iterator_next_block(iter, ind, blk)
+         CALL dbcsr_t_get_block(tensor, ind, blk_data, found)
+         CPASSERT(found)
+         nints = SIZE(blk_data)
+         blk_data_1d(1:nints) => blk_data
+         spherical_estimate = MAXVAL(ABS(blk_data_1d))
+         IF (spherical_estimate == 0.0_dp) spherical_estimate = TINY(spherical_estimate)
+         estimate_to_store_int = EXPONENT(spherical_estimate)
+         estimate_to_store_int = MAX(estimate_to_store_int, -15_int_8)
+
+         CALL hfx_add_single_cache_element(estimate_to_store_int, 6, &
+                                           maxval_cache, maxval_container, unused, &
+                                           .FALSE.)
+
+         spherical_estimate = SET_EXPONENT(1.0_dp, estimate_to_store_int + 1)
+
+         nbits = EXPONENT(ANINT(spherical_estimate/eps)) + 1
+         IF (nbits > 64) THEN
+            CALL cp_abort(__LOCATION__, &
+                          "Overflow during tensor compression. Please use a larger EPS_FILTER or EPS_STORAGE_SCALING")
          ENDIF
+
+         buffer_left = nints
+         buffer_start = 1
+
+         DO WHILE (buffer_left > 0)
+            buffer_size = MIN(buffer_left, cache_size)
+            CALL hfx_add_mult_cache_elements(blk_data_1d(buffer_start:), &
+                                             buffer_size, nbits, &
+                                             integral_caches(nbits), &
+                                             integral_containers(nbits), &
+                                             eps, 1.0_dp, &
+                                             unused, &
+                                             .FALSE.)
+            buffer_left = buffer_left - buffer_size
+            buffer_start = buffer_start + buffer_size
+         ENDDO
+
+         NULLIFY (blk_data_1d); DEALLOCATE (blk_data)
+      ENDDO
+      CALL dbcsr_t_iterator_stop(iter)
+
+      CALL dbcsr_t_clear(tensor)
+
+      CALL hfx_flush_last_cache(6, maxval_cache, maxval_container, unused, &
+                                .FALSE.)
+      DO i = 1, 64
+         CALL hfx_flush_last_cache(i, integral_caches(i), integral_containers(i), &
+                                   unused, .FALSE.)
+      END DO
+
+      CALL hfx_reset_cache_and_container(maxval_cache, maxval_container, unused, .FALSE.)
+      DO i = 1, 64
+         CALL hfx_reset_cache_and_container(integral_caches(i), integral_containers(i), &
+                                            unused, .FALSE.)
+      END DO
+
+   END SUBROUTINE
+
+! **************************************************************************************************
+!> \brief ...
+!> \param tensor empty tensor which is filled by decompressed data
+!> \param blk_indices indices of blocks to be reserved
+!> \param compressed compressed data
+!> \param eps all entries < eps are discarded
+! **************************************************************************************************
+   SUBROUTINE decompress_tensor(tensor, blk_indices, compressed, eps)
+
+      TYPE(dbcsr_t_type), INTENT(INOUT)                  :: tensor
+      INTEGER, DIMENSION(:, :)                           :: blk_indices
+      TYPE(hfx_compression_type), INTENT(INOUT)          :: compressed
+      REAL(dp), INTENT(IN)                               :: eps
+
+      INTEGER                                            :: blk, buffer_left, buffer_size, &
+                                                            buffer_start, i, nbits, nints, unused
+      INTEGER(int_8)                                     :: estimate_to_store_int
+      INTEGER, DIMENSION(3)                              :: blk_size, ind
+      REAL(dp)                                           :: spherical_estimate
+      REAL(dp), ALLOCATABLE, DIMENSION(:), TARGET        :: blk_data
+      REAL(dp), DIMENSION(:, :, :), POINTER              :: blk_data_3d
+      TYPE(dbcsr_t_iterator_type)                        :: iter
+      TYPE(hfx_cache_type), DIMENSION(:), POINTER        :: integral_caches
+      TYPE(hfx_cache_type), POINTER                      :: maxval_cache
+      TYPE(hfx_container_type), DIMENSION(:), POINTER    :: integral_containers
+      TYPE(hfx_container_type), POINTER                  :: maxval_container
+
+      maxval_cache => compressed%maxval_cache(1)
+      maxval_container => compressed%maxval_container(1)
+      integral_caches => compressed%integral_caches(:, 1)
+      integral_containers => compressed%integral_containers(:, 1)
+
+      unused = 0
+
+      CALL hfx_decompress_first_cache(6, maxval_cache, maxval_container, unused, .FALSE.)
+
+      DO i = 1, 64
+         CALL hfx_decompress_first_cache(i, integral_caches(i), integral_containers(i), &
+                                         unused, .FALSE.)
       ENDDO
 
-      ALLOCATE (pgf_blk_sizes(blk_count))
-      pgf_blk_sizes(:) = pgf_blk_sizes_tmp(:blk_count)
+      CALL dbcsr_t_reserve_blocks(tensor, blk_indices)
+      CALL dbcsr_t_iterator_start(iter, tensor)
+      DO WHILE (dbcsr_t_iterator_blocks_left(iter))
+         CALL dbcsr_t_iterator_next_block(iter, ind, blk, blk_size=blk_size)
+         nints = PRODUCT(blk_size)
+         CALL hfx_get_single_cache_element( &
+            estimate_to_store_int, 6, &
+            maxval_cache, maxval_container, unused, &
+            .FALSE.)
+
+         spherical_estimate = SET_EXPONENT(1.0_dp, estimate_to_store_int + 1)
+
+         nbits = EXPONENT(ANINT(spherical_estimate/eps)) + 1
+
+         buffer_left = nints
+         buffer_start = 1
+
+         ALLOCATE (blk_data(nints))
+         DO WHILE (buffer_left > 0)
+            buffer_size = MIN(buffer_left, cache_size)
+            CALL hfx_get_mult_cache_elements(blk_data(buffer_start), &
+                                             buffer_size, nbits, &
+                                             integral_caches(nbits), &
+                                             integral_containers(nbits), &
+                                             eps, 1.0_dp, &
+                                             unused, &
+                                             .FALSE.)
+            buffer_left = buffer_left - buffer_size
+            buffer_start = buffer_start + buffer_size
+         ENDDO
+
+         blk_data_3d(1:blk_size(1), 1:blk_size(2), 1:blk_size(3)) => blk_data
+         CALL dbcsr_t_put_block(tensor, ind, blk_size, blk_data_3d)
+         NULLIFY (blk_data_3d); DEALLOCATE (blk_data)
+      ENDDO
+
+      CALL dbcsr_t_iterator_stop(iter)
+
+      CALL hfx_reset_cache_and_container(maxval_cache, maxval_container, unused, .FALSE.)
+      DO i = 1, 64
+         CALL hfx_reset_cache_and_container(integral_caches(i), integral_containers(i), &
+                                            unused, .FALSE.)
+      END DO
    END SUBROUTINE
 
 ! **************************************************************************************************

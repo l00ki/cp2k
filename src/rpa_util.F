@@ -84,7 +84,7 @@ CONTAINS
 !> \param para_env ...
 !> \param dimen_RI ...
 !> \param dimen_RI_red ...
-!> \param num_integ_points_freq ...
+!> \param num_integ_points ...
 !> \param fm_mat_Q ...
 !> \param fm_mo_coeff_occ ...
 !> \param fm_mo_coeff_virt ...
@@ -128,7 +128,7 @@ CONTAINS
 !> \param mat_work ...
 !> \param mat_P_omega_beta ...
 ! **************************************************************************************************
-   SUBROUTINE alloc_im_time(qs_env, para_env, dimen_RI, dimen_RI_red, num_integ_points_freq, &
+   SUBROUTINE alloc_im_time(qs_env, para_env, dimen_RI, dimen_RI_red, num_integ_points, &
                             fm_mat_Q, fm_mo_coeff_occ, fm_mo_coeff_virt, &
                             fm_matrix_L_RI_metric, mat_P_global, &
                             t_3c_O, matrix_s, kpoints, eps_filter_im_time, &
@@ -148,8 +148,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_para_env_type), POINTER                    :: para_env
-      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, &
-                                                            num_integ_points_freq
+      INTEGER, INTENT(IN)                                :: dimen_RI, dimen_RI_red, num_integ_points
       TYPE(cp_fm_type), POINTER                          :: fm_mat_Q, fm_mo_coeff_occ, &
                                                             fm_mo_coeff_virt
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: fm_matrix_L_RI_metric
@@ -257,10 +256,10 @@ CONTAINS
          size_P = 1
       END IF
 
-      CALL alloc_mat_P_omega(mat_P_omega, num_integ_points_freq, size_P, mat_P_global%matrix)
+      CALL alloc_mat_P_omega(mat_P_omega, num_integ_points, size_P, mat_P_global%matrix)
 
       IF (my_open_shell .AND. do_ri_sos_laplace_mp2) THEN
-         CALL alloc_mat_P_omega(mat_P_omega_beta, num_integ_points_freq, size_P, mat_P_global%matrix)
+         CALL alloc_mat_P_omega(mat_P_omega_beta, num_integ_points, size_P, mat_P_global%matrix)
       END IF
 
       IF (do_kpoints_cubic_RPA .OR. do_kpoints_from_Gamma) THEN
@@ -419,7 +418,7 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER :: routineN = 'reorder_mat_L', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: handle, i_size, j_size, nblk
-      INTEGER, DIMENSION(:), POINTER                     :: row_blk_size
+      INTEGER, DIMENSION(:), POINTER                     :: col_blk_size, row_blk_size
       LOGICAL                                            :: do_kpoints
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
       TYPE(cp_fm_struct_type), POINTER                   :: fm_struct
@@ -514,11 +513,11 @@ CONTAINS
       IF (dimen_RI == dimen_RI_red) THEN
          CALL dbcsr_create(mat_L%matrix, template=mat_template)
       ELSE
-         CALL dbcsr_get_info(mat_template, nblkrows_total=nblk)
+         CALL dbcsr_get_info(mat_template, nblkrows_total=nblk, col_blk_size=col_blk_size)
 
          CALL calculate_equal_blk_size(row_blk_size, dimen_RI_red, nblk)
 
-         CALL dbcsr_create(mat_L%matrix, template=mat_template, row_blk_size=row_blk_size)
+         CALL dbcsr_create(mat_L%matrix, template=mat_template, row_blk_size=row_blk_size, col_blk_size=col_blk_size)
 
          DEALLOCATE (row_blk_size)
       END IF
@@ -916,6 +915,16 @@ CONTAINS
 
       ! calculate Trace(Log(Matrix)) as Log(DET(Matrix)) via cholesky decomposition
       CALL cp_fm_cholesky_decompose(matrix=fm_mat_Q, n=dimen_RI, info_out=info_chol)
+      IF (info_chol .NE. 0) THEN
+         CALL cp_warn(__LOCATION__, &
+                      "The Cholesky decomposition before inverting the RPA matrix / dielectric "// &
+                      "function failed. "// &
+                      "In case of low-scaling RPA/GW, decreasing EPS_FILTER in the &LOW_SCALING "// &
+                      "section might "// &
+                      "increase the overall accuracy making the matrix positive definite. "// &
+                      "Code will abort.")
+      END IF
+
       CPASSERT(info_chol == 0)
 
       ALLOCATE (Q_log(dimen_RI))

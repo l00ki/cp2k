@@ -36,7 +36,7 @@ NOOPT_FLAGS="-O1"
 
 # those flags that do not influence code generation are used always, the others if debug
 FCDEB_FLAGS="-fbacktrace -ffree-form -fimplicit-none -std=f2008"
-FCDEB_FLAGS_DEBUG="-fsanitize=leak -fcheck=all -ffpe-trap=invalid,zero,overflow -finit-derived -finit-real=snan -finit-integer=-42 -Werror=realloc-lhs -finline-matmul-limit=0"
+FCDEB_FLAGS_DEBUG="-fsanitize=leak -fcheck=all,no-array-temps -ffpe-trap=invalid,zero,overflow -finit-derived -finit-real=snan -finit-integer=-42 -Werror=realloc-lhs -finline-matmul-limit=0"
 
 # code coverage generation flags
 COVERAGE_FLAGS="-O1 -coverage -fkeep-static-functions"
@@ -143,7 +143,7 @@ gen_arch_file() {
     local __filename=$1
     shift
     local __flags=$@
-    local __full_flag_list="MPI OMP DEBUG CUDA WARNALL VALGRIND COVERAGE"
+    local __full_flag_list="MPI DEBUG CUDA WARNALL VALGRIND COVERAGE"
     local __flag=''
     for __flag in $__full_flag_list ; do
         eval "local __${__flag}=off"
@@ -158,7 +158,7 @@ gen_arch_file() {
       cat <<EOF >> $__filename
 #
 CXX         = \${CC}
-CXXFLAGS    = \${CXXFLAGS} -I\\\${CUDA_PATH}/include -std=c++11 IF_OMP(-fopenmp|)
+CXXFLAGS    = \${CXXFLAGS} -I\\\${CUDA_PATH}/include -std=c++11 -fopenmp
 GPUVER      = \${GPUVER}
 NVCC        = \${NVCC}
 NVFLAGS     = \${NVFLAGS}
@@ -187,48 +187,37 @@ EOF
 
 rm -f ${INSTALLDIR}/arch/local*
 # normal production arch files
-    { gen_arch_file "local.sopt" ;          arch_vers="sopt"; }
-    { gen_arch_file "local.sdbg" OMP DEBUG; arch_vers="${arch_vers} sdbg"; }
-[ "$ENABLE_OMP" = __TRUE__ ] && \
-    { gen_arch_file "local.ssmp" OMP;       arch_vers="${arch_vers} ssmp"; }
-[ "$MPI_MODE" != no ] && \
-    { gen_arch_file "local.popt" MPI;       arch_vers="${arch_vers} popt"; }
-[ "$MPI_MODE" != no ] && \
-    { gen_arch_file "local.pdbg" MPI OMP DEBUG; arch_vers="${arch_vers} pdbg"; }
-[ "$MPI_MODE" != no ] && \
-[ "$ENABLE_OMP" = __TRUE__ ] && \
-    { gen_arch_file "local.psmp" MPI OMP;   arch_vers="${arch_vers} psmp"; }
-[ "$MPI_MODE" != no ] && \
-[ "$ENABLE_OMP" = __TRUE__ ] && \
-    gen_arch_file "local_warn.psmp" MPI OMP WARNALL
+gen_arch_file "local.ssmp"
+gen_arch_file "local.sdbg" DEBUG
+arch_vers="ssmp sdbg"
+
+if [ "$MPI_MODE" != no ] ; then
+    gen_arch_file "local.psmp"           MPI
+    gen_arch_file "local.pdbg"           MPI DEBUG
+    gen_arch_file "local_warn.psmp"      MPI WARNALL
+    gen_arch_file "local_coverage.pdbg"  MPI COVERAGE
+    arch_vers="${arch_vers} psmp pdbg"
+fi
+
 # cuda enabled arch files
 if [ "$ENABLE_CUDA" = __TRUE__ ] ; then
-    [ "$ENABLE_OMP" = __TRUE__ ] && \
-      gen_arch_file "local_cuda.ssmp"          CUDA OMP
-    [ "$MPI_MODE" != no ] && \
-    [ "$ENABLE_OMP" = __TRUE__ ] && \
-      gen_arch_file "local_cuda.psmp"          CUDA OMP MPI
-    [ "$ENABLE_OMP" = __TRUE__ ] && \
-      gen_arch_file "local_cuda.sdbg"          CUDA DEBUG OMP
-    [ "$MPI_MODE" != no ] && \
-    [ "$ENABLE_OMP" = __TRUE__ ] && \
-      gen_arch_file "local_cuda.pdbg"          CUDA DEBUG OMP MPI
-    [ "$MPI_MODE" != no ] && \
-    [ "$ENABLE_OMP" = __TRUE__ ] && \
-      gen_arch_file "local_cuda_warn.psmp"     CUDA MPI OMP WARNALL
+    gen_arch_file "local_cuda.ssmp"              CUDA
+    gen_arch_file "local_cuda.sdbg"              CUDA DEBUG
+    if [ "$MPI_MODE" != no ] ; then
+        gen_arch_file "local_cuda.psmp"          CUDA MPI
+        gen_arch_file "local_cuda.pdbg"          CUDA MPI DEBUG
+        gen_arch_file "local_cuda_warn.psmp"     CUDA MPI WARNALL
+        gen_arch_file "local_coverage_cuda.pdbg" CUDA MPI COVERAGE
+    fi
 fi
+
 # valgrind enabled arch files
 if [ "$ENABLE_VALGRIND" = __TRUE__ ] ; then
-      gen_arch_file "local_valgrind.sopt"      VALGRIND
-    [ "$MPI_MODE" != no ] && \
-      gen_arch_file "local_valgrind.popt"      VALGRIND MPI
+    gen_arch_file "local_valgrind.ssmp"          VALGRIND
+    if [ "$MPI_MODE" != no ] ; then
+        gen_arch_file "local_valgrind.psmp"      VALGRIND MPI
+    fi
 fi
-# coverage enabled arch files
-gen_arch_file "local_coverage.sdbg"            COVERAGE
-[ "$MPI_MODE" != no ] && \
-    gen_arch_file "local_coverage.pdbg"        COVERAGE MPI
-[ "$ENABLE_CUDA" = __TRUE__ ] && \
-    gen_arch_file "local_coverage_cuda.pdbg"   COVERAGE MPI CUDA
 
 cd "${ROOTDIR}"
 

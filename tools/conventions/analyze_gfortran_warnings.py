@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 # author: Ole Schuett
-
-from __future__ import print_function
 
 import argparse
 import re
@@ -31,11 +28,12 @@ lapack_re = re.compile(
 )
 
 warning_re = re.compile(r".*[Ww]arning: (.*)")
-warning_re_subst = re.compile(r"'\d+'")  # replace occurences of '49' with *
+warning_re_subst = re.compile(r"'\d+'")  # replace occurrences of '49' with *
 
 IGNORED_WARNINGS = (
     "-Wrealloc-lhs",
     "-Wdo-subscript",
+    "-Winteger-division",
     "-Wmaybe-uninitialized",
     "-Wfunction-elimination",
     "Creating array temporary",

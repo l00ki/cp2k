@@ -766,6 +766,11 @@ MODULE input_constants
    INTEGER, PARAMETER, PUBLIC               :: hfx_do_eval_energy = 1, &
                                                hfx_do_eval_forces = 2
 
+   ! HFX RI matrix methods
+   INTEGER, PARAMETER, PUBLIC               :: hfx_ri_do_2c_iter = 1, &
+                                               hfx_ri_do_2c_diag = 2, &
+                                               hfx_ri_do_2c_cholesky = 3
+
    ! mode selctive vibrational analysis
    INTEGER, PARAMETER, PUBLIC               :: ms_guess_bfgs = 1, &
                                                ms_guess_atomic = 2, &
@@ -885,7 +890,10 @@ MODULE input_constants
    INTEGER, PARAMETER, PUBLIC               :: ls_scf_sign = 17, ls_scf_trs4 = 18, &
                                                ls_scf_tc2 = 19, ls_scf_pexsi = 20
 
-   INTEGER, PARAMETER, PUBLIC               :: ls_scf_sign_ns = 1, ls_scf_sign_proot = 2
+   INTEGER, PARAMETER, PUBLIC               :: ls_scf_sign_ns = 1, ls_scf_sign_proot = 2, ls_scf_sign_submatrix = 3
+
+   INTEGER, PARAMETER, PUBLIC               :: ls_scf_submatrix_sign_ns = 1, ls_scf_submatrix_sign_direct = 2, &
+                                               ls_scf_submatrix_sign_direct_muadj = 3, ls_scf_submatrix_sign_direct_muadj_lowmem = 4
 
    INTEGER, PARAMETER, PUBLIC               :: ls_scf_line_search_3point = 3, &
                                                ls_scf_line_search_3point_2d = 6
@@ -1003,7 +1011,7 @@ MODULE input_constants
                                                do_opt_coeff = 2, &
                                                do_opt_exps = 3
 
-   ! LRI paramters for inverse of overlap
+   ! LRI parameters for inverse of overlap
    INTEGER, PARAMETER, PUBLIC               :: do_lri_inv = 0, &
                                                do_lri_pseudoinv_svd = 1, &
                                                do_lri_pseudoinv_diag = 2, &

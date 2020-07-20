@@ -39,8 +39,7 @@ MODULE qs_cdft_methods
                                               section_vals_type
    USE kahan_sum,                       ONLY: accurate_dot_product,&
                                               accurate_sum
-   USE kinds,                           ONLY: dp,&
-                                              int_8
+   USE kinds,                           ONLY: dp
    USE message_passing,                 ONLY: mp_sum
    USE particle_types,                  ONLY: particle_type
    USE pw_env_types,                    ONLY: pw_env_get,&
@@ -1163,8 +1162,7 @@ CONTAINS
 
       INTEGER                                            :: atom_a, handle, i, iatom, iex, igroup, &
                                                             ikind, ithread, j, natom, npme, &
-                                                            nthread, numexp
-      INTEGER(KIND=int_8)                                :: subpatch_pattern
+                                                            nthread, numexp, subpatch_pattern
       INTEGER, DIMENSION(:), POINTER                     :: atom_list, cores
       LOGICAL, ALLOCATABLE, DIMENSION(:)                 :: compute_charge, is_constraint
       REAL(kind=dp)                                      :: alpha, coef, dvol, eps_rho_rspace, &
@@ -1310,12 +1308,17 @@ CONTAINS
                                                 subpatch_pattern=subpatch_pattern)
                   END IF
                   IF (cdft_control%atomic_charges .AND. igroup == 1) THEN
-                     IF (compute_charge(atom_a)) &
+                     IF (compute_charge(atom_a)) THEN
+                        DO iatom = 1, cdft_control%natoms
+                           IF (atom_a == cdft_control%atoms(iatom)) EXIT
+                        END DO
+                        CPASSERT(iatom <= cdft_control%natoms)
                         CALL collocate_pgf_product(0, alpha, 0, 0, 0.0_dp, 0, ra, &
                                                    (/0.0_dp, 0.0_dp, 0.0_dp/), 1.0_dp, pab, 0, 0, &
-                                                   rs_single(atom_a)%rs_grid, cell, cube_info, radius=radius, &
+                                                   rs_single(iatom)%rs_grid, cell, cube_info, radius=radius, &
                                                    ga_gb_function=GRID_FUNC_AB, use_subpatch=.TRUE., &
                                                    subpatch_pattern=subpatch_pattern)
+                     END IF
                   END IF
                END DO
             END DO

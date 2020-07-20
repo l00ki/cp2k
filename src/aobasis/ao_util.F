@@ -4,14 +4,15 @@
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
-!> \brief All kind of helpfull little routines
+!> \brief All kind of helpful little routines
 !> \par History
 !>      none
 !> \author CJM & JGH
 ! **************************************************************************************************
 MODULE ao_util
 
-   USE kinds,                           ONLY: dp
+   USE kinds,                           ONLY: dp,&
+                                              sp
    USE mathconstants,                   ONLY: &
         dfac, fac, fourpi, oorootpi, rootpi, sqrt105, sqrt15, sqrt2, sqrt21, sqrt3, sqrt35, sqrt5, &
         sqrt7, sqrthalf
@@ -32,63 +33,63 @@ MODULE ao_util
 
    !MK sqrt* constants moved to mathconstants
 
-   REAL(KIND=dp), PARAMETER ::  s_root1o4pi = 0.5_dp*oorootpi
+   REAL(KIND=dp), PARAMETER :: s_root1o4pi = 0.5_dp*oorootpi
    REAL(KIND=dp), PARAMETER :: root4pi = 2.0_dp*rootpi
-   REAL(KIND=dp), PARAMETER ::  s_root3o4pi = sqrt3*s_root1o4pi
+   REAL(KIND=dp), PARAMETER :: s_root3o4pi = sqrt3*s_root1o4pi
    REAL(KIND=dp), PARAMETER :: root4pio3 = root4pi/sqrt3
    REAL(KIND=dp), PARAMETER :: root4pio5 = root4pi/sqrt5
-   REAL(KIND=dp), PARAMETER ::  s_root15o4pi = sqrt15*s_root1o4pi
+   REAL(KIND=dp), PARAMETER :: s_root15o4pi = sqrt15*s_root1o4pi
    REAL(KIND=dp), PARAMETER :: root4pio15 = root4pi/sqrt15
-   REAL(KIND=dp), PARAMETER ::  s_root105o4pi = sqrt105*s_root1o4pi
+   REAL(KIND=dp), PARAMETER :: s_root105o4pi = sqrt105*s_root1o4pi
    REAL(KIND=dp), PARAMETER :: root4pio105 = root4pi/sqrt105
-   REAL(KIND=dp), PARAMETER ::  s_root1o16pi = 0.25_dp*oorootpi
+   REAL(KIND=dp), PARAMETER :: s_root1o16pi = 0.25_dp*oorootpi
    REAL(KIND=dp), PARAMETER :: root16pi = 4.0_dp*rootpi
-   REAL(KIND=dp), PARAMETER ::  s_root5o16pi = sqrt5*s_root1o16pi
+   REAL(KIND=dp), PARAMETER :: s_root5o16pi = sqrt5*s_root1o16pi
    REAL(KIND=dp), PARAMETER :: root16pio5 = root16pi/sqrt5
-   REAL(KIND=dp), PARAMETER ::  s_2root5o16pi = 2.0_dp*s_root5o16pi
+   REAL(KIND=dp), PARAMETER :: s_2root5o16pi = 2.0_dp*s_root5o16pi
    REAL(KIND=dp), PARAMETER :: root16pio5o2 = root16pio5*0.5_dp
-   REAL(KIND=dp), PARAMETER ::  s_3root5o16pi = 3.0_dp*s_root5o16pi
+   REAL(KIND=dp), PARAMETER :: s_3root5o16pi = 3.0_dp*s_root5o16pi
    REAL(KIND=dp), PARAMETER :: root16pio5o3 = root16pio5/3.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_18root5o16pi = 18.0_dp*s_root5o16pi
+   REAL(KIND=dp), PARAMETER :: s_18root5o16pi = 18.0_dp*s_root5o16pi
    REAL(KIND=dp), PARAMETER :: root16pio5o18 = root16pio5/18.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_2root7o16pi = 2.0_dp*sqrt7*s_root1o16pi
+   REAL(KIND=dp), PARAMETER :: s_2root7o16pi = 2.0_dp*sqrt7*s_root1o16pi
    REAL(KIND=dp), PARAMETER :: root16pio7o2 = root16pi/sqrt7*0.5_dp
-   REAL(KIND=dp), PARAMETER ::  s_3root7o16pi = 3.0_dp*sqrt7*s_root1o16pi
+   REAL(KIND=dp), PARAMETER :: s_3root7o16pi = 3.0_dp*sqrt7*s_root1o16pi
    REAL(KIND=dp), PARAMETER :: root16pio7o3 = root16pi/sqrt7/3.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_root15o16pi = sqrt15*s_root1o16pi
+   REAL(KIND=dp), PARAMETER :: s_root15o16pi = sqrt15*s_root1o16pi
    REAL(KIND=dp), PARAMETER :: root16pio15 = root16pi/sqrt15
-   REAL(KIND=dp), PARAMETER ::  s_3root35o16pi = sqrt5*s_3root7o16pi
+   REAL(KIND=dp), PARAMETER :: s_3root35o16pi = sqrt5*s_3root7o16pi
    REAL(KIND=dp), PARAMETER :: root16pio35o3 = root16pio7o3/sqrt5
-   REAL(KIND=dp), PARAMETER ::  s_root105o16pi = 0.5_dp*s_root105o4pi
-   REAL(KIND=dp), PARAMETER ::  root16pio105 = root4pio105*2.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_root1o32pi = 0.25_dp*sqrthalf*oorootpi
-   REAL(KIND=dp), PARAMETER ::  root32pi = root16pi*sqrt2
-   REAL(KIND=dp), PARAMETER ::  s_3root5o32pi = 3.0_dp*sqrt5*s_root1o32pi
-   REAL(KIND=dp), PARAMETER ::  root32pio5o3 = root32pi/sqrt5/3.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_9root5o32pi = 9.0_dp*sqrt5*s_root1o32pi
-   REAL(KIND=dp), PARAMETER ::  root32pio5o9 = root32pi/sqrt5/9.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_12root5o32pi = 12.0_dp*sqrt5*s_root1o32pi
-   REAL(KIND=dp), PARAMETER ::  root32pio5o12 = root32pi/sqrt5/12.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_root21o32pi = sqrt21*s_root1o32pi
-   REAL(KIND=dp), PARAMETER ::  root32pio21 = root32pi/sqrt21
-   REAL(KIND=dp), PARAMETER ::  s_4root21o32pi = 4.0_dp*s_root21o32pi
-   REAL(KIND=dp), PARAMETER ::  root32pio21o4 = root32pio21/4.0_dp
-   REAL(KIND=dp), PARAMETER ::  s_root35o32pi = sqrt35*s_root1o32pi
-   REAL(KIND=dp), PARAMETER ::  root32pio35 = root32pi/sqrt35
-   REAL(KIND=dp), PARAMETER ::  s_3root35o32pi = 3.0_dp*s_root35o32pi
-   REAL(KIND=dp), PARAMETER ::  s_9root35o32pi = 9.0_dp*s_root35o32pi
-   REAL(KIND=dp), PARAMETER ::  s_18root35o32pi = 18.0_dp*s_root35o32pi
-   REAL(KIND=dp), PARAMETER ::  s_root1o64pi = 0.125_dp*oorootpi
-   REAL(KIND=dp), PARAMETER ::  s_3root5o64pi = 3.0_dp*sqrt5*s_root1o64pi
-   REAL(KIND=dp), PARAMETER ::  s_18root5o64pi = 18.0_dp*sqrt5*s_root1o64pi
-   REAL(KIND=dp), PARAMETER ::  s_root1o256pi = 0.0625_dp*oorootpi
-   REAL(KIND=dp), PARAMETER ::  s_3root1o256pi = 3.0_dp*s_root1o256pi
-   REAL(KIND=dp), PARAMETER ::  s_9root1o256pi = 9.0_dp*s_root1o256pi
-   REAL(KIND=dp), PARAMETER ::  s_18root1o256pi = 18.0_dp*s_root1o256pi
-   REAL(KIND=dp), PARAMETER ::  s_24root1o256pi = 24.0_dp*s_root1o256pi
-   REAL(KIND=dp), PARAMETER ::  s_72root1o256pi = 72.0_dp*s_root1o256pi
-   REAL(KIND=dp), PARAMETER ::  s_3root35o256pi = 3.0_dp*sqrt35*s_root1o256pi
-   REAL(KIND=dp), PARAMETER ::  s_18root35o256pi = 18.0_dp*sqrt35*s_root1o256pi
+   REAL(KIND=dp), PARAMETER :: s_root105o16pi = 0.5_dp*s_root105o4pi
+   REAL(KIND=dp), PARAMETER :: root16pio105 = root4pio105*2.0_dp
+   REAL(KIND=dp), PARAMETER :: s_root1o32pi = 0.25_dp*sqrthalf*oorootpi
+   REAL(KIND=dp), PARAMETER :: root32pi = root16pi*sqrt2
+   REAL(KIND=dp), PARAMETER :: s_3root5o32pi = 3.0_dp*sqrt5*s_root1o32pi
+   REAL(KIND=dp), PARAMETER :: root32pio5o3 = root32pi/sqrt5/3.0_dp
+   REAL(KIND=dp), PARAMETER :: s_9root5o32pi = 9.0_dp*sqrt5*s_root1o32pi
+   REAL(KIND=dp), PARAMETER :: root32pio5o9 = root32pi/sqrt5/9.0_dp
+   REAL(KIND=dp), PARAMETER :: s_12root5o32pi = 12.0_dp*sqrt5*s_root1o32pi
+   REAL(KIND=dp), PARAMETER :: root32pio5o12 = root32pi/sqrt5/12.0_dp
+   REAL(KIND=dp), PARAMETER :: s_root21o32pi = sqrt21*s_root1o32pi
+   REAL(KIND=dp), PARAMETER :: root32pio21 = root32pi/sqrt21
+   REAL(KIND=dp), PARAMETER :: s_4root21o32pi = 4.0_dp*s_root21o32pi
+   REAL(KIND=dp), PARAMETER :: root32pio21o4 = root32pio21/4.0_dp
+   REAL(KIND=dp), PARAMETER :: s_root35o32pi = sqrt35*s_root1o32pi
+   REAL(KIND=dp), PARAMETER :: root32pio35 = root32pi/sqrt35
+   REAL(KIND=dp), PARAMETER :: s_3root35o32pi = 3.0_dp*s_root35o32pi
+   REAL(KIND=dp), PARAMETER :: s_9root35o32pi = 9.0_dp*s_root35o32pi
+   REAL(KIND=dp), PARAMETER :: s_18root35o32pi = 18.0_dp*s_root35o32pi
+   REAL(KIND=dp), PARAMETER :: s_root1o64pi = 0.125_dp*oorootpi
+   REAL(KIND=dp), PARAMETER :: s_3root5o64pi = 3.0_dp*sqrt5*s_root1o64pi
+   REAL(KIND=dp), PARAMETER :: s_18root5o64pi = 18.0_dp*sqrt5*s_root1o64pi
+   REAL(KIND=dp), PARAMETER :: s_root1o256pi = 0.0625_dp*oorootpi
+   REAL(KIND=dp), PARAMETER :: s_3root1o256pi = 3.0_dp*s_root1o256pi
+   REAL(KIND=dp), PARAMETER :: s_9root1o256pi = 9.0_dp*s_root1o256pi
+   REAL(KIND=dp), PARAMETER :: s_18root1o256pi = 18.0_dp*s_root1o256pi
+   REAL(KIND=dp), PARAMETER :: s_24root1o256pi = 24.0_dp*s_root1o256pi
+   REAL(KIND=dp), PARAMETER :: s_72root1o256pi = 72.0_dp*s_root1o256pi
+   REAL(KIND=dp), PARAMETER :: s_3root35o256pi = 3.0_dp*sqrt35*s_root1o256pi
+   REAL(KIND=dp), PARAMETER :: s_18root35o256pi = 18.0_dp*sqrt35*s_root1o256pi
 
    ! *** Public subroutines ***
 
@@ -139,112 +140,107 @@ CONTAINS
 !>               g(r) = prefactor*r**l*exp(-alpha*r**2) - threshold = 0
 !> \param l Angular momentum quantum number l.
 !> \param alpha Exponent of the primitive Gaussian function.
-!> \param threshold Threshold for radius.
+!> \param threshold Threshold for function g(r).
 !> \param prefactor Prefactor of the Gaussian function (e.g. a contraction
 !>                     coefficient).
-!> \param epsin Convergence criterion
-!> \return Calculated radius of the Gaussian functio
-!> \date    26.02.1999
-!> \par History
-!>            - Modified to bisection to avoid division by zero (01.2002, Joost)
-!>            - that means the old version contains bugs .......(04.2002, Joost)
-!>              so keep this one ...
+!> \param epsabs Absolute tolerance (radius)
+!> \param epsrel Relative tolerance (radius)
+!> \param rlow Optional lower bound radius, e.g., when searching maximum radius
+!> \return Calculated radius of the Gaussian function
 !> \par Variables
-!>        - g      : The function g(r).
-!>        - maxiter: Maximum number of iterations.
-!> \author  MK
-!> \version 1.0
+!>        - g       : function g(r)
+!>        - prec_exp: single/double precision exponential function
+!>        - itermax : Maximum number of iterations
+!>        - contract: Golden Section Search (GSS): [0.38, 0.62]
+!>                    Equidistant sampling: [0.2, 0.4, 0.6, 0.8]
+!>                    Bisection (original approach): [0.5]
+!>                    Array size may trigger vectorization
 ! **************************************************************************************************
-   FUNCTION exp_radius(l, alpha, threshold, prefactor, epsin) RESULT(radius)
+   FUNCTION exp_radius(l, alpha, threshold, prefactor, epsabs, epsrel, rlow) RESULT(radius)
       INTEGER, INTENT(IN)                                :: l
       REAL(KIND=dp), INTENT(IN)                          :: alpha, threshold, prefactor
-      REAL(KIND=dp), INTENT(IN), OPTIONAL                :: epsin
+      REAL(KIND=dp), INTENT(IN), OPTIONAL                :: epsabs, epsrel, rlow
       REAL(KIND=dp)                                      :: radius
 
       CHARACTER(len=*), PARAMETER :: routineN = 'exp_radius', routineP = moduleN//':'//routineN
-      INTEGER, PARAMETER                                 :: maxiter = 5000
+      INTEGER, PARAMETER                                 :: itermax = 5000, prec_exp = sp
+      REAL(KIND=dp), PARAMETER                           :: contract(*) = (/0.38, 0.62/), &
+                                                            mineps = 1.0E-12, next = 2.0, &
+                                                            step = 1.0
 
-      INTEGER                                            :: iter
-      REAL(KIND=dp)                                      :: a, ar2, d, epsiter, g, r, rhigh, rlow, &
-                                                            rmid, t
+      INTEGER                                            :: i, j
+      REAL(KIND=dp)                                      :: a, d, dr, eps, r, rd, t
+      REAL(KIND=dp), DIMENSION(SIZE(contract))           :: g, s
 
-      IF (PRESENT(epsin)) THEN
-         epsiter = epsin
-      ELSE
-         epsiter = EPSILON(epsiter)*(1.0E-12_dp/2.22044604925031E-16_dp)
+      IF (l .LT. 0) THEN
+         CPABORT("The angular momentum quantum number is negative")
       ENDIF
 
-      ! Initialize function value
-
-      radius = 0.0_dp
-
-      ! Load and check parameter values
-
-      IF (l < 0) THEN
-         CPABORT("The angular momentum quantum number is negative")
-      END IF
-
-      IF (alpha == 0.0_dp) THEN
+      IF (alpha .EQ. 0.0_dp) THEN
          CPABORT("The Gaussian function exponent is zero")
       ELSE
          a = ABS(alpha)
-      END IF
+      ENDIF
 
-      IF (threshold == 0.0_dp) THEN
-         CPABORT("The requested threshold is zero")
-      ELSE
+      IF (threshold .NE. 0.0_dp) THEN
          t = ABS(threshold)
-      END IF
-
-      IF (prefactor == 0.0_dp) THEN
-         RETURN
       ELSE
-         d = ABS(prefactor)
+         CPABORT("The requested threshold is zero")
+      ENDIF
+
+      radius = 0.0_dp
+      IF (PRESENT(rlow)) radius = rlow
+      IF (prefactor .EQ. 0.0_dp) RETURN
+
+      ! MAX: facilitate early exit
+      r = MAX(SQRT(0.5_dp*REAL(l, dp)/a), radius)
+
+      d = ABS(prefactor); g(1) = d
+      IF (l .NE. 0) THEN
+         g(1) = g(1)*EXP(REAL(-a*r*r, KIND=prec_exp))*r**l
       END IF
+      ! original approach may return radius=0
+      ! with g(r) != g(radius)
+      !radius = r
+      IF (g(1) .LT. t) RETURN ! early exit
 
-      ! Calculate the Maximum g(r)
-      r = SQRT(0.5_dp*REAL(l, dp)/a)
-      ar2 = a*r*r
-
-      IF (l == 0) THEN
-         g = d
-      ELSE
-         g = d*r**l*EXP(-ar2)
-      END IF
-
-      IF (t > g) THEN
-         RETURN
-      END IF
-
-      rlow = r
-      rhigh = 2.0_dp*rlow + 1.0_dp
-      iter = 0
-      DO
-         iter = iter + 1
-         IF (iter .GT. maxiter) THEN
-            CPABORT("Maximum number of iterations exceeded")
-         END IF
-         g = d*rhigh**l*EXP(-a*rhigh**2)
-         IF (g < t) EXIT
-         rlow = rhigh
-         rhigh = 2.0_dp*rlow + 1.0_dp
+      radius = r*next + step
+      DO i = 1, itermax
+         g(1) = d*EXP(REAL(-a*radius*radius, KIND=prec_exp))*radius**l
+         IF (g(1) .LT. t) EXIT
+         r = radius; radius = r*next + step
       ENDDO
 
-      DO iter = 1, maxiter
-         rmid = (rlow + rhigh)*0.5_dp
-         ar2 = a*rmid*rmid
-         g = d*rmid**l*EXP(-ar2)
-         IF (g .LT. t) THEN
-            rhigh = rmid
-         ELSE
-            rlow = rmid
-         ENDIF
-         IF (ABS(rhigh - rlow) .LT. epsiter) THEN
-            radius = rhigh
-            RETURN
-         ENDIF
+      ! consider absolute and relative accuracy (interval width)
+      IF (PRESENT(epsabs)) THEN
+         eps = epsabs
+      ELSE IF (.NOT. PRESENT(epsrel)) THEN
+         eps = mineps
+      ELSE
+         eps = HUGE(eps)
+      ENDIF
+      IF (PRESENT(epsrel)) eps = MIN(eps, epsrel*r)
+
+      dr = 0.0_dp
+      DO i = i + 1, itermax
+         rd = radius - r
+         ! check if finished or no further progress
+         IF ((rd .LT. eps) .OR. (rd .EQ. dr)) RETURN
+         s = r + rd*contract ! interval contraction
+         g = d*EXP(REAL(-a*s*s, KIND=prec_exp))*s**l
+         DO j = 1, SIZE(contract)
+            IF (g(j) .LT. t) THEN
+               radius = s(j) ! interval [r, sj)
+               EXIT
+            ELSE
+               r = s(j) ! interval [sj, radius)
+            ENDIF
+         ENDDO
+         dr = rd
       ENDDO
-      CPABORT("Maximum number of iterations exceeded")
+      IF (i .GE. itermax) THEN
+         CPABORT("Maximum number of iterations reached")
+      ENDIF
 
    END FUNCTION exp_radius
 
@@ -265,7 +261,7 @@ CONTAINS
 !> \param eps ...
 !> \param prefactor ...
 !> \param cutoff ...
-!> \param epsin ...
+!> \param epsabs ...
 !> \return ...
 !> \par History
 !>      03.2007 new version that assumes that the Gaussians origante from spherical
@@ -274,14 +270,14 @@ CONTAINS
 !>      can optionally screen by the maximum element of the pab block
 ! **************************************************************************************************
    FUNCTION exp_radius_very_extended(la_min, la_max, lb_min, lb_max, pab, o1, o2, ra, rb, rp, &
-                                     zetp, eps, prefactor, cutoff, epsin) RESULT(radius)
+                                     zetp, eps, prefactor, cutoff, epsabs) RESULT(radius)
 
       INTEGER, INTENT(IN)                                :: la_min, la_max, lb_min, lb_max
       REAL(KIND=dp), DIMENSION(:, :), OPTIONAL, POINTER  :: pab
       INTEGER, OPTIONAL                                  :: o1, o2
       REAL(KIND=dp), INTENT(IN)                          :: ra(3), rb(3), rp(3), zetp, eps, &
                                                             prefactor, cutoff
-      REAL(KIND=dp), OPTIONAL                            :: epsin
+      REAL(KIND=dp), OPTIONAL                            :: epsabs
       REAL(KIND=dp)                                      :: radius
 
       INTEGER                                            :: i, ico, j, jco, la(3), lb(3), lxa, lxb, &
@@ -293,7 +289,7 @@ CONTAINS
 ! get the local prefactor, we'll now use the largest density matrix element of the block to screen
 
       epsin_local = 1.0E-2_dp
-      IF (PRESENT(epsin)) epsin_local = epsin
+      IF (PRESENT(epsabs)) epsin_local = epsabs
 
       IF (PRESENT(pab)) THEN
          prefactor_local = cutoff
@@ -353,7 +349,7 @@ CONTAINS
       polycoef(0:la_max + lb_max) = polycoef(0:la_max + lb_max)*prefactor_local
       radius = 0.0_dp
       DO i = 0, la_max + lb_max
-         radius = MAX(radius, exp_radius(i, zetp, eps, polycoef(i), epsin_local))
+         radius = MAX(radius, exp_radius(i, zetp, eps, polycoef(i), epsin_local, rlow=radius))
       ENDDO
 
    END FUNCTION exp_radius_very_extended
@@ -695,7 +691,7 @@ CONTAINS
 
       IF (lmax1 > 3 .OR. lmax2 > 3) THEN
          CPABORT("l>3 not implemented")
-      END IF
+      ENDIF
       DO idx_l2 = 1, nsoset(lmax2)
 
          mat_aux(1, idx_l2, :) &
@@ -877,7 +873,7 @@ CONTAINS
 
       IF ((lmax1 > 3) .OR. (lmax2 > 3)) THEN
          CPABORT("l > 3 not implemented")
-      END IF
+      ENDIF
 
       DO idx_l2 = 1, ncoset(lmax2)
 
@@ -1022,3 +1018,4 @@ CONTAINS
    END SUBROUTINE cart2sph_mat
 
 END MODULE ao_util
+

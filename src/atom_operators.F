@@ -293,7 +293,7 @@ CONTAINS
          integrals%uptrans = 0._dp
          integrals%nne = integrals%n
          lwork = 10*n
-         ALLOCATE (omat(n, n), w(n), vmat(n, n), work(lwork))
+         ALLOCATE (omat(n, n), vmat(n, n), w(n), work(lwork))
          DO l = 0, lmat
             n = integrals%n(l)
             IF (n > 0) THEN
@@ -319,7 +319,6 @@ CONTAINS
             END IF
          END DO
          DEALLOCATE (omat, vmat, w, work)
-
       END IF
 
       CALL timestop(handle)

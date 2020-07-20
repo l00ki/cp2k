@@ -12,8 +12,8 @@ source "${INSTALLDIR}"/toolchain.env
 
 [ -f "${BUILDDIR}/setup_libvdwxc" ] && rm "${BUILDDIR}/setup_libvdwxc"
 
-if [ "$MPI_MODE" = "no" ] && [ "$ENABLE_OMP" = "__FALSE__" ] && [ $with_sirius ="__FALSE__" ] ; then
-    report_warning $LINENO "MPI and OpenMP and SIRIUS are disabled, skipping libvdwxc installation"
+if [ "$MPI_MODE" = "no" ] && [ $with_sirius ="__FALSE__" ] ; then
+    report_warning $LINENO "MPI and SIRIUS are disabled, skipping libvdwxc installation"
     exit 0
 fi
 
@@ -73,7 +73,7 @@ case "$with_libvdwxc" in
                     --without-mpi \
                     >> configure.log 2>&1
             else
-                CC=mpicc FC=mpifort ./configure \
+                CC="${MPICC}" FC="${MPIFC}" ./configure \
                     --prefix="${pkg_install_dir}" \
                     --libdir="${pkg_install_dir}/lib" \
                     --with-fftw3=${FFTW_ROOT} \
@@ -101,7 +101,6 @@ case "$with_libvdwxc" in
         echo "==================== Linking libvdwxc to user paths ===================="
         pkg_install_dir="$with_libvdwxc"
         check_dir "$pkg_install_dir/lib"
-        check_dir "$pkg_install_dir/lib64"
         check_dir "$pkg_install_dir/include"
         LIBVDWXC_CFLAGS="-I'${pkg_install_dir}/include'"
         LIBVDWXC_LDFLAGS="-L'${pkg_install_dir}/lib' -Wl,-rpath='${pkg_install_dir}/lib'"
@@ -121,12 +120,12 @@ EOF
 export LIBVDWXC_CFLAGS="-I$pkg_install_dir/include ${LIBVDWXC_CFLAGS}"
 export LIBVDWXC_LDFLAGS="${LIBVDWXC_LDFLAGS}"
 export LIBVDWXC_LIBS="${LIBVDWXC_LIBS}"
-export CP_DFLAGS="\${CP_DFLAGS} IF_MPI(IF_OMP(-D__LIBVDWXC|)|)"
-export CP_CFLAGS="\${CP_CFLAGS} IF_MPI(IF_OMP(${LIBVDWXC_CFLAGS}|)|)"
-export CP_LDFLAGS="\${CP_LDFLAGS} IF_MPI(IF_OMP(${LIBVDWXC_LDFLAGS}|)|)"
-export CP_LIBS="IF_MPI(IF_OMP(${LIBVDWXC_LIBS}|)|) \${CP_LIBS}"
+export CP_DFLAGS="\${CP_DFLAGS} IF_MPI(-D__LIBVDWXC|)"
+export CP_CFLAGS="\${CP_CFLAGS} IF_MPI(${LIBVDWXC_CFLAGS}|)"
+export CP_LDFLAGS="\${CP_LDFLAGS} IF_MPI(${LIBVDWXC_LDFLAGS}|)"
+export CP_LIBS="IF_MPI(${LIBVDWXC_LIBS}|) \${CP_LIBS}"
 export PKG_CONFIG_PATH="$pkg_install_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
-export LIBVDWXCROOT="$pkg_install_dir"
+export VDWXC_DIR="$pkg_install_dir"
 EOF
         cat "${BUILDDIR}/setup_libvdwxc" >> $SETUPFILE
 fi
