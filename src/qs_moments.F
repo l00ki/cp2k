@@ -268,20 +268,25 @@ CONTAINS
          !dab = NORM2(rab)
 
          !! PBC fix by Edward Ditler
-         !ra(:) = particle_set(iatom)%r(:)
-         !rb(:) = particle_set(jatom)%r(:)
-         !rab(:) = pbc(rb, ra, cell)
-         !rac(:) = ra - rc
-         !rbc(:) = rb - rc
+         !!ra(:) = pbc(particle_set(iatom)%r(:), cell)
+         !!rb(:) = pbc(particle_set(jatom)%r(:), cell)
+         !! we dont use PBC at this point
+         !rab(:) = pbc(rb, ra, cell) 
+         !!PRINT *, "rab ", rab
+         !rac(:) = pbc(rc, ra, cell)
+         !rbc(:) = pbc(rc, rb, cell)
          !dab = NORM2(rab)
+         !!print *, "dab ", dab
 
-         ! my PBC fix
-         ra(:) = pbc(particle_set(iatom)%r(:) - rc, cell) + rc
-         rb(:) = pbc(particle_set(jatom)%r(:) - rc, cell) + rc
-         rab(:) = pbc(rb, ra, cell)
-         rac(:) = pbc(rc, ra, cell)
-         rbc(:) = pbc(rc, rb, cell)
+         !! my PBC fix
+         ra(:) = particle_set(iatom)%r(:) - rc
+         rb(:) = particle_set(jatom)%r(:) - rc
+         rab(:) = ra - rb
+         print *, "rab", rab
+         rac(:) = ra - rc
+         rbc(:) = rb - rc
          dab = NORM2(rab)
+         print *, "dab", dab
          
          DO iset = 1, nseta
 
@@ -493,15 +498,22 @@ CONTAINS
          ELSE
             rc(:) = 0._dp
          ENDIF
-         ! using PBC here might screw a molecule that fits the box (but e.g. hasn't been shifted by center_molecule)
-         ! by folding around the center, such screwing can be avoided for a proper choice of center.
-         ra(:) = pbc(particle_set(iatom)%r(:) - rc, cell) + rc
-         rb(:) = pbc(particle_set(jatom)%r(:) - rc, cell) + rc
-         ! we dont use PBC at this point
-         rab(:) = ra(:) - rb(:)
-         rac(:) = ra(:) - rc(:)
-         rbc(:) = rb(:) - rc(:)
-         dab = NORM2(rab)
+         !! using PBC here might screw a molecule that fits the box (but e.g. hasn't been shifted by center_molecule)
+         !! by folding around the center, such screwing can be avoided for a proper choice of center.
+         !ra(:) = pbc(particle_set(iatom)%r(:) - rc, cell) + rc
+         !rb(:) = pbc(particle_set(jatom)%r(:) - rc, cell) + rc
+         !! we dont use PBC at this point
+         !rab(:) = ra(:) - rb(:)
+         !rac(:) = ra(:) - rc(:)
+         !rbc(:) = rb(:) - rc(:)
+         !dab = NORM2(rab)
+
+         ra = particle_set(iatom)%r(:)
+         rb = particle_set(jatom)%r(:)
+         rab = ra - rb
+         rac = ra - rc
+         rbc = rb -rc
+         dab = norm2(rab)
 
          ! get blocks
          IF (inode == 1) last_jatom = 0

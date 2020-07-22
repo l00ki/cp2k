@@ -29,7 +29,8 @@ module wannier_moments
    use cp_dbcsr_operations,    only: copy_dbcsr_to_cfm, &
                                      copy_dbcsr_to_fm, &
                                      cp_dbcsr_sm_cfm_multiply, &
-                                     dbcsr_allocate_matrix_set
+                                     dbcsr_allocate_matrix_set, &
+                                     dbcsr_deallocate_matrix_set
    use cp_fm_struct,           only: cp_fm_struct_create, &
                                      cp_fm_struct_release, &
                                      cp_fm_struct_type
@@ -122,13 +123,14 @@ contains
            routineP = moduleN//":"//routineN
 
       character(len=default_string_length)  :: iter, subset_name, name
-      integer                               :: akind, handle, iion, imol, imolkind, imoment, lx, ly, lz, &
+      complex(dp)                           :: ggamma(3), zeta
+      integer                               :: akind, handle, iion, imoment, lx, ly, lz, &
            nao, nions, nmolkinds, nmols, &
-           iproc, ispin, istate, isubset, nmoments, norder, ns, nspins, nstates, nsubsets, unit_nr
+           ispin, istate, isubset, nmoments, norder, nspins, nstates, nsubsets, unit_nr
       integer, allocatable                  :: first_atoms(:), last_atoms(:), states(:)
       logical                               :: do_periodic, do_orbitals, first_time, floating, ghost
-      real(dp)                              :: trace, zeff, zwfc, r(3)
-      real(dp), allocatable                 :: moments(:, :, :), nuclear_moments(:, :), rccs(:, :)
+      real(dp)                              :: theta, trace, zeff, zwfc, r(3)
+      real(dp), allocatable                 :: mom(:), moments(:, :, :), nuclear_moments(:, :), rccs(:, :)
       real(dp), pointer                     :: ref_point(:)
       TYPE(atomic_kind_type), POINTER       :: atomic_kind
       type(cell_type), pointer              :: cell
@@ -144,7 +146,6 @@ contains
       TYPE(distribution_1d_type), POINTER   :: local_molecules
       type(particle_type), pointer          :: particles(:)
       type(qs_kind_type), pointer           :: qs_kind_set(:)
-      type(rt_prop_type), pointer           :: rtp
       type(wannier_centres_type), pointer   :: wcs(:)
 
       call timeset(routineN, handle)
@@ -206,7 +207,7 @@ contains
             call get_reference_point(rccs(:, isubset), qs_env=qs_env, reference=use_mom_ref_com, &
                  ref_point=ref_point, ifirst=first_atoms(isubset), ilast=last_atoms(isubset))
          end if 
-         print *, "rccs", isubset, rccs(:, isubset)
+         !print *, "rccs", isubset, rccs(:, isubset)
       end do
 
       ! operator
@@ -218,7 +219,7 @@ contains
       end do
 
       ! results 
-      allocate(moments(nspins, nsubsets, nmoments))
+      allocate(moments(nspins, nsubsets, nmoments), mom(nmoments))
       moments = 0.0_dp
       if (do_orbitals) then
          allocate(nuclear_moments(nspins, nmoments))
@@ -273,7 +274,7 @@ contains
                      end do
                   end select
                else
-                  ! JCP 234110 hybrid operator
+                  ! local expectation values
                   ! Wannier functions of a single subsystem
                   call cp_fm_struct_create(vec_struct, template_fmstruct=coeffs%matrix_struct, &
                        ncol_global=nstates)
@@ -283,19 +284,19 @@ contains
                   call cp_cfm_create(opvec, vec_struct)
                   call cp_cfm_create(vecopvec, nstates_struct)
                   do istate = 1, nstates
-                     call cp_cfm_to_cfm(coeffs, vec, 1, states(istate), istate)
+                     call cp_cfm_to_cfm(coeffs, vec, nstates, states(1), 1)
                   end do
                   ! moments operator
+                  print *, "isubset", isubset
                   call build_local_moment_matrix(qs_env, moments_op, norder, ref_point=rccs(:, isubset))
 
                   ! calculate expectation value
                   do imoment = 1, nmoments
-                     print *, "imoment", imoment
                      call copy_dbcsr_to_fm(moments_op(imoment)%matrix, op_fm)
                      call cp_fm_to_cfm(op_fm, mtarget=op)
                      call cp_cfm_gemm("N", "N", nao, nstates, nao, (1.0_dp, 0.0_dp), op, vec, &
                           (0.0_dp, 0.0_dp), opvec)
-                     call cp_cfm_gemm("C", "N", nstates, nao, nao, (1.0_dp, 0.0_dp), vec, opvec, &
+                     call cp_cfm_gemm("C", "N", nstates, nstates, nao, (1.0_dp, 0.0_dp), vec, opvec, &
                           (0.0_dp, 0.0_dp), vecopvec)
                      trace = 0.0_dp
                      do istate = 1, nstates
@@ -313,6 +314,7 @@ contains
                end if
 
                if (.not. do_orbitals) then
+                  ! add the nuclear dipole to the local dipole moment
                   do imoment = 1, nmoments
                      lx = indco(1, imoment + 1)
                      ly = indco(2, imoment + 1)
@@ -353,8 +355,24 @@ contains
                      end if
                   end do
                end do
+
+               if (do_periodic) then
+                  CPASSERT(norder == 1)
+                  ! JCP 234110 hybrid operator: Berry correction
+                  do isubset = 1, nsubsets
+                     ggamma = cmplx(1.0_dp, 0.0_dp, dp)
+                     do imoment = 1, nmoments
+                        theta = twopi * sum(cell%h_inv(imoment, :) * moments(ispin, isubset, 1:3))
+                        zeta = cmplx(cos(theta), sin(theta), dp)
+                        ggamma(imoment) = ggamma(imoment) * zeta
+                     end do
+                     mom = aimag(log(ggamma)) / twopi
+                     mom = matmul(cell%hmat, mom)
+                     moments(ispin, isubset, :) = mom
+                  end do  ! isubset
+               end if
             end if
-         end do
+         end do  ! ispin
       end if
 
       ! print
@@ -363,7 +381,7 @@ contains
             write(unit_nr, "(a)") "# iter_level, ispin, "//trim(subset_name)//", moments [a.u.]"
          end if
          do ispin = 1, nspins
-            if (do_orbitals) write(unit_nr, "(a10,i3,1X,a20,39es21.12)") iter(1:10), ispin, &
+            if (do_orbitals) write(unit_nr, "(a10,i3,1X,a20,39es24.15)") iter(1:10), ispin, &
                  "nuclear", nuclear_moments(ispin, :)
             do isubset = 1, nsubsets
                if (do_orbitals) then
@@ -371,17 +389,22 @@ contains
                else
                   name = molecules(isubset)%molecule_kind%name(1:20)
                end if
-               write(unit_nr, "(a10,i3,1X,a20,39es21.12)") iter(1:10), ispin, trim(name), moments(ispin, isubset, :)
+               write(unit_nr, "(a10,i3,1X,a20,39es24.15)") iter(1:10), ispin, trim(name), moments(ispin, isubset, :)
             end do
          end do
       end if
 
       ! cleanup
-      deallocate(rccs, moments)
+      deallocate(rccs, mom, moments)
       if (do_orbitals) then
          deallocate(nuclear_moments)
       end if
-
+      call dbcsr_deallocate_matrix_set(moments_op)
+      call cp_fm_struct_release(op_struct)
+      call cp_fm_release(op_fm)
+      call cp_cfm_release(op) 
+      call cp_cfm_release(coeffs) 
+      
       call cp_print_key_finished_output(unit_nr, logger, print_key, "WANNIER_MOMENTS")
       call timestop(handle)
 
