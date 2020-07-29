@@ -520,16 +520,16 @@ CONTAINS
             CALL get_localization_info(qs_env, qs_loc_env_homo, localize_section, homo_localized, &
                  wf_r, wf_g, particles, occupied_orbs, occupied_evals, marked_states)
 
-            PRINT *, "rtp_control%localize", rtp_control%localize
-            IF (rtp_control%localize /= rtp_localize_none) THEN
-               ! write the localized orbitals into qs_env for later use in rtp_localize
-               DO ispin = 1, dft_control%nspins
-                  CALL cp_cfm_create(mos(ispin)%mo_set%wannier_coeff, &
-                                     matrix_struct=homo_localized(ispin)%matrix%matrix_struct)
-                  CALL cp_fm_to_cfm(homo_localized(ispin)%matrix, &
-                                    mtarget=mos(ispin)%mo_set%wannier_coeff)
-               END DO
-            END IF
+            !PRINT *, "rtp_control%localize", rtp_control%localize
+            !IF (rtp_control%localize /= rtp_localize_none) THEN
+            !   ! write the localized orbitals into qs_env for later use in rtp_localize
+            !   DO ispin = 1, dft_control%nspins
+            !      CALL cp_cfm_create(mos(ispin)%mo_set%wannier_coeff, &
+            !                         matrix_struct=homo_localized(ispin)%matrix%matrix_struct)
+            !      CALL cp_fm_to_cfm(homo_localized(ispin)%matrix, &
+            !                        mtarget=mos(ispin)%mo_set%wannier_coeff)
+            !   END DO
+            !END IF
 
             !retain the homo_localized for future use
             IF (qs_loc_env_homo%localized_wfn_control%use_history) THEN
@@ -1138,6 +1138,7 @@ CONTAINS
 
       IF (BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)) THEN
 
+         print *, "post moments"
          maxmom = section_get_ival(section_vals=input, &
                                    keyword_name="DFT%PRINT%MOMENTS%MAX_MOMENT")
          periodic = section_get_lval(section_vals=input, &
@@ -1183,6 +1184,7 @@ CONTAINS
                CALL qs_moment_locop(qs_env, magnetic, maxmom, reference, ref_point, unit_nr, vel_reprs, com_nl)
             END IF
             IF (do_kg) THEN
+               PRINT *, "KG moments!"
                CALL calculate_kg_moments(qs_env, maxmom, reference, ref_point, input, logger)
             END IF
          END IF

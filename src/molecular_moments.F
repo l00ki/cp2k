@@ -210,6 +210,7 @@ CONTAINS
             CALL get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
                                      ref_point=ref_point, ifirst=first_atom, &
                                      ilast=first_atom + natom - 1)
+            print *, "rcc mol", rcc
             ! charge
             DO iatom = 1, natom
                i = first_atom + iatom - 1

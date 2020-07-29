@@ -282,11 +282,11 @@ CONTAINS
          ra(:) = particle_set(iatom)%r(:) - rc
          rb(:) = particle_set(jatom)%r(:) - rc
          rab(:) = ra - rb
-         print *, "rab", rab
+         !print *, "rab", rab
          rac(:) = ra - rc
          rbc(:) = rb - rc
          dab = NORM2(rab)
-         print *, "dab", dab
+         !print *, "dab", dab
          
          DO iset = 1, nseta
 

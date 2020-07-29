@@ -53,6 +53,10 @@ MODULE rt_propagation_types
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'rt_propagation_types'
 
+   TYPE rtp_states_type
+      INTEGER, POINTER, DIMENSION(:)  :: states
+   END TYPE rtp_states_type
+   
    TYPE rtp_rho_type
       TYPE(dbcsr_p_type), POINTER, DIMENSION(:) :: new
       TYPE(dbcsr_p_type), POINTER, DIMENSION(:) :: old
@@ -87,6 +91,7 @@ MODULE rt_propagation_types
       TYPE(dbcsr_p_type), POINTER, DIMENSION(:) :: SinvB
       TYPE(rtp_rho_type), POINTER                  :: rho
       TYPE(rtp_mos_type), POINTER                  :: mos
+      TYPE(rtp_states_type), POINTER, DIMENSION(:) :: states
       REAL(KIND=dp)                               :: energy_old
       REAL(KIND=dp)                               :: energy_new
       REAL(KIND=dp)                               :: dt
@@ -115,7 +120,8 @@ MODULE rt_propagation_types
 
 ! *** Public data types ***
 
-   PUBLIC :: rt_prop_type
+   PUBLIC :: rt_prop_type, &
+             rtp_states_type
 
 ! *** Public subroutines ***
 
@@ -284,6 +290,7 @@ CONTAINS
       rtp%iter = 0
       rtp%do_hfx = .FALSE.
       rtp%track_imag_density = .FALSE.
+      NULLIFY(rtp%states)
 
    END SUBROUTINE rt_prop_create
 
@@ -317,7 +324,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE get_rtp(rtp, exp_H_old, exp_H_new, H_last_iter, rho_old, rho_next, rho_new, mos, mos_new, mos_old, mos_next, &
                       S_inv, S_half, S_minus_half, B_mat, C_mat, propagator_matrix, mixing, mixing_factor, &
-                      S_der, dt, nsteps, SinvH, SinvB, admm_mos)
+                      S_der, dt, nsteps, SinvH, SinvB, admm_mos, states)
 
       TYPE(rt_prop_type), POINTER                        :: rtp
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, &
@@ -339,6 +346,8 @@ CONTAINS
          POINTER                                         :: SinvH, SinvB
       TYPE(cp_fm_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: admm_mos
+      TYPE(rtp_states_type), DIMENSION(:), OPTIONAL, &
+           POINTER                                       :: states
 
       CHARACTER(len=*), PARAMETER :: routineN = 'get_rtp', routineP = moduleN//':'//routineN
 
@@ -370,6 +379,7 @@ CONTAINS
       IF (PRESENT(mixing)) mixing = rtp%mixing
       IF (PRESENT(mixing_factor)) mixing_factor = rtp%mixing_factor
       IF (PRESENT(nsteps)) nsteps = rtp%nsteps
+      IF (PRESENT(states)) states = rtp%states
 
    END SUBROUTINE get_rtp
 
@@ -381,7 +391,9 @@ CONTAINS
       TYPE(rt_prop_type), INTENT(inout)                  :: rtp
 
       CHARACTER(len=*), PARAMETER :: routineN = 'rt_prop_release', &
-         routineP = moduleN//':'//routineN
+           routineP = moduleN//':'//routineN
+
+      INTEGER             :: i
 
       CALL dbcsr_deallocate_matrix_set(rtp%exp_H_old)
       CALL dbcsr_deallocate_matrix_set(rtp%exp_H_new)
@@ -424,6 +436,12 @@ CONTAINS
          CALL rtp_history_release(rtp)
       DEALLOCATE (rtp%orders)
       IF (.NOT. rtp%linear_scaling) CALL cp_fm_struct_release(rtp%ao_ao_fmstruct)
+      IF (ASSOCIATED(rtp%states)) THEN
+         DO i = 1, SIZE(rtp%states)
+            DEALLOCATE(rtp%states)
+         END DO
+         DEALLOCATE(rtp%states)
+      END IF
    END SUBROUTINE rt_prop_release
 
 ! **************************************************************************************************

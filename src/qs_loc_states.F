@@ -193,6 +193,7 @@ CONTAINS
                  "WANNIER_STATES"), cp_p_file) .OR. &
                 (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
                  "WANNIER_MOMENTS"), cp_p_file))) THEN
+               print *, "test"
                ns = SIZE(qs_loc_env%localized_wfn_control%loc_states, 1)
                IF (.NOT. ASSOCIATED(wc(ispin)%centres)) THEN
                   ALLOCATE (wc(ispin)%WannierHamDiag(ns))
@@ -239,7 +240,9 @@ CONTAINS
       END IF
       !
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
-                                           "WANNIER_STATES"), cp_p_file)) THEN
+                                           "WANNIER_STATES"), cp_p_file) .OR. &
+          BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+                                           "WANNIER_MOMENTS"), cp_p_file)) THEN
          CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
       ENDIF
       ! print moments of Wannier functions

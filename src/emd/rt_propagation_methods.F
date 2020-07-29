@@ -913,7 +913,9 @@ CONTAINS
      loc_explicit = .TRUE.
      loc_print_explicit = .TRUE.
 
-     WRITE (unit=output_unit, fmt="(A)") "LOCALIZE| Localising propagated orbitals"
+     IF (output_unit > 0) THEN
+        WRITE (unit=output_unit, fmt="(A)") "LOCALIZE| Localising propagated orbitals"
+     END IF
 
      ! get section properties
      CALL get_qs_env(qs_env, dft_control=dft_control, input=input, pw_env=pw_env)

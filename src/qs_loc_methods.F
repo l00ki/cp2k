@@ -205,8 +205,8 @@ CONTAINS
             CALL cp_fm_create(nullmat, vectors%matrix_struct)
             CALL cp_fm_set_all(nullmat, 0.0_dp, 0.0_dp)
             CALL cp_cfm_create(tmp_complex_vectors, vectors%matrix_struct)
-            CALL cp_fm_to_cfm(vectors, nullmat, tmp_complex_vectors)
-            CALL zij_matrix(op_sm_set, zij_cfm_set=zij_cfm_set, c_vectors=tmp_complex_vectors)
+            CALL cp_fm_to_cfm(vectors, mtarget=tmp_complex_vectors)
+            CALL zij_matrix(op_sm_set, zij_fm_set=zij_fm_set, c_vectors=tmp_complex_vectors)
          ELSE
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
@@ -823,6 +823,8 @@ CONTAINS
                                        para_env, cell, weights, ispin, print_loc_section, &
                                        zij_cfm_set=op_cfm_set, &
                                        complex_vectors=complex_moloc_coeff(ispin)%matrix)
+               CALL cp_cfm_to_fm(complex_moloc_coeff(ispin)%matrix, moloc_coeff(2*ispin-1)%matrix, &
+                                 moloc_coeff(2*ispin)%matrix)
             END IF
 
             ! Here we dealloctate op_fm_set

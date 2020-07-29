@@ -2372,7 +2372,7 @@ CONTAINS
           target_time >= 0 .AND. &
           start_time >= 0 .AND. &
           ASSOCIATED(vectors)) THEN
-         PRINT *, "dummy call"
+         CPWARN("dummy call")
       END IF
 
       CPWARN("Falling back to serial")
@@ -2408,7 +2408,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3)                        :: evals
       TYPE(cp_cfm_type), POINTER                         :: c_Gmat, hmat
       TYPE(cp_fm_struct_type), POINTER                   :: G_fm_struct, h_fm_struct
-      TYPE(cp_fm_type), POINTER                          :: evects, Gmat, i_Gmat
+      TYPE(cp_fm_type), POINTER                          :: evects, Gmat
 
       dim_m = SIZE(mii)
 
@@ -2420,7 +2420,6 @@ CONTAINS
       CALL cp_cfm_create(c_Gmat, G_fm_struct)
       CALL cp_cfm_set_all(c_Gmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
       CALL cp_fm_create(Gmat, G_fm_struct)
-      CALL cp_fm_create(i_Gmat, G_fm_struct)
       CALL cp_fm_create(evects, G_fm_struct)
 
       DO i = 1, dim_m
@@ -2431,7 +2430,7 @@ CONTAINS
          CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), hmat, hmat, (1.0_dp, 0.0_dp), c_Gmat)
       END DO
 
-      CALL cp_cfm_to_fm(c_Gmat, Gmat, i_Gmat)
+      CALL cp_cfm_to_fm(c_Gmat, Gmat)
 
       CALL choose_eigv_solver(Gmat, evects, evals)
 
@@ -2449,13 +2448,12 @@ CONTAINS
       ! calculate the angles
       r = SQRT(x**2 + y**2 + z**2)  ! this will always be 1
       c = SQRT((x + r) / (2 * r))  ! this will always be real
-      s = CMPLX(y / SQRT(2 * r * (x + r)), -1.0 * z / SQRT(2 * r * (x + r)), KIND=dp)
+      s = CMPLX(y / SQRT(2 * r * (x + r)), -1.0 * z / SQRT(2 * r * (x + r)), KIND=dp)  ! angle 
 
       CALL cp_fm_struct_release(h_fm_struct)
       CALL cp_fm_struct_release(G_fm_struct)
       CALL cp_cfm_release(hmat)
       CALL cp_cfm_release(c_Gmat)
-      CALL cp_fm_release(i_Gmat)
       CALL cp_fm_release(Gmat)
       CALL cp_fm_release(evects)
 
