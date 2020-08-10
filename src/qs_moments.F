@@ -279,8 +279,8 @@ CONTAINS
          !!print *, "dab ", dab
 
          !! my PBC fix
-         ra(:) = particle_set(iatom)%r(:) - rc
-         rb(:) = particle_set(jatom)%r(:) - rc
+         ra(:) = pbc(particle_set(iatom)%r(:) - rc, cell) + rc
+         rb(:) = pbc(particle_set(jatom)%r(:) - rc, cell) + rc
          rab(:) = ra - rb
          !print *, "rab", rab
          rac(:) = ra - rc

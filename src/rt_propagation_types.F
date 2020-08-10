@@ -54,7 +54,7 @@ MODULE rt_propagation_types
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'rt_propagation_types'
 
    TYPE rtp_states_type
-      INTEGER, POINTER, DIMENSION(:)  :: states
+      INTEGER, ALLOCATABLE, DIMENSION(:)  :: states
    END TYPE rtp_states_type
    
    TYPE rtp_rho_type
@@ -91,7 +91,7 @@ MODULE rt_propagation_types
       TYPE(dbcsr_p_type), POINTER, DIMENSION(:) :: SinvB
       TYPE(rtp_rho_type), POINTER                  :: rho
       TYPE(rtp_mos_type), POINTER                  :: mos
-      TYPE(rtp_states_type), POINTER, DIMENSION(:) :: states
+      TYPE(rtp_states_type), POINTER, DIMENSION(:, :) :: states
       REAL(KIND=dp)                               :: energy_old
       REAL(KIND=dp)                               :: energy_new
       REAL(KIND=dp)                               :: dt
@@ -346,7 +346,7 @@ CONTAINS
          POINTER                                         :: SinvH, SinvB
       TYPE(cp_fm_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: admm_mos
-      TYPE(rtp_states_type), DIMENSION(:), OPTIONAL, &
+      TYPE(rtp_states_type), DIMENSION(:, :), OPTIONAL, &
            POINTER                                       :: states
 
       CHARACTER(len=*), PARAMETER :: routineN = 'get_rtp', routineP = moduleN//':'//routineN
@@ -379,7 +379,7 @@ CONTAINS
       IF (PRESENT(mixing)) mixing = rtp%mixing
       IF (PRESENT(mixing_factor)) mixing_factor = rtp%mixing_factor
       IF (PRESENT(nsteps)) nsteps = rtp%nsteps
-      IF (PRESENT(states)) states = rtp%states
+      IF (PRESENT(states)) states => rtp%states
 
    END SUBROUTINE get_rtp
 
@@ -393,7 +393,7 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'rt_prop_release', &
            routineP = moduleN//':'//routineN
 
-      INTEGER             :: i
+      INTEGER             :: i, j
 
       CALL dbcsr_deallocate_matrix_set(rtp%exp_H_old)
       CALL dbcsr_deallocate_matrix_set(rtp%exp_H_new)
@@ -437,8 +437,10 @@ CONTAINS
       DEALLOCATE (rtp%orders)
       IF (.NOT. rtp%linear_scaling) CALL cp_fm_struct_release(rtp%ao_ao_fmstruct)
       IF (ASSOCIATED(rtp%states)) THEN
-         DO i = 1, SIZE(rtp%states)
-            DEALLOCATE(rtp%states)
+         DO i = 1, SIZE(rtp%states, 1)
+            DO j = 1, SIZE(rtp%states, 2)
+               DEALLOCATE(rtp%states(i, j)%states)
+            END DO
          END DO
          DEALLOCATE(rtp%states)
       END IF
