@@ -114,7 +114,7 @@ contains
                                      routineP = moduleN//":"//routineN
 
       character(len=default_string_length)  :: iter, name, nameheader
-      integer                               :: akind, handle, i, j, k, l, lx, ly, lz, m, nao, natoms, &
+      integer                               :: akind, handle, i, j, k, l, lx, ly, lz, nao, natoms, &
            nlocalstates(2), nmo, nmoments, norders, nspins, nstates, nsubsets, unit_nr
       integer, allocatable                  :: first_atoms(:), last_atoms(:), nbasis(:)
       logical                               :: do_periodic, do_orbitals, first_time, floating, ghost
@@ -125,7 +125,7 @@ contains
       type(cell_type), pointer              :: cell
       type(cp_cfm_p_type), pointer          :: opvec(:), vecopvec(:)
       type(cp_cfm_type), pointer            :: vec, tmp_opvec
-      type(cp_fm_struct_type), pointer      :: op_struct, vec_struct, vecopvec_struct
+      type(cp_fm_struct_type), pointer      :: vecopvec_struct
       type(cp_fm_p_type), pointer           :: coeffs(:)
       type(cp_fm_type), pointer             :: opvecr, opveci
       type(cp_logger_type), pointer         :: logger
@@ -220,7 +220,6 @@ contains
 
          ! get the states list for each subset
          if (first_time .or. .not. do_rtp) then 
-            print *, "new states map"
             allocate(current_states(nspins, nsubsets))
             do i = 1, nspins
                do j = 1, nsubsets
@@ -342,7 +341,6 @@ contains
                   call get_qs_kind(kinds(akind), core_charge=zeff)
                   !r = wrap(particles(l)%r - rcc, cell)
                   r = pbc(particles(l)%r - rcc, cell)
-                  print *, "r", l, r
                   zmom = zeff
                   if (lx /= 0) zmom = zmom * r(1)**lx
                   if (ly /= 0) zmom = zmom * r(2)**ly
