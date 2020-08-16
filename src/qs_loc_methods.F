@@ -714,7 +714,8 @@ CONTAINS
                                                             loc_method, n_rep, nao, ncubes, nmo, &
                                                             nmosub, s_spin, ub
       INTEGER, DIMENSION(:), POINTER                     :: bounds, list, list_cubes
-      LOGICAL                                            :: append_cube, list_cubes_setup, mos_are_complex
+      LOGICAL                                            :: append_cube, list_cubes_setup, mos_are_complex, &
+           do_density_cube
       LOGICAL, SAVE                                      :: first_time = .TRUE.
       REAL(dp), DIMENSION(6)                             :: weights
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: centers, vecbuffer
@@ -960,6 +961,7 @@ CONTAINS
             ! Real call for dumping the cube files
             print_key => section_vals_get_subs_vals(print_loc_section, "WANNIER_CUBES")
             append_cube = section_get_lval(print_loc_section, "WANNIER_CUBES%APPEND")
+            do_density_cube = section_get_lval(print_loc_section, "WANNIER_CUBES%DENSITY")
             my_pos = "REWIND"
             IF (append_cube) THEN
                my_pos = "APPEND"
@@ -970,11 +972,29 @@ CONTAINS
                                    print_key, "loc"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
                                    mo_coeff=moloc_coeff(ispin)%matrix, &
                                    ispin=ispin, file_position=my_pos)
+               IF (do_density_cube) THEN
+                  CALL qs_print_density_cubes(qs_env, ncubes, list_cubes, centers, &
+                                              print_key, "locdens"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                              mo_coeff=moloc_coeff(ispin)%matrix, &
+                                              ispin=ispin, file_position=my_pos)
+               END IF
             ELSE
+               ! real part
                CALL qs_print_cubes(qs_env, ncubes, list_cubes, centers, &
-                                   print_key, "loc"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
-                                   complex_mo_coeff=complex_moloc_coeff(ispin)%matrix, &
+                                   print_key, "locreal"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                   mo_coeff=moloc_coeff(2*ispin-1)%matrix, &
                                    ispin=ispin, file_position=my_pos)
+               ! imaginary part
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, centers, &
+                                   print_key, "locimag"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                   mo_coeff=moloc_coeff(2*ispin)%matrix, &
+                                   ispin=ispin, file_position=my_pos)
+               IF (do_density_cube) THEN
+                  CALL qs_print_density_cubes(qs_env, ncubes, list_cubes, centers, &
+                                              print_key, "locdens"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                              complex_mo_coeff=complex_moloc_coeff(ispin)%matrix, &
+                                              ispin=ispin, file_position=my_pos)
+               END IF
             END IF 
 
             DEALLOCATE (centers)
@@ -1005,7 +1025,7 @@ CONTAINS
 !>      This routine should not be in this module
 ! **************************************************************************************************
    SUBROUTINE qs_print_cubes(qs_env, nstates, state_list, centers, &
-        print_key, root, mo_coeff, complex_mo_coeff, ispin, idir, state0, &
+        print_key, root, mo_coeff, ispin, idir, state0, &
         file_position)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
@@ -1015,7 +1035,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: print_key
       CHARACTER(LEN=*)                                   :: root
       TYPE(cp_fm_type), POINTER, OPTIONAL                :: mo_coeff
-      TYPE(cp_cfm_type), POINTER, OPTIONAL               :: complex_mo_coeff
       INTEGER, INTENT(IN), OPTIONAL                      :: ispin, idir
       INTEGER, OPTIONAL                                  :: state0
       CHARACTER(LEN=default_string_length), OPTIONAL     :: file_position
@@ -1045,12 +1064,6 @@ CONTAINS
       NULLIFY (auxbas_pw_pool, pw_env, logger)
       logger => cp_get_default_logger()
 
-      IF (PRESENT(mo_coeff)) THEN
-         CPASSERT(.NOT. PRESENT(complex_mo_coeff))
-      ELSE
-         CPASSERT(PRESENT(complex_mo_coeff))
-      END IF
-      
       CALL get_qs_env(qs_env=qs_env, pw_env=pw_env, subsys=subsys)
       CALL qs_subsys_get(subsys, particles=particles)
 
@@ -1129,6 +1142,42 @@ CONTAINS
       CALL timestop(handle)
    END SUBROUTINE qs_print_cubes
 
+! **************************************************************************************************
+!> \brief Prints the electronic density
+! **************************************************************************************************
+
+   SUBROUTINE qs_print_density_cubes(qs_env, nstates, state_list, centers, print_key, root, &
+        mo_coeff, complex_mo_coeff, ispin, file_position)
+
+      TYPE(qs_environment_type), POINTER                 :: qs_env
+      INTEGER, INTENT(IN)                                :: nstates
+      INTEGER, DIMENSION(:), POINTER                     :: state_list
+      REAL(dp), DIMENSION(:, :), POINTER                 :: centers
+      TYPE(section_vals_type), POINTER                   :: print_key
+      CHARACTER(LEN=*)                                   :: root
+      TYPE(cp_fm_type), POINTER, OPTIONAL                :: mo_coeff
+      TYPE(cp_cfm_type), POINTER, OPTIONAL               :: complex_mo_coeff
+      INTEGER, INTENT(IN), OPTIONAL                      :: ispin
+      CHARACTER(LEN=default_string_length), OPTIONAL     :: file_position
+
+      TYPE(cp_fm_type), POINTER                          :: densmat
+      
+      
+      IF(PRESENT(mo_coeff)) THEN
+         CPASSERT(.NOT. PRESENT(complex_mo_coeff))
+         CALL cp_fm_create(densmat, mo_coeff%matrix_struct)
+         densmat%local_data = mo_coeff%local_data**2.0
+      ELSE
+         CPASSERT(PRESENT(complex_mo_coeff))
+         CALL cp_fm_create(densmat, complex_mo_coeff%matrix_struct)
+         densmat%local_data = ABS(complex_mo_coeff%local_data)**2.0
+      END IF
+      CALL qs_print_cubes(qs_env, nstates, state_list, centers, print_key, root, mo_coeff=densmat, &
+                          ispin=ispin, file_position=file_position)
+      CALL cp_fm_release(densmat)
+
+    END SUBROUTINE qs_print_density_cubes
+    
 ! **************************************************************************************************
 !> \brief Prints wannier centers
 !> \param qs_loc_env ...

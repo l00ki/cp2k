@@ -873,7 +873,7 @@ CONTAINS
                                                    "multipole moments from Wannier functions.", &
                                        print_level=debug_print_level + 1, filename="__STD_OUT__")
       CALL keyword_create(keyword, __LOCATION__, name="ORDER", &
-                          description="Maximum order of multimpole expansion", &
+                          description="Maximum order of multipole expansion", &
                           usage="ORDER {integer}", default_i_val=1, type_of_var=integer_t)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
@@ -929,6 +929,12 @@ CONTAINS
                           "(larger values result in smaller cube files). You can provide 3 numbers (for X,Y,Z) or"// &
                           " 1 number valid for all components.", &
                           usage="STRIDE 2 2 2", n_var=-1, default_i_vals=(/2, 2, 2/), type_of_var=integer_t)
+      CALL section_add_keyword(print_key, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="DENSITY", &
+                          description="print a cubefile of the electronic density", &
+                          default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(print_key, keyword)
       CALL keyword_release(keyword)
 

@@ -23,9 +23,9 @@ MODULE qs_localization_methods
                                               cp_cfm_transpose
    USE cp_cfm_diag,                     ONLY: cp_cfm_heevd
    USE cp_cfm_types,                    ONLY: &
-        cp_cfm_create, cp_cfm_get_element, cp_cfm_get_info, cp_cfm_p_type, cp_cfm_release, &
-        cp_cfm_set_all, cp_cfm_set_element, cp_cfm_to_cfm, cp_cfm_to_fm, cp_cfm_type, &
-        cp_fm_to_cfm, cp_cfm_write_formatted
+        cp_cfm_create, cp_cfm_get_element, cp_cfm_get_info, cp_cfm_get_submatrix, cp_cfm_p_type, &
+        cp_cfm_release, cp_cfm_set_all, cp_cfm_set_element, cp_cfm_to_cfm, cp_cfm_to_fm, &
+        cp_cfm_type, cp_fm_to_cfm, cp_cfm_write_formatted
    USE cp_dbcsr_operations,             ONLY: copy_cfm_to_dbcsr,&
                                               copy_dbcsr_to_fm,&
                                               cp_dbcsr_sm_cfm_multiply,&
@@ -64,6 +64,7 @@ MODULE qs_localization_methods
    USE message_passing,                 ONLY: mp_allgather,&
                                               mp_bcast,&
                                               mp_max,&
+                                              mp_isendrecv, &
                                               mp_sendrecv,&
                                               mp_sum,&
                                               mp_sync
@@ -2265,6 +2266,9 @@ CONTAINS
             NULLIFY(c_zij((idim-1)*dim1+jdim)%matrix)
             CALL cp_cfm_create(c_zij((idim-1)*dim1+jdim)%matrix, zij(jdim, idim)%matrix%matrix_struct)
             CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij((idim-1)*dim1+jdim)%matrix)
+            PRINT *, c_zij((idim-1)*dim1+jdim)%matrix%local_data, &
+                 SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 1), &
+                 SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 2)
          END DO
       END DO
 
@@ -2356,32 +2360,235 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'cardoso_souloumiac_parallel', &
          routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: handle, output_unit
+      COMPLEX(KIND=dp)                                   :: mii, mij, mji, mjj
+      COMPLEX(KIND=dp), ALLOCATABLE                      :: local_cols(:, :, :), &
+           colbuffer(:, :), local_rmat(:, :, :)
+      INTEGER                                            :: dim1, dim2, handle, icol, i, j, &
+           itop, ibot, idim, jdim, k, nmo, ncols_local, ncols_total, npe, output_unit, pe, &
+           zindexa, zindexb, colindexa, colindexb, totalindexa, totalindexb, group
+      INTEGER, ALLOCATABLE                               :: local_indices(:, :)
+      REAL(KIND=dp)                                      :: func, t1, t2, tolerance, c
+      TYPE(cp_cfm_p_type), POINTER                       :: c_zij(:)
+      TYPE(cp_cfm_type), POINTER                         :: rmat
 
+      PRINT *, c, icol, mii, mij, mji, mjj, start_time, target_time, vectors%local_data, weights
+      
       CALL timeset(routineN, handle)
 
       output_unit = cp_logger_get_default_io_unit()
 
-      IF (SIZE(weights) > 0 .AND. &
-          SIZE(zij, 1) > 0 .AND. &
-          ASSOCIATED(para_env) .AND. &
-          max_iter > 0 .AND. &
-          eps_localization > 0 .AND. &
-          sweeps >= 0 .AND. &
-          out_each >= 0 .AND. &
-          target_time >= 0 .AND. &
-          start_time >= 0 .AND. &
-          ASSOCIATED(vectors)) THEN
-         CPWARN("dummy call")
+      pe = para_env%mepos  ! current CPU
+      npe = para_env%num_pe  ! number of CPUs
+      group = para_env%group
+      dim1 = SIZE(zij, 1)
+      dim2 = SIZE(zij, 2)
+      CALL cp_cfm_get_info(zij(1, 1)%matrix, nrow_global=nmo)
+
+      ! add dummy columns for an even workload distribution
+      ncols_total = nmo * dim1 * dim2
+      ncols_total = ncols_total + MOD(ncols_total, 2)
+      DO WHILE(MOD(ncols_total, npe) /= 0)
+         ncols_total = ncols_total + 2
+      END DO
+      ncols_local = ncols_total / npe
+      
+      !PRINT *, "!LOC pe", pe, "nmo", nmo, "ncols_total", ncols_total, "ncols_local", &
+      !     ncols_local
+
+      ! collect the spread matrices
+      ALLOCATE(c_zij(dim1*dim2))
+      DO idim = 1, dim2
+         DO jdim = 1, dim1
+            CALL cp_cfm_create(c_zij((idim-1)*dim1+jdim)%matrix, &
+                 zij(jdim, idim)%matrix%matrix_struct)
+            CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij((idim-1)*dim1+jdim)%matrix)
+         END DO
+      END DO
+      CALL cp_cfm_create(rmat, zij(1, 1)%matrix%matrix_struct)
+      CALL cp_cfm_set_all(rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
+            
+      ! local columns and buffers
+      ALLOCATE(local_cols(2, ncols_local / 2, nmo), &
+               local_indices(2, ncols_local / 2), &
+               colbuffer(1, nmo))
+      
+      ! get the columns assigned to the current processor
+      local_indices = 0
+      DO i = 1, ncols_local / 2
+         ! determine the columns to pull
+         totalindexa = (pe * ncols_local / 2) + i
+         local_indices(1, i) = totalindexa
+         zindexa = (totalindexa - 1) / nmo + 1
+         colindexa = MOD(totalindexa-1, nmo) + 1
+         CALL cp_cfm_get_submatrix(c_zij(zindexa)%matrix, colbuffer, 1, colindexa)
+         local_cols(1, i, :) = colbuffer(1, :)
+         !PRINT *, "pe ", pe, "i", i, "a ", "totalindex" , totalindexa, "zindex", zindexa, "colindex", colindexa
+
+         totalindexb = ncols_total - totalindexa + 1
+         local_indices(2, i) = totalindexb
+         zindexb = dim1*dim2 - zindexa + 1
+         colindexb = nmo - colindexa + 1
+         CALL cp_cfm_get_submatrix(c_zij(zindexb)%matrix, colbuffer, 1, colindexb)
+         local_cols(2, i, :) = colbuffer(1, :)
+         !PRINT *, "pe ", pe, "i", i, "b ", "totalindex" , totalindexb, "zindex", zindexb, "colindex", colindexb
+      END DO
+
+      !IF (pe == 0) THEN
+      !   CALL cp_cfm_write_formatted(c_zij(1)%matrix, output_unit, "c_zij(1)")
+      !   DO i = 1, ncols_local / 2
+      !      PRINT *, i, "a", local_cols(1, i, :)
+      !   END DO
+      !   CALL cp_cfm_write_formatted(c_zij(6)%matrix, output_unit, "c_zij(6)")
+      !   DO i = 1, ncols_local / 2
+      !      PRINT *, i, "b", local_cols(2, i, :)
+      !   END DO
+      !END IF
+
+      IF (output_unit > 0) THEN
+         WRITE (output_unit, '(T4,A )') " Localization by iterative distributed Jacobi rotation "// &
+              "using Cardoso-Souloumiac angles"
+         WRITE (output_unit, '(T20,A12,T32, A22,T60, A12,A8 )') "Iteration", "Functional", &
+              "Tolerance", " Time "
+      END IF
+      
+      tolerance = 1.0e10_dp
+      sweeps = 0
+      
+      DO WHILE (tolerance >= eps_localization .AND. sweeps < max_iter)
+         t1 = m_walltime()
+         sweeps = sweeps + 1
+
+         ! 1 cycle of column pairs
+         DO j = 1, ncols_total - 1
+            !IF (pe == 0) THEN
+            !   PRINT *, "pe", pe, "indices a:", local_indices(1, :)
+            !   PRINT *, "pe", pe, "indices b:", local_indices(2, :)
+            !   PRINT *, "-----"
+            !END IF
+
+            ! Jacobi rotations for all local pairs
+            DO k = 1, ncols_local / 2
+               itop = local_indices(1, k)
+               ibot = local_indices(2, k)
+               IF (local_indices(1, k) > nmo*dim1*dim2 .OR. &
+                   local_indices(2, k) > nmo*dim1*dim2) THEN
+                  ! skip dummy columns
+                  PRINT *, "skipping pair:", itop, ibot
+                  CYCLE
+               END IF
+               PRINT *, "calculating angles for pair:", itop, ibot               
+               CALL ddot()
+            END DO
+            
+            ! rotate columns and communicate with other processors
+            CALL rotate_local_columns(local_cols, local_rmat, local_indices, pe, npe, ncols_local, group)
+         END DO
+
+         !IF (pe == 0) THEN
+         !   PRINT *, "pe", pe, "indices a:", local_indices(1, :)
+         !   PRINT *, "pe", pe, "indices b:", local_indices(2, :)
+         !   PRINT *, "-----"
+         !END IF
+
+         ! calculate the current spread functional
+         func = 0.0_dp
+         CALL mp_sum(func, para_env%group)
+         t2 = m_walltime()
+         
+         IF (output_unit > 0 .AND. MOD(sweeps, out_each) == 0) THEN
+            WRITE (output_unit, '(T20,I12,T35,F20.10,T60,E12.4,F8.3)') sweeps, func, tolerance, &
+                 t2 - t1
+            CALL m_flush(output_unit)
+         END IF
+      END DO
+
+      IF (sweeps == max_iter) THEN
+         IF (output_unit > 0) THEN
+            WRITE (output_unit, *) ' LOCALIZATION! loop did not converge within the maximum number of iterations.'
+            WRITE (output_unit, *) '               Present  Max. gradient = ', tolerance
+         END IF
       END IF
 
-      CPWARN("Falling back to serial")
-      CALL cardoso_souloumiac_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
-                                     vectors)
+      ! write the spread matrices back
+      DO idim = 1, dim2
+         DO jdim = 1, dim1
+            CALL cp_cfm_to_cfm(c_zij((idim-1)*dim1+jdim)%matrix, zij(jdim, idim)%matrix)
+            CALL cp_cfm_release(c_zij((idim-1)*dim1+jdim)%matrix)
+         END DO
+      END DO
+      DEALLOCATE(c_zij)
 
+      DEALLOCATE(local_cols)
+
+      CALL mp_sync(para_env%group)
+      
       CALL timestop(handle)
 
    END SUBROUTINE cardoso_souloumiac_parallel
+
+
+! **************************************************************************************************
+!> \brief rotates 
+! **************************************************************************************************
+   SUBROUTINE rotate_local_columns(columns, rmat, indices, pe, npe, n_local, group)
+
+      COMPLEX(KIND=dp), INTENT(INOUT)     :: columns(:, :, :), rmat(:, :, :)
+      INTEGER, INTENT(INOUT)              :: indices(:, :)
+      INTEGER, INTENT(IN)                 :: pe, npe, n_local, group
+
+      COMPLEX(KIND=dp), ALLOCATABLE       :: col_carry(:, :, :), col_carry_loc(:, :), &
+                                             rmat_carry(:, :, :), rmat_carry_loc(:, :)
+      INTEGER, ALLOCATABLE                :: index_carry(:, :), index_carry_loc(:)
+      INTEGER                             :: i
+
+      PRINT *, rmat
+
+      ALLOCATE(index_carry(2, npe), &
+               index_carry_loc(2), &
+               col_carry(2, SIZE(columns, 3), npe), &
+               col_carry_loc(2, SIZE(columns, 3)), &
+               rmat_carry(2, SIZE(columns, 3), npe), &
+               rmat_carry_loc(2, SIZE(columns, 3)))
+      
+      ! get carries and gather them
+      index_carry_loc(1) = indices(2, 1)
+      col_carry_loc(1, :) = columns(2, 1, :) 
+      index_carry_loc(2) = indices(1, n_local / 2)
+      col_carry_loc(2, :) = columns(1, n_local / 2, :)
+
+      CALL mp_allgather(index_carry_loc, index_carry, group)
+      CALL mp_allgather(col_carry_loc, col_carry, group)
+
+      ! rotate the indices
+      DO i = n_local / 2, 2, -1
+         indices(1, i) = indices(1, i-1)
+         columns(1, i, :) = columns(1, i-1, :)
+      END DO
+      DO i = 1, n_local / 2 - 1
+         indices(2, i) = indices(2, i+1)
+         columns(2, i, :) = columns(2, i+1, :)
+      END DO
+
+      ! take back the carries
+      IF (pe == 0) THEN
+         indices(1, 2) = index_carry(1, 1)
+         columns(1, 2, :) = col_carry(1, :, 1)
+      ELSE
+         indices(1, 1) = index_carry(2, pe)
+         columns(1, 1, :) = col_carry(1, :, pe)
+      END IF
+
+      IF (pe == npe - 1) THEN
+         indices(2, n_local / 2) = index_carry(2, npe) 
+         columns(2, n_local / 2, :) = col_carry(2, :, npe)
+      ELSE
+         indices(2, n_local / 2) = index_carry(1, pe+2)
+         columns(2, n_local / 2, :) = col_carry(1, :, pe+2)
+      END IF
+
+      !PRINT *, "pe", pe, "carry", carry
+      
+   END SUBROUTINE rotate_local_columns
 
 ! **************************************************************************************************
 !> \brief calculates the Jacobi angles needed in Cardoso-Souloumiac diagonalisation

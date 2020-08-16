@@ -296,7 +296,7 @@ contains
                      moments(k, j) = moments(k, j) - zmom
                   end do
                end do
-               if (.not. do_periodic) then  ! add density correction
+               if (do_periodic) then  ! add density correction
                   do k = 1, nstates
                      call build_local_moment_matrix(qs_env, moments_op, norders, &
                           !ref_point=wrap(wos(i)%centres(:, current_states(i, j)%states(k)), cell))
