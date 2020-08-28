@@ -1160,21 +1160,22 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: ispin
       CHARACTER(LEN=default_string_length), OPTIONAL     :: file_position
 
-      TYPE(cp_fm_type), POINTER                          :: densmat
+      TYPE(cp_fm_type), POINTER                          :: squaredmat
       
       
       IF(PRESENT(mo_coeff)) THEN
          CPASSERT(.NOT. PRESENT(complex_mo_coeff))
-         CALL cp_fm_create(densmat, mo_coeff%matrix_struct)
-         densmat%local_data = mo_coeff%local_data**2.0
+         CALL cp_fm_create(squaredmat, mo_coeff%matrix_struct)
+         squaredmat%local_data = mo_coeff%local_data**2.0
       ELSE
          CPASSERT(PRESENT(complex_mo_coeff))
-         CALL cp_fm_create(densmat, complex_mo_coeff%matrix_struct)
-         densmat%local_data = ABS(complex_mo_coeff%local_data)**2.0
+         CALL cp_fm_create(squaredmat, complex_mo_coeff%matrix_struct)
+         squaredmat%local_data = REAL(CONJG(complex_mo_coeff%local_data) &
+                                      * complex_mo_coeff%local_data, dp)
       END IF
-      CALL qs_print_cubes(qs_env, nstates, state_list, centers, print_key, root, mo_coeff=densmat, &
+      CALL qs_print_cubes(qs_env, nstates, state_list, centers, print_key, root, mo_coeff=squaredmat, &
                           ispin=ispin, file_position=file_position)
-      CALL cp_fm_release(densmat)
+      CALL cp_fm_release(squaredmat)
 
     END SUBROUTINE qs_print_density_cubes
     

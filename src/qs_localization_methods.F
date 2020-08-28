@@ -57,7 +57,8 @@ MODULE qs_localization_methods
    USE kinds,                           ONLY: dp
    USE machine,                         ONLY: m_flush,&
                                               m_walltime
-   USE mathconstants,                   ONLY: pi,&
+   USE mathconstants,                   ONLY: gaussi,&
+                                              pi,&
                                               twopi
    USE matrix_exp,                      ONLY: exp_pade_real,&
                                               get_nsquare_norder
@@ -68,6 +69,9 @@ MODULE qs_localization_methods
                                               mp_sendrecv,&
                                               mp_sum,&
                                               mp_sync
+   USE omp_lib,                         ONLY: OMP_get_num_threads,&
+                                              OMP_get_thread_num
+                                              
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
@@ -2266,9 +2270,9 @@ CONTAINS
             NULLIFY(c_zij((idim-1)*dim1+jdim)%matrix)
             CALL cp_cfm_create(c_zij((idim-1)*dim1+jdim)%matrix, zij(jdim, idim)%matrix%matrix_struct)
             CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij((idim-1)*dim1+jdim)%matrix)
-            PRINT *, c_zij((idim-1)*dim1+jdim)%matrix%local_data, &
-                 SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 1), &
-                 SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 2)
+            !PRINT *, c_zij((idim-1)*dim1+jdim)%matrix%local_data, &
+            !     SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 1), &
+            !     SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 2)
          END DO
       END DO
 
@@ -2360,18 +2364,21 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'cardoso_souloumiac_parallel', &
          routineP = moduleN//':'//routineN
 
-      COMPLEX(KIND=dp)                                   :: mii, mij, mji, mjj
-      COMPLEX(KIND=dp), ALLOCATABLE                      :: local_cols(:, :, :), &
-           colbuffer(:, :), local_rmat(:, :, :)
-      INTEGER                                            :: dim1, dim2, handle, icol, i, j, &
-           itop, ibot, idim, jdim, k, nmo, ncols_local, ncols_total, npe, output_unit, pe, &
-           zindexa, zindexb, colindexa, colindexb, totalindexa, totalindexb, group
-      INTEGER, ALLOCATABLE                               :: local_indices(:, :)
-      REAL(KIND=dp)                                      :: func, t1, t2, tolerance, c
+      COMPLEX(KIND=dp)                                   :: mii, mij, mjj, h(3), gc(3, 3), s
+      COMPLEX(KIND=dp), POINTER                          :: local_cols(:, :, :), &
+           colbuffer(:, :), rmat(:, :), m(:)
+      COMPLEX(KIND=dp), POINTER                          :: mi(:), mj(:), ri(:), rj(:)
+      INTEGER                                            :: dim1, dim2, handle, im, icol, i, j, &
+           idim, info, jdim, k, l, nmo, ncols_local, ncols_total, nrealcols_total, npe, output_unit, pe, &
+           zindexa, zindexb, colindexa, colindexb, totalindexa, totalindexb, group, lwork, liwork
+      INTEGER, ALLOCATABLE                               :: local_indices(:, :), iwork(:)
+      REAL(KIND=dp)                                      :: func, t1, t2, tolerance, g(3, 3), eigval(3, 2),  &
+           leigvec(3, 3), reigvec(3, 3), x, y, z, r, c
+      REAL(KIND=dp), ALLOCATABLE                         :: work(:)
       TYPE(cp_cfm_p_type), POINTER                       :: c_zij(:)
-      TYPE(cp_cfm_type), POINTER                         :: rmat
+      TYPE(cp_cfm_type), POINTER                         :: c_rmat
 
-      PRINT *, c, icol, mii, mij, mji, mjj, start_time, target_time, vectors%local_data, weights
+      !PRINT *, c, icol, mii, mij, mji, mjj, start_time, target_time, vectors%local_data, weights
       
       CALL timeset(routineN, handle)
 
@@ -2385,8 +2392,8 @@ CONTAINS
       CALL cp_cfm_get_info(zij(1, 1)%matrix, nrow_global=nmo)
 
       ! add dummy columns for an even workload distribution
-      ncols_total = nmo * dim1 * dim2
-      ncols_total = ncols_total + MOD(ncols_total, 2)
+      nrealcols_total = nmo * dim1 * dim2
+      ncols_total = nrealcols_total + MOD(ncols_total, 2)
       DO WHILE(MOD(ncols_total, npe) /= 0)
          ncols_total = ncols_total + 2
       END DO
@@ -2404,13 +2411,15 @@ CONTAINS
             CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij((idim-1)*dim1+jdim)%matrix)
          END DO
       END DO
-      CALL cp_cfm_create(rmat, zij(1, 1)%matrix%matrix_struct)
-      CALL cp_cfm_set_all(rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
+      CALL cp_cfm_create(c_rmat, zij(1, 1)%matrix%matrix_struct)
+      CALL cp_cfm_set_all(c_rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
             
       ! local columns and buffers
       ALLOCATE(local_cols(2, ncols_local / 2, nmo), &
                local_indices(2, ncols_local / 2), &
-               colbuffer(1, nmo))
+               rmat(nmo, nmo), &
+               colbuffer(1, nmo), &
+               m(3 * ncols_total * ncols_local/ 2))
       
       ! get the columns assigned to the current processor
       local_indices = 0
@@ -2433,6 +2442,9 @@ CONTAINS
          !PRINT *, "pe ", pe, "i", i, "b ", "totalindex" , totalindexb, "zindex", zindexb, "colindex", colindexb
       END DO
 
+      ! get the initial rotation matrix
+      CALL cp_cfm_get_submatrix(c_rmat, rmat)
+
       !IF (pe == 0) THEN
       !   CALL cp_cfm_write_formatted(c_zij(1)%matrix, output_unit, "c_zij(1)")
       !   DO i = 1, ncols_local / 2
@@ -2454,35 +2466,127 @@ CONTAINS
       tolerance = 1.0e10_dp
       sweeps = 0
       
+      PRINT *, "nmo", nmo
       DO WHILE (tolerance >= eps_localization .AND. sweeps < max_iter)
          t1 = m_walltime()
          sweeps = sweeps + 1
 
          ! 1 cycle of column pairs
-         DO j = 1, ncols_total - 1
-            !IF (pe == 0) THEN
-            !   PRINT *, "pe", pe, "indices a:", local_indices(1, :)
-            !   PRINT *, "pe", pe, "indices b:", local_indices(2, :)
-            !   PRINT *, "-----"
-            !END IF
-
-            ! Jacobi rotations for all local pairs
-            DO k = 1, ncols_local / 2
-               itop = local_indices(1, k)
-               ibot = local_indices(2, k)
-               IF (local_indices(1, k) > nmo*dim1*dim2 .OR. &
-                   local_indices(2, k) > nmo*dim1*dim2) THEN
-                  ! skip dummy columns
-                  PRINT *, "skipping pair:", itop, ibot
-                  CYCLE
-               END IF
-               PRINT *, "calculating angles for pair:", itop, ibot               
-               CALL ddot()
+         DO i = 1, ncols_total - 1
+            ! collect the relevant matrix elements
+            DO j = 1, ncols_total
+               ! over all local pairs
+               DO k = 1, ncols_local / 2
+                  im = 3 * (k-1) + (j-1) * 3 * ncols_local / 2 + 1
+                  m(im) = (0.0, 0.0)
+                  m(im+1) = (0.0, 0.0)
+                  m(im+2) = (0.0, 0.0)
+                  ! skip dummies
+                  IF ((local_indices(1, k) <= nrealcols_total) .AND. &
+                      (local_indices(2, k) <= nrealcols_total)) THEN
+                     !PRINT *, "Calculating angles for ", local_indices(1, k), " and ", local_indices(2, k)
+                     mi => local_cols(j, local_indices(1, k), :)
+                     mj => local_cols(j, local_indices(2, k), :)
+                     ri => rmat(local_indices(1, k), :)
+                     rj => rmat(local_indices(2, k), :)
+                     DO l = 1, nmo
+                        m(im) = m(im) + CONJG(mi(l)) * rj(l)
+                        m(im+1) = m(im+1) + CONJG(mi(l)) * ri(l)
+                        m(im+2) = m(im+2) + CONJG(mj(l)) * rj(l)
+                     END DO
+                  END IF
+               END DO
             END DO
+
+            CALL mp_sum(m, group)
+
+            ! now calculate the rotation angles
+            DO j = 1, ncols_local / 2
+               g = 0.0_dp  ! the matrix to be solved
+
+               DO k = 1, nmo
+                  gc = (0.0_dp, 0.0_dp)
+                  im = 3 * (j-1) + (i-1) * 3 * ncols_local / 2 + 1
+
+                  mij = m(im)
+                  mii = m(im+1)
+                  mjj = m(im+2)
+
+                  h = (/ mii - mjj, mij + CONJG(mij), gaussi * (mij - CONJG(mij)) /)
+
+                  CALL zgemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, 1, h, 1, (0.0_dp, 0.0_dp), gc, 3)
+
+                  g = g + REAL(gc)
+               END DO
+
+               IF (pe == 0) THEN
+                  PRINT *, "*** g"
+                  DO k = 1, 3
+                     PRINT *, k, g(k, :)
+                  END DO
+               END IF
+
+               ! query for workspace
+               ALLOCATE(work(1))
+               lwork = -1
+               CALL dgeev("N", "V", 3, g, 3, eigval(:, 1), eigval(:, 2), leigvec, 3, reigvec, 3, work, lwork, &
+                    info)
+               
+               IF (info /= 0) THEN
+                  CPABORT("dgeev failed to compute the required workspace")
+               END IF
+
+               ! solve the eigenvalue problem
+               lwork = int(work(1))
+               DEALLOCATE(work)
+               ALLOCATE(work(lwork))
+               CALL dgeev("N", "V", 3, g, 3, eigval(:, 1), eigval(:, 2), leigvec, 3, reigvec, 3, work, lwork, &
+                    info)
+               DEALLOCATE(work)
+
+               IF (info /= 0) THEN
+                  CPABORT("dgeev failed to compute eigenvalues")
+               END IF
+
+               ! get the eigenvector with the largest eigenvalue
+               IF (pe == 0) THEN
+                  PRINT *, "eigval", eigval(:, 1)
+                  PRINT *, "eigvect"
+                  DO k = 1, 3
+                     PRINT *, reigvec(:, k)
+                  END DO
+               END IF
+
+               x = reigvec(1, 1)
+               y = reigvec(1, 2)
+               z = reigvec(1, 3)
+
+               ! this ensures small rotation angles
+               IF (x < 0.0_dp) THEN
+                  x = -x
+                  y = -y
+                  z = -z
+               END IF
+               
+               r = NORM2((/ x, y, z/))
+               c = SQRT((x + r)  / (2.0 * r))
+               s = CMPLX((y - gaussi * z) / SQRT(2.0 * r * (x + r)))
+
+               ! rotate spread matrices
+               DO k = 1, 
+                  mi => local_cols(k, local_indices(1, k), :)
+                  mj => local_cols(k, local_indices(2, k), :)
+                  CALL zrot(nmo, mi, 1, mj, 1, c, CONJG(s))
+               END DO
+
+               ! rotate total rotation matrix
+               ri => rmat(local_indices(1, ))
+            END DO  ! local pairs
             
             ! rotate columns and communicate with other processors
-            CALL rotate_local_columns(local_cols, local_rmat, local_indices, pe, npe, ncols_local, group)
-         END DO
+            !CALL rotate_local_columns(local_cols, local_rmat, local_indices, pe, npe, ncols_local, &
+                                      !group)
+         END DO  ! one round
 
          !IF (pe == 0) THEN
          !   PRINT *, "pe", pe, "indices a:", local_indices(1, :)
@@ -2500,7 +2604,7 @@ CONTAINS
                  t2 - t1
             CALL m_flush(output_unit)
          END IF
-      END DO
+      END DO  ! until convergence
 
       IF (sweeps == max_iter) THEN
          IF (output_unit > 0) THEN
@@ -2638,6 +2742,8 @@ CONTAINS
       END DO
 
       CALL cp_cfm_to_fm(c_Gmat, Gmat)
+
+      CALL cp_fm_write_formatted(Gmat, 6, "Gmat")
 
       CALL choose_eigv_solver(Gmat, evects, evals)
 

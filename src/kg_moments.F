@@ -52,6 +52,8 @@ module kg_moments
    use kg_environment_types,    only: kg_environment_type
    use kinds,                   only: default_string_length, &
                                       dp
+   use mathconstants,           only: gaussi, &
+                                      twopi
    use molecule_types,          only: get_molecule, &
                                       get_molecule_set_info, &
                                       molecule_type
@@ -109,9 +111,9 @@ contains
       character(len=default_string_length)  :: iter
       integer                               :: akind, handle, iatom, ibasis, im, ispin, lx, ly, lz, isubsys, nao, nions, &
                                                nm, nspins, nsubsys, unit_nr
-      integer, allocatable                  :: nbasis(:)
+      integer, allocatable                  :: nbasis(:), first_atoms(:), last_atoms(:)
       logical                               :: first_time, floating, ghost
-      real(dp)                              :: r(3), rcc(3), strace, trace, zeff, zmom
+      real(dp)                              :: r(3), rcc(3), strace, trace, zeff, zmom, focc
       real(dp), allocatable                 :: moments(:, :), nuclear_moments(:)
       type(atomic_kind_type), pointer       :: atomic_kind
       type(cell_type), pointer              :: cell
@@ -139,8 +141,6 @@ contains
       call get_qs_env(qs_env, cell=cell, dft_control=dft_control, kg_env=kg_env, &
            matrix_s=matrix_s, molecule_set=molecules, particle_set=particles, qs_kind_set=kinds, &
            rho=rho, natom=nions)
-      call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ref_point=ref_point)
-      !rcc = wrap(rcc, cell)
       call cp_fm_get_info(qs_env%mos(1)%mo_set%mo_coeff, matrix_struct=mo_coeff_struct, &
            nrow_global=nao)
       call cp_fm_struct_create(density_fmstruct, template_fmstruct=mo_coeff_struct, &
@@ -151,6 +151,7 @@ contains
       nm = (6 + 11 * nmoments + 6 * nmoments**2 + nmoments**3) / 6 - 1
       nspins = dft_control%nspins
       nsubsys = kg_env%nsubsets
+      focc = 3.0_dp - real(nspins, dp)  ! occupation
 
       if (btest(cp_print_key_should_output(logger%iter_info, input, "DFT%PRINT%MOMENTS", &
            first_time=first_time), cp_p_file)) then
@@ -167,22 +168,21 @@ contains
          allocate(moments(nsubsys, nm))
          allocate(moments_op(nm))
          allocate(moments_op_fm(nm))
-         allocate(nbasis(nsubsys))
+         allocate(nbasis(nsubsys), first_atoms(nsubsys), last_atoms(nsubsys))
          do im = 1, nm
             allocate(moments_op(im)%matrix)
             call dbcsr_copy(moments_op(im)%matrix, matrix_s(1)%matrix, "moments operator")
             call dbcsr_set(moments_op(im)%matrix, 0.0_dp)
          end do
-         call build_local_moment_matrix(qs_env, moments_op, nmoments, ref_point=rcc)
          do im = 1, nm
             !allocate(moments_op_fm(im)%matrix)
             call cp_fm_create(moments_op_fm(im)%matrix, density_fmstruct)
-            call copy_dbcsr_to_fm(moments_op(im)%matrix, moments_op_fm(im)%matrix)
          end do
 
          ! slice and dice the density matrix
          allocate(density_slices(nsubsys, nspins))
-         call get_molecule_set_info(molecules, mol_to_nbasis=nbasis)
+         call get_molecule_set_info(molecules, mol_to_nbasis=nbasis, mol_to_first_atom=first_atoms, &
+              mol_to_last_atom=last_atoms(:))
          ibasis = 1
          do isubsys = 1, nsubsys
             ! get the Kim-Gordon blocks
@@ -199,21 +199,27 @@ contains
 
          ! calculate eigenvalues
          do isubsys = 1, nsubsys
+            call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                 ref_point=ref_point, ifirst=first_atoms(isubsys), &
+                 ilast=last_atoms(isubsys))
+            call build_local_moment_matrix(qs_env, moments_op, nmoments, ref_point=rcc)
             do im = 1, nm
+               call copy_dbcsr_to_fm(moments_op(im)%matrix, moments_op_fm(im)%matrix)
                strace = 0.0_dp
                do ispin = 1, nspins
                   call cp_fm_trace(density_slices(isubsys, ispin)%matrix, &
                        moments_op_fm(im)%matrix, trace)
                   strace = strace - trace
                end do
-               moments(isubsys, im) = strace
+               moments(isubsys, im) = -focc * cell%hmat(im, im) / twopi &
+                    * aimag(log(exp(-gaussi * twopi / cell%hmat(im, im) * strace)))
             end do
          end do
-         
+
          ! total nuclear contribution
          allocate(nuclear_moments(nm))
          nuclear_moments = 0.0_dp
-         rcc = pbc(rcc, cell)
+         !rcc = pbc(rcc, cell)
          do im = 1, nm
             lx = indco(1, im+1)
             ly = indco(2, im+1)

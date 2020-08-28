@@ -219,7 +219,7 @@ contains
          end do
 
          ! get the states list for each subset
-         if (first_time .or. .not. do_rtp) then 
+         if ((first_time .or. .not. do_rtp) .and. para_env%mepos == 0) then 
             allocate(current_states(nspins, nsubsets))
             do i = 1, nspins
                do j = 1, nsubsets
@@ -251,11 +251,14 @@ contains
                end do
             end do
             if (do_rtp) then
-               allocate(rtp%states(nspins, nsubsets))
+               if (para_env%mepos == 0) allocate(rtp%states(nspins, nsubsets))
                do i = 1, nspins
                   do j = 1, nsubsets
-                     allocate(rtp%states(i, j)%states(size(current_states(i, j)%states)))
-                     rtp%states(i, j)%states(:) = current_states(i, j)%states
+                     if (para_env%mepos == 0) then
+                        allocate(rtp%states(i, j)%states(size(current_states(i, j)%states)))
+                        rtp%states(i, j)%states(:) = current_states(i, j)%states
+                     end if
+                     call mp_bcast(current_states(i, j)%states(:), para_env%mepos, para_env%group)
                   end do
                end do
             end if
@@ -266,7 +269,7 @@ contains
          call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
               ref_point=ref_point)
          !rcc = wrap(rcc, cell)
-         rcc = pbc(rcc, cell)
+         !rcc = pbc(rcc, cell)
 
          allocate(moments(nmoments, nsubsets))
          moments = 0.0_dp
@@ -300,7 +303,7 @@ contains
                   do k = 1, nstates
                      call build_local_moment_matrix(qs_env, moments_op, norders, &
                           !ref_point=wrap(wos(i)%centres(:, current_states(i, j)%states(k)), cell))
-                          ref_point=pbc(wcs(i)%centres(:, current_states(i, j)%states(k)), cell))
+                          ref_point=wcs(i)%centres(:, current_states(i, j)%states(k)))
                      do l = 2, nmoments
                         call cp_cfm_set_all(opvec(l)%matrix, (0.0_dp, 0.0_dp))
                         call cp_cfm_set_all(vecopvec(l)%matrix, (0.0_dp, 0.0_dp))
