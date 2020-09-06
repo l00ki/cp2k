@@ -219,8 +219,8 @@ contains
          end do
 
          ! get the states list for each subset
+         allocate(current_states(nspins, nsubsets))
          if ((first_time .or. .not. do_rtp) .and. para_env%mepos == 0) then 
-            allocate(current_states(nspins, nsubsets))
             do i = 1, nspins
                do j = 1, nsubsets
                   if (do_orbitals) then
@@ -251,7 +251,7 @@ contains
                end do
             end do
             if (do_rtp) then
-               if (para_env%mepos == 0) allocate(rtp%states(nspins, nsubsets))
+               allocate(rtp%states(nspins, nsubsets))
                do i = 1, nspins
                   do j = 1, nsubsets
                      if (para_env%mepos == 0) then
