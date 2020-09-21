@@ -706,7 +706,7 @@ CONTAINS
                DO idim = 1, dim_m
                   zii = diag(row_indices(istate), idim)
                   zjj = diag(col_indices(jstate), idim)
-                  zij = matrix_p(idim)%matrix%local_data(istate, jstate)
+                  CALL cp_cfm_get_element(matrix_p(idim)%matrix, istate, jstate, zij)
                   grad_ij = grad_ij + weights(idim)* &
                             REAL(4.0_dp*CONJG(zij)*(zjj - zii), dp)
                END DO

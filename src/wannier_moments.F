@@ -255,7 +255,7 @@ contains
                end do
             end do
          end if
-         if (.not. first_time .and. do_rtp) then
+         if (.not. first_time) then
             current_states => qs_env%persistent_states
          end if
 
