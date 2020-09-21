@@ -175,6 +175,7 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_berry', &
          routineP = moduleN//':'//routineN
 
+      TYPE(cp_cfm_p_type), DIMENSION(:, :), POINTER      :: my_zij_cfm_set
       INTEGER                                            :: handle, max_iter, nao, nmoloc, out_each, &
                                                             output_unit, sweeps
       LOGICAL                                            :: converged, crazy_use_diag, &
@@ -186,8 +187,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: tmp_complex_vectors
       TYPE(cp_fm_type), POINTER                          :: nullmat
       TYPE(cp_logger_type), POINTER                      :: logger
-
-!      INTEGER :: i,j
+      INTEGER :: i,j
 
       CALL timeset(routineN, handle)
       logger => cp_get_default_logger()
@@ -202,11 +202,18 @@ CONTAINS
          CALL cp_fm_get_info(vectors, nrow_global=nao, ncol_global=nmoloc)
          IF (method == do_loc_cardoso) THEN
             ! current implementation of Cardoso-Souloumiac angles requires complex imput
+            ALLOCATE(my_zij_cfm_set(SIZE(zij_fm_set, 1), SIZE(zij_fm_set, 2)))
+            DO i = 1, SIZE(zij_fm_set, 1)
+               DO j = 1, SIZE(zij_fm_set, 2)
+                  CALL cp_cfm_create(my_zij_cfm_set(i, j)%matrix, zij_fm_set(i, j)%matrix%matrix_struct)
+                  CALL cp_fm_to_cfm(zij_fm_set(i, j)%matrix, mtarget=my_zij_cfm_set(i, j)%matrix)
+               END DO
+            END DO
             CALL cp_fm_create(nullmat, vectors%matrix_struct)
             CALL cp_fm_set_all(nullmat, 0.0_dp, 0.0_dp)
             CALL cp_cfm_create(tmp_complex_vectors, vectors%matrix_struct)
             CALL cp_fm_to_cfm(vectors, mtarget=tmp_complex_vectors)
-            CALL zij_matrix(op_sm_set, zij_fm_set=zij_fm_set, c_vectors=tmp_complex_vectors)
+            CALL zij_matrix(op_sm_set, zij_cfm_set=my_zij_cfm_set, c_vectors=tmp_complex_vectors)
          ELSE
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
@@ -216,8 +223,9 @@ CONTAINS
          vectors_are_complex = .TRUE.
          method = do_loc_cardoso  ! currently the only method that works with TD MOs
          tmp_complex_vectors => complex_vectors
+         my_zij_cfm_set => zij_cfm_set
          CALL cp_cfm_get_info(complex_vectors, nrow_global=nao, ncol_global=nmoloc)
-         CALL zij_matrix(op_sm_set, zij_cfm_set=zij_cfm_set, c_vectors=complex_vectors)
+         CALL zij_matrix(op_sm_set, zij_cfm_set=my_zij_cfm_set, c_vectors=complex_vectors)
       END IF
 
       max_iter = qs_loc_env%localized_wfn_control%max_iter
@@ -229,12 +237,12 @@ CONTAINS
       target_time = qs_loc_env%target_time
       start_time = qs_loc_env%start_time
       do_jacobi_refinement = qs_loc_env%localized_wfn_control%jacobi_refinement
-      IF (.NOT. vectors_are_complex) THEN
+      IF (.NOT. vectors_are_complex .AND. method /= do_loc_cardoso) THEN
          CALL centers_spreads_berry(qs_loc_env, nmoloc, cell, weights, &
                                     ispin, print_loc_section, zij=zij_fm_set, only_initial_out=.TRUE.)
       ELSE
          CALL centers_spreads_berry(qs_loc_env, nmoloc, cell, weights, &
-                                    ispin, print_loc_section, c_zij=zij_cfm_set, &
+                                    ispin, print_loc_section, c_zij=my_zij_cfm_set, &
                                     only_initial_out=.TRUE.)
       END IF
       SELECT CASE (method)
@@ -289,16 +297,8 @@ CONTAINS
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
       CASE (do_loc_cardoso)
-         CALL cardoso_souloumiac(weights, zij_cfm_set, para_env, max_iter, eps_localization, &
-                                 sweeps, out_each, target_time, start_time, tmp_complex_vectors)
-         IF (PRESENT(vectors)) THEN
-            CALL cp_cfm_to_fm(tmp_complex_vectors, vectors, nullmat)
-            CALL cp_fm_release(nullmat)
-            CALL cp_cfm_release(tmp_complex_vectors)
-         ELSE
-            CALL cp_cfm_to_cfm(tmp_complex_vectors, complex_vectors)
-         END IF
-
+         CALL cardoso_souloumiac(weights, my_zij_cfm_set, para_env, max_iter, eps_localization, &
+                                 sweeps, out_each, target_time, start_time, complex_vectors)
       CASE (do_loc_none)
          IF (output_unit > 0) THEN
             WRITE (output_unit, '(T4,A,I6,A)') " No MOS localization applied "
@@ -316,12 +316,12 @@ CONTAINS
          END IF
       ENDIF
 
-      IF (.NOT. vectors_are_complex) THEN
+      IF (.NOT. vectors_are_complex .AND. method /= do_loc_cardoso) THEN
          CALL centers_spreads_berry(qs_loc_env, nmoloc, cell, weights, &
                                     ispin, print_loc_section, zij=zij_fm_set)
       ELSE
          CALL centers_spreads_berry(qs_loc_env, nmoloc, cell, weights, &
-                                    ispin, print_loc_section, c_zij=zij_cfm_set)
+                                    ispin, print_loc_section, c_zij=my_zij_cfm_set)
       END IF
       
       CALL cp_print_key_finished_output(output_unit, logger, print_loc_section, "PROGRAM_RUN_INFO")
@@ -824,8 +824,7 @@ CONTAINS
                                        para_env, cell, weights, ispin, print_loc_section, &
                                        zij_cfm_set=op_cfm_set, &
                                        complex_vectors=complex_moloc_coeff(ispin)%matrix)
-               CALL cp_cfm_to_fm(complex_moloc_coeff(ispin)%matrix, moloc_coeff(2*ispin-1)%matrix, &
-                                 moloc_coeff(2*ispin)%matrix)
+               CALL cp_cfm_to_cfm(complex_moloc_coeff(ispin)%matrix, complex_mo_coeff)
             END IF
 
             ! Here we dealloctate op_fm_set

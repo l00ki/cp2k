@@ -17,10 +17,12 @@ MODULE qs_loc_states
                                               cp_cfm_write_formatted,&
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
-   USE cp_fm_types,                     ONLY: cp_fm_p_type
+   USE cp_fm_types,                     ONLY: cp_fm_p_type,&
+                                              cp_fm_write_formatted
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_get_default_io_unit,&
-                                              cp_logger_type
+                                              cp_logger_type,&
+                                              cp_to_string
    USE cp_output_handling,              ONLY: cp_p_file,&
                                               cp_print_key_should_output
    USE dbcsr_api,                       ONLY: dbcsr_p_type
@@ -118,7 +120,7 @@ CONTAINS
       mos_are_complex = (dft_control%nspins * 2 == SIZE(mo_local))
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
            "WANNIER_STATES"), cp_p_file) .OR. &
-          BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+         BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
            "WANNIER_MOMENTS"), cp_p_file)) THEN
          CALL get_qs_env(qs_env=qs_env, WannierCentres=wc)
          IF (.NOT. ASSOCIATED(wc)) THEN
@@ -153,18 +155,25 @@ CONTAINS
                IF (output_unit > 0) WRITE (output_unit, "(/,T2,A)") &
                     "LOCALIZATION| indirect propagation of Wannier functions"
                IF (.NOT. mos_are_complex) THEN
+                  CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, &
+                       "mo_local("//cp_to_string(ispin)//")%matrix")
                   ! purely real coefficients, e.g. from SCF runs
                   CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                      myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
+                  CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, &
+                       "mo_local("//cp_to_string(ispin)//")%matrix")
                ELSE
                   ! complex coefficients, e.g. from RTP runs
                   CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix%matrix_struct)
                   CALL cp_fm_to_cfm(mo_local(2*ispin-1)%matrix, mo_local(2*ispin)%matrix, &
                                     tmp_complex_coeffs)
+                  CALL cp_cfm_write_formatted(tmp_complex_coeffs, output_unit, &
+                       "tmp_complex_coeffs")
                   CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                      myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
                   CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
-                                    mo_local(2*ispin)%matrix)
+                       mo_local(2*ispin)%matrix)
+                  IF (output_unit > 0) PRINT *, tmp_complex_coeffs%local_data
                END IF
             ELSE
                ! only localize once per iteration, in that case the propagated orbitals are written
@@ -193,7 +202,6 @@ CONTAINS
                  "WANNIER_STATES"), cp_p_file) .OR. &
                 (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
                  "WANNIER_MOMENTS"), cp_p_file))) THEN
-               print *, "test"
                ns = SIZE(qs_loc_env%localized_wfn_control%loc_states, 1)
                IF (.NOT. ASSOCIATED(wc(ispin)%centres)) THEN
                   ALLOCATE (wc(ispin)%WannierHamDiag(ns))

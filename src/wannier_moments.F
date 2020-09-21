@@ -15,6 +15,7 @@ module wannier_moments
                                     pbc
    use cp_cfm_basic_linalg,   only: cp_cfm_gemm
    use cp_cfm_types,          only: cp_cfm_create, &
+                                    cp_cfm_get_element, &
                                     cp_cfm_p_type, &
                                     cp_cfm_release, &
                                     cp_cfm_set_all, &
@@ -68,6 +69,7 @@ module wannier_moments
    use particle_types,        only: particle_type
    use qs_environment_types,  only: get_qs_env, &
                                     qs_environment_type, &
+                                    persistent_states_type, &
                                     set_qs_env
    use qs_kind_types,         only: get_qs_kind, &
                                     qs_kind_type
@@ -114,6 +116,7 @@ contains
                                      routineP = moduleN//":"//routineN
 
       character(len=default_string_length)  :: iter, name, nameheader
+      complex(dp)                           :: z
       integer                               :: akind, handle, i, j, k, l, lx, ly, lz, nao, natoms, &
            nlocalstates(2), nmo, nmoments, norders, nspins, nstates, nsubsets, unit_nr
       integer, allocatable                  :: first_atoms(:), last_atoms(:), nbasis(:)
@@ -135,7 +138,7 @@ contains
       type(particle_type), pointer          :: particles(:)
       type(qs_kind_type), pointer           :: kinds(:)
       type(rt_prop_type), pointer           :: rtp
-      type(rtp_states_type), pointer        :: states(:, :), current_states(:, :)
+      type(persistent_states_type), pointer        :: states(:, :), current_states(:, :)
       type(wannier_centres_type), pointer   :: origins(:), wcs(:), wos(:)
 
       call timeset(routineN, handle)
@@ -153,7 +156,7 @@ contains
 
       ! get parameters
       call get_qs_env(qs_env, cell=cell, dft_control=dft_control, matrix_s=matrix_s, &
-           particle_set=particles, qs_kind_set=kinds, wanniercentres=wcs, wannierorigins=wos)
+           particle_set=particles, qs_kind_set=kinds, wanniercentres=wcs, wannierorigins=wos, para_env=para_env)
       if (do_rtp) then
          call get_qs_env(qs_env, rtp=rtp)
       end if
@@ -219,8 +222,9 @@ contains
          end do
 
          ! get the states list for each subset
-         allocate(current_states(nspins, nsubsets))
-         if ((first_time .or. .not. do_rtp) .and. para_env%mepos == 0) then 
+         if (first_time) then 
+            allocate(qs_env%persistent_states(nspins, nsubsets))
+            current_states => qs_env%persistent_states
             do i = 1, nspins
                do j = 1, nsubsets
                   if (do_orbitals) then
@@ -250,20 +254,9 @@ contains
                   end if
                end do
             end do
-            if (do_rtp) then
-               allocate(rtp%states(nspins, nsubsets))
-               do i = 1, nspins
-                  do j = 1, nsubsets
-                     if (para_env%mepos == 0) then
-                        allocate(rtp%states(i, j)%states(size(current_states(i, j)%states)))
-                        rtp%states(i, j)%states(:) = current_states(i, j)%states
-                     end if
-                     call mp_bcast(current_states(i, j)%states(:), para_env%mepos, para_env%group)
-                  end do
-               end do
-            end if
-         else
-            current_states => rtp%states
+         end if
+         if (.not. first_time .and. do_rtp) then
+            current_states => qs_env%persistent_states
          end if
 
          call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
@@ -320,8 +313,9 @@ contains
                              current_states(i, j)%states(k))
                         call cp_cfm_gemm("C", "N", nmo, nmo, nao, (1.0_dp, 0.0_dp), vec, &
                              opvec(l)%matrix, (0.0_dp, 0.0_dp), vecopvec(l)%matrix)
+                        call cp_cfm_get_element(vecopvec(l)%matrix, k, k, z)
                         zmom = zwfc * cell%hmat(l-1, l-1) / twopi * &
-                             aimag(log(exp(-gaussi * twopi / cell%hmat(l-1, l-1) * real(vecopvec(l)%matrix%local_data(k, k)))))
+                             aimag(log(exp(-gaussi * twopi / cell%hmat(l-1, l-1) * real(z))))
                         moments(l, j) = moments(l, j) - zmom
                      end do
                   end do
@@ -378,14 +372,6 @@ contains
          end do
          deallocate(moments_op)
 
-         if (first_time .and. .not. do_rtp) then
-            do i = 1, nspins
-               do j = 1, nsubsets
-                  deallocate(current_states(i, j)%states)
-               end do
-            end do
-            deallocate(current_states)
-         end if
       end if
 
       unit_nr = cp_print_key_unit_nr(logger, print_key, "WANNIER_MOMENTS", extension=".WanMom", &

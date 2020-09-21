@@ -176,7 +176,8 @@ MODULE qs_environment_types
 
 ! *** Public data types ***
 
-   PUBLIC :: qs_environment_type
+   PUBLIC :: qs_environment_type, &
+             persistent_states_type
 
 ! *** Public subroutines ***
 
@@ -185,6 +186,10 @@ MODULE qs_environment_types
              qs_env_release, &
              qs_env_retain, &
              set_qs_env
+
+   TYPE persistent_states_type
+      INTEGER, POINTER, DIMENSION(:) :: states
+   END TYPE persistent_states_type
 
 ! **************************************************************************************************
 !> \param local_rho_set contains the atomic, compensations and core densities
@@ -317,6 +322,7 @@ MODULE qs_environment_types
       REAL(KIND=dp)                                         :: total_zeff_corr, surface_dipole_moment
       LOGICAL                                               :: surface_dipole_switch_off
       TYPE(mo_set_p_type), DIMENSION(:), POINTER            :: mos_last_converged
+      TYPE(persistent_states_type), POINTER, DIMENSION(:, :)       :: persistent_states
    END TYPE qs_environment_type
 
 ! **************************************************************************************************
@@ -951,6 +957,7 @@ CONTAINS
       NULLIFY (qs_env%WannierCentres)
       NULLIFY (qs_env%WannierOrigins)
       NULLIFY (qs_env%wcs_ions_map)
+      NULLIFY (qs_env%persistent_states)
 
       qs_env%outer_scf_ihistory = 0
       qs_env%broyden_adaptive_sigma = -1.0_dp
@@ -1405,7 +1412,7 @@ CONTAINS
 
       CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_release', routineP = moduleN//':'//routineN
 
-      INTEGER                                            :: i
+      INTEGER                                            :: i, j
 
       IF (ASSOCIATED(qs_env)) THEN
          CPASSERT(qs_env%ref_count > 0)
@@ -1608,6 +1615,17 @@ CONTAINS
             IF (ASSOCIATED(qs_env%wcs_ions_map)) DEALLOCATE (qs_env%wcs_ions_map)
             ! Resp charges
             IF (ASSOCIATED(qs_env%rhs)) DEALLOCATE (qs_env%rhs)
+            IF (ASSOCIATED(qs_env%persistent_states)) THEN
+               DO i = 1, SIZE(qs_env%persistent_states, 1)
+                  DO j = 1, SIZE(qs_env%persistent_states, 2)
+                     IF (ASSOCIATED(qs_env%persistent_states(i, j)%states)) THEN
+                        DEALLOCATE(qs_env%persistent_states(i, j)%states)
+                     END IF
+                  END DO
+               END DO
+               DEALLOCATE (qs_env%persistent_states)
+            END IF
+            
             ! now we are ready to deallocate the full structure
             DEALLOCATE (qs_env)
          END IF

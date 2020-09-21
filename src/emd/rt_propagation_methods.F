@@ -17,7 +17,8 @@ MODULE rt_propagation_methods
                                               cp_cfm_triangular_multiply
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
                                               cp_cfm_release,&
-                                              cp_cfm_type
+                                              cp_cfm_type,&
+                                              cp_cfm_write_formatted
    USE cp_control_types,                ONLY: dft_control_type,&
                                               rtp_control_type
    USE cp_dbcsr_cholesky,               ONLY: cp_dbcsr_cholesky_decompose,&

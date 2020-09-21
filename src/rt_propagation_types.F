@@ -91,7 +91,6 @@ MODULE rt_propagation_types
       TYPE(dbcsr_p_type), POINTER, DIMENSION(:) :: SinvB
       TYPE(rtp_rho_type), POINTER                  :: rho
       TYPE(rtp_mos_type), POINTER                  :: mos
-      TYPE(rtp_states_type), POINTER, DIMENSION(:, :) :: states
       REAL(KIND=dp)                               :: energy_old
       REAL(KIND=dp)                               :: energy_new
       REAL(KIND=dp)                               :: dt
@@ -290,7 +289,6 @@ CONTAINS
       rtp%iter = 0
       rtp%do_hfx = .FALSE.
       rtp%track_imag_density = .FALSE.
-      NULLIFY(rtp%states)
 
    END SUBROUTINE rt_prop_create
 
@@ -379,7 +377,6 @@ CONTAINS
       IF (PRESENT(mixing)) mixing = rtp%mixing
       IF (PRESENT(mixing_factor)) mixing_factor = rtp%mixing_factor
       IF (PRESENT(nsteps)) nsteps = rtp%nsteps
-      IF (PRESENT(states)) states => rtp%states
 
    END SUBROUTINE get_rtp
 
@@ -436,14 +433,6 @@ CONTAINS
          CALL rtp_history_release(rtp)
       DEALLOCATE (rtp%orders)
       IF (.NOT. rtp%linear_scaling) CALL cp_fm_struct_release(rtp%ao_ao_fmstruct)
-      IF (ASSOCIATED(rtp%states)) THEN
-         DO i = 1, SIZE(rtp%states, 1)
-            DO j = 1, SIZE(rtp%states, 2)
-               DEALLOCATE(rtp%states(i, j)%states)
-            END DO
-         END DO
-         DEALLOCATE(rtp%states)
-      END IF
    END SUBROUTINE rt_prop_release
 
 ! **************************************************************************************************
