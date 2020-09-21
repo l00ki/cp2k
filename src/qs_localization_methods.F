@@ -553,10 +553,11 @@ CONTAINS
 !> \param weights ...
 !> \param tolerance ...
 ! **************************************************************************************************
-   SUBROUTINE check_tolerance(zij, weights, tolerance)
+   SUBROUTINE check_tolerance(zij, weights, tolerance, para_env)
       TYPE(cp_cfm_p_type)                                :: zij(:)
       REAL(KIND=dp), INTENT(IN)                          :: weights(:)
       REAL(KIND=dp), INTENT(OUT)                         :: tolerance
+      TYPE(cp_para_env_type), POINTER, OPTIONAL :: para_env
 
       CHARACTER(len=*), PARAMETER :: routineN = 'check_tolerance', &
          routineP = moduleN//':'//routineN
@@ -571,7 +572,7 @@ CONTAINS
       NULLIFY (force)
       CALL cp_fm_create(force, zij(1)%matrix%matrix_struct)
       CALL cp_fm_set_all(force, 0._dp)
-      CALL grad_at_0(zij, weights, force)
+      CALL grad_at_0(zij, weights, force, para_env)
       CALL cp_fm_maxabsval(force, tolerance)
       CALL cp_fm_release(force)
 
@@ -657,12 +658,13 @@ CONTAINS
 !> \param weights ...
 !> \param matrix ...
 ! **************************************************************************************************
-   SUBROUTINE grad_at_0(matrix_p, weights, matrix)
+   SUBROUTINE grad_at_0(matrix_p, weights, matrix, para_env)
       TYPE(cp_cfm_p_type)                                :: matrix_p(:)
       REAL(KIND=dp), INTENT(IN)                          :: weights(:)
       TYPE(cp_fm_type), POINTER                          :: matrix
+      TYPE(cp_para_env_type), POINTER, OPTIONAL          :: para_env
 
-      COMPLEX(KIND=dp)                                   :: zii, zij, zjj
+      COMPLEX(KIND=dp)                                   :: z, zii, zij, zjj
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: diag
       INTEGER                                            :: dim_m, idim, istate, jstate, ncol_local, &
                                                             nrow_global, nrow_local
@@ -681,7 +683,8 @@ CONTAINS
             CALL cp_cfm_get_element(matrix_p(idim)%matrix, istate, istate, diag(istate, idim))
          ENDDO
       ENDDO
-
+      CALL mp_bcast(diag, 0, para_env%group)
+      
       DO istate = 1, nrow_local
          DO jstate = 1, ncol_local
 ! get real and imaginary parts
@@ -690,11 +693,12 @@ CONTAINS
                DO idim = 1, 3
                   ! combine the cos/sin decomposition back into 3 matrices
                   zii = diag(row_indices(istate), idim*2-1) + &
-                        (0.0_dp, 1.0_dp) * diag(row_indices(istate), idim*2)
-                  zjj = diag(row_indices(jstate), idim*2-1) + &
-                        (0.0_dp, 1.0_dp) * diag(row_indices(jstate), idim*2)
-                  zij = matrix_p(idim*2-1)%matrix%local_data(istate, jstate) + &
-                        (0.0_dp, 1.0_dp) *  matrix_p(idim*2)%matrix%local_data(istate, jstate)
+                        gaussi * diag(row_indices(istate), idim*2)
+                  zjj = diag(col_indices(jstate), idim*2-1) + &
+                        gaussi * diag(col_indices(jstate), idim*2)
+                  CALL cp_cfm_get_element(matrix_p(idim*2-1)%matrix, istate, jstate, zij)
+                  CALL cp_cfm_get_element(matrix_p(idim*2)%matrix, istate, jstate, z)
+                  zij = zij + gaussi * z
                   grad_ij = grad_ij + weights(idim)* &
                             REAL(4.0_dp*CONJG(zij)*(zjj - zii), dp)
                END DO
@@ -2209,9 +2213,9 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-      IF (para_env%num_pe == 1) THEN
+      IF (para_env%num_pe >= 1) THEN
          CALL cardoso_souloumiac_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
-                                        vectors)
+                                        vectors, para_env)
       ELSE
          CALL cardoso_souloumiac_parallel(weights, zij, para_env, max_iter, eps_localization, &
                                           sweeps, out_each, target_time, start_time, vectors)
@@ -2235,7 +2239,7 @@ CONTAINS
 !> \author Lukas Schreder
 ! **************************************************************************************************
    SUBROUTINE cardoso_souloumiac_serial(weights, zij, max_iter, eps_localization, sweeps, &
-                                        out_each, vectors)
+                                        out_each, vectors, para_env)
 
       REAL(KIND=dp), INTENT(IN)                          :: weights(:)
       TYPE(cp_cfm_p_type), INTENT(INOUT)                 :: zij(:, :)
@@ -2244,6 +2248,7 @@ CONTAINS
       INTEGER                                            :: sweeps
       INTEGER, INTENT(IN)                                :: out_each
       TYPE(cp_cfm_type), POINTER                         :: vectors
+      TYPE(cp_para_env_type), POINTER                    :: para_env
 
       CHARACTER(len=*), PARAMETER :: routineN = 'cardoso_souloumiac_serial', &
          routineP = moduleN//':'//routineN
@@ -2306,7 +2311,8 @@ CONTAINS
                CALL rotate_cardoso_rmat(istate, jstate, c, s, c_rmat)
             END DO
          END DO
-         CALL check_tolerance(c_zij, weights, spread)
+         CALL check_tolerance(c_zij, weights, spread, para_env)
+         CALL mp_max(spread, para_env%group)
          tolerance = ABS(spread - old_spread)
          old_spread = spread
          t2 = m_walltime()
