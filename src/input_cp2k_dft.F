@@ -834,6 +834,12 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
+      CALL keyword_create(keyword, __LOCATION__, name="EACH", &
+           description="localize each n steps", &
+           default_i_val=1)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
       NULLIFY (print_section)
       CALL section_create(print_section, __LOCATION__, name="PRINT", &
                           description="Collects all printing options related to the Wannier centers and "// &
@@ -8836,15 +8842,9 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="LOCALIZE", &
-                          description="Localise the Molecular orbitals before or during "// &
-                          "real-time propagated TDDFT", &
-                          usage="LOCALIZE", default_i_val=rtp_localize_none, &
-                          enum_c_vals=s2a("NONE", "ONCE", "EACH"), &
-                          enum_i_vals=(/rtp_localize_none, rtp_localize_once, rtp_localize_each/), &
-                          enum_desc=s2a("The MOs are not localised during RT-TDDFT.", &
-                                        "The MOs are localised, then the Wannier functions are "// &
-                                        "propagated.", &
-                                        "Propagate the MOs and localise them after each step."))
+                          description="Localise the Molecular orbitals each n steps "// &
+                          "real-time propagated TDDFT, 0 means never localise", &
+                          usage="LOCALIZE", default_i_val=0)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 

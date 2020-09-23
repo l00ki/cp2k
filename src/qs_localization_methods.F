@@ -683,7 +683,12 @@ CONTAINS
             CALL cp_cfm_get_element(matrix_p(idim)%matrix, istate, istate, diag(istate, idim))
          ENDDO
       ENDDO
-      CALL mp_bcast(diag, 0, para_env%group)
+
+      IF (PRESENT(para_env)) THEN
+         IF (para_env%num_pe > 1) THEN
+            CALL mp_bcast(diag, 0, para_env%group)
+         END IF
+      END IF
       
       DO istate = 1, nrow_local
          DO jstate = 1, ncol_local
@@ -2306,7 +2311,7 @@ CONTAINS
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, jstate, istate, mji(idim))
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, jstate, jstate, mjj(idim))
                END DO
-               CALL get_cardoso_angles(mii, mij, mji, mjj, c, s, c_zij(1)%matrix%matrix_struct)
+               CALL get_cardoso_angles(mii, mij, mji, mjj, c, s)
                CALL rotate_cardoso_zij(istate, jstate, c, s, c_zij)
                CALL rotate_cardoso_rmat(istate, jstate, c, s, c_rmat)
             END DO
@@ -2332,7 +2337,6 @@ CONTAINS
       END DO
 
       CALL rotate_complex_orbitals(c_rmat, vectors)
-      PRINT *, vectors%local_data
 
       DEALLOCATE (c_zij, mii, mij, mji, mjj)
       CALL cp_cfm_release(c_rmat)
@@ -2595,7 +2599,7 @@ CONTAINS
                         mji(idim) = xyz_mix(idim)%c_array(jstate, istate)
                         mjj(idim) = xyz_mix(idim)%c_array(jstate, jstate)
                      END DO
-                     CALL get_cardoso_angles(mii, mij, mji, mjj, ct, st, zij(1, 1)%matrix%matrix_struct)
+                     CALL get_cardoso_angles(mii, mij, mji, mjj, ct, st)
                      DO idim = 1, dim3
                         DO i = 1, n1 + n2
                            zi = ct*xyz_mix(idim)%c_array(i, istate) + st*xyz_mix(idim)%c_array(i, jstate)
@@ -3269,71 +3273,112 @@ CONTAINS
 !>      2020-04 created [LS]
 !> \author Lukas Schreder
 ! **************************************************************************************************
-   SUBROUTINE get_cardoso_angles(mii, mij, mji, mjj, c, s, tmp_fm_struct)
+   SUBROUTINE get_cardoso_angles(mii, mij, mji, mjj, c, s)!, tmp_fm_struct)
 
       COMPLEX(KIND=dp), DIMENSION(:)                     :: mii, mij, mji, mjj
-      REAL(KIND=dp)                                      :: c
-      COMPLEX(KIND=dp)                                   :: s
-      TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
+      REAL(KIND=dp), INTENT(out)                         :: c
+      COMPLEX(KIND=dp), INTENT(out)                      :: s
+      !TYPE(cp_fm_struct_type), POINTER                   :: tmp_fm_struct
 
-      REAL(KIND=dp)                                      :: r, x, y, z
-      INTEGER                                            :: dim_m, i, i_max, handle
-      REAL(KIND=dp), DIMENSION(3)                        :: evals
-      TYPE(cp_cfm_type), POINTER                         :: c_Gmat, hmat
-      TYPE(cp_fm_struct_type), POINTER                   :: G_fm_struct, h_fm_struct
-      TYPE(cp_fm_type), POINTER                          :: evects, Gmat
+      COMPLEX(KIND=dp)                                   :: h(3), Gc(3, 3), G(3, 3)
+      REAL(KIND=dp)                                      :: r, x, y, z, evalsr(3), evalsi(3), &
+                                                            vl(3, 3), vr(3, 3)
+      REAL(KIND=dp), ALLOCATABLE                         :: work(:)
+      INTEGER                                            :: dim_m, i, lwork, info
 
-      CALL timeset("get_cardoso_angles", handle)
       dim_m = SIZE(mii)
 
-      CALL cp_fm_struct_create(h_fm_struct, nrow_global=1, ncol_global=3, &
-                               template_fmstruct=tmp_fm_struct)
-      CALL cp_fm_struct_create(G_fm_struct, nrow_global=3, ncol_global=3, &
-                               template_fmstruct=tmp_fm_struct)
-      CALL cp_cfm_create(hmat, h_fm_struct)
-      CALL cp_cfm_create(c_Gmat, G_fm_struct)
-      CALL cp_cfm_set_all(c_Gmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
-      CALL cp_fm_create(Gmat, G_fm_struct)
-      CALL cp_fm_create(evects, G_fm_struct)
-
+      Gc = (0.0_dp, 0.0_dp)
       DO i = 1, dim_m
-         CALL cp_cfm_set_all(hmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
-         CALL cp_cfm_set_element(hmat, 1, 1, (mii(i) - mjj(i)))
-         CALL cp_cfm_set_element(hmat, 1, 2, (mij(i) + mji(i)))
-         CALL cp_cfm_set_element(hmat, 1, 3, (0.0_dp, 1.0_dp)*(mji(i) - mij(i)))
-         CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), hmat, hmat, (1.0_dp, 0.0_dp), c_Gmat)
+         h = (/ mii(i) - mjj(i), mij(i) + mji(i), gaussi * (mji(i) - mij(i)) /)
+         CALL zgemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), h, 3, h, 3, (1.0_dp, 0.0_dp), Gc, 3)
       END DO
+      G = REAL(Gc, dp)
 
-      CALL cp_cfm_to_fm(c_Gmat, Gmat)
+      ALLOCATE(work(1))
+      lwork = -1
+      CALL dgeev("N", "V", 3, G, 3, evalsr, evalsi, vl, 3, vr, 3, work, lwork, info)
 
-      !CALL cp_fm_write_formatted(Gmat, 6, "Gmat")
+      lwork = INT(work(1))
+      DEALLOCATE(work)
+      ALLOCATE(work(lwork))
+      CALL dgeev("N", "V", 3, G, 3, evalsr, evalsi, vl, 3, vr, 3, work, lwork, info)
 
-      CALL choose_eigv_solver(Gmat, evects, evals)
-
-      ! find eigenvector with highest eigenvalue
-      i_max = MAXLOC(evals, 1)
-      CALL cp_fm_get_element(evects, 1, i_max, x)
-      CALL cp_fm_get_element(evects, 2, i_max, y)
-      CALL cp_fm_get_element(evects, 3, i_max, z)
-      IF (x < 0) THEN
+      IF (info /= 0) THEN
+         CPABORT("eigenvalue solver failed")
+      END IF
+      
+      x = vr(1, 1)
+      IF (x < 0) THEN  ! this ensure small rotation angles
          x = -x
-         y = -y
-         z = -z
+         y = -vr(1, 2)
+         z = -vr(1, 3)
+      ELSE
+         y = vr(1, 2)
+         z = vr(1, 3)
       END IF
 
-      ! calculate the angles
-      r = SQRT(x**2 + y**2 + z**2)  ! this will always be 1
-      c = SQRT((x + r) / (2 * r))  ! this will always be real
-      s = CMPLX(y / SQRT(2 * r * (x + r)), -1.0 * z / SQRT(2 * r * (x + r)), KIND=dp)  ! angle 
+      r = NORM2((/ x, y, z /))
+      c = SQRT((x + r) / (2 * r))
+      s = (y - gaussi * z) / SQRT(2 * r * (x + r))
+      
+      
+      !REAL(KIND=dp), DIMENSION(3)                        :: evals
+      !TYPE(cp_cfm_type), POINTER                         :: c_Gmat, hmat
+      !TYPE(cp_fm_struct_type), POINTER                   :: G_fm_struct, h_fm_struct
+      !TYPE(cp_fm_type), POINTER                          :: evects, Gmat
 
-      CALL cp_fm_struct_release(h_fm_struct)
-      CALL cp_fm_struct_release(G_fm_struct)
-      CALL cp_cfm_release(hmat)
-      CALL cp_cfm_release(c_Gmat)
-      CALL cp_fm_release(Gmat)
-      CALL cp_fm_release(evects)
+      !CALL timeset("get_cardoso_angles", handle)
+      !dim_m = SIZE(mii)
 
-      CALL timestop(handle)
+      !CALL cp_fm_struct_create(h_fm_struct, nrow_global=1, ncol_global=3, &
+      !                         template_fmstruct=tmp_fm_struct)
+      !CALL cp_fm_struct_create(G_fm_struct, nrow_global=3, ncol_global=3, &
+      !                         template_fmstruct=tmp_fm_struct)
+      !CALL cp_cfm_create(hmat, h_fm_struct)
+      !CALL cp_cfm_create(c_Gmat, G_fm_struct)
+      !CALL cp_cfm_set_all(c_Gmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
+      !CALL cp_fm_create(Gmat, G_fm_struct)
+      !CALL cp_fm_create(evects, G_fm_struct)
+
+      !DO i = 1, dim_m
+      !   CALL cp_cfm_set_all(hmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
+      !   CALL cp_cfm_set_element(hmat, 1, 1, (mii(i) - mjj(i)))
+      !   CALL cp_cfm_set_element(hmat, 1, 2, (mij(i) + mji(i)))
+      !   CALL cp_cfm_set_element(hmat, 1, 3, (0.0_dp, 1.0_dp)*(mji(i) - mij(i)))
+      !   CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), hmat, hmat, (1.0_dp, 0.0_dp), c_Gmat)
+      !END DO
+
+      !CALL cp_cfm_to_fm(c_Gmat, Gmat)
+
+      !!CALL cp_fm_write_formatted(Gmat, 6, "Gmat")
+
+      !CALL choose_eigv_solver(Gmat, evects, evals)
+
+      !! find eigenvector with highest eigenvalue
+      !i_max = MAXLOC(evals, 1)
+      !CALL cp_fm_get_element(evects, 1, i_max, x)
+      !CALL cp_fm_get_element(evects, 2, i_max, y)
+      !CALL cp_fm_get_element(evects, 3, i_max, z)
+      !IF (x < 0) THEN
+      !   x = -x
+      !   y = -y
+      !   z = -z
+      !END IF
+
+      !! calculate the angles
+      !r = SQRT(x**2 + y**2 + z**2)  ! this will always be 1
+      !c = SQRT((x + r) / (2 * r))  ! this will always be real
+      !s = CMPLX(y / SQRT(2 * r * (x + r)), -1.0 * z / SQRT(2 * r * (x + r)), KIND=dp)  ! angle 
+
+      !CALL cp_fm_struct_release(h_fm_struct)
+      !CALL cp_fm_struct_release(G_fm_struct)
+      !CALL cp_cfm_release(hmat)
+      !CALL cp_cfm_release(c_Gmat)
+      !CALL cp_fm_release(Gmat)
+      !CALL cp_fm_release(evects)
+
+      !CALL timestop(handle)
 
    END SUBROUTINE get_cardoso_angles
 

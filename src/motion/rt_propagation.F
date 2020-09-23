@@ -221,17 +221,17 @@ CONTAINS
                   CALL apply_delta_pulse(qs_env, mos_old, mos_new)
                ENDIF
             ELSE
-               IF (rtp_control%localize == rtp_localize_once) THEN
-                  DO i = 1, SIZE(mos)
-                     CALL cp_cfm_to_fm(mos(i)%mo_set%wannier_coeff, mos_old(2*i-1)%matrix, &
-                                       mos_old(2*i)%matrix)
-                  END DO
-               ELSE
+               !IF (rtp_control%localize == rtp_localize_once) THEN
+               !   DO i = 1, SIZE(mos)
+               !      CALL cp_cfm_to_fm(mos(i)%mo_set%wannier_coeff, mos_old(2*i-1)%matrix, &
+               !                        mos_old(2*i)%matrix)
+               !   END DO
+               !ELSE
                   DO i = 1, SIZE(mos)
                      CALL cp_fm_to_fm(mos(i)%mo_set%mo_coeff, mos_old(2*i - 1)%matrix)  ! real parts
                      CALL cp_fm_set_all(mos_old(2*i)%matrix, zero, zero)  ! imaginary parts
                   END DO
-               END IF
+               !END IF
             ENDIF
          END IF
 
@@ -355,9 +355,8 @@ CONTAINS
             time_iter_start = time_iter_stop
             CALL rt_prop_output(qs_env, real_time_propagation, delta_iter=rtp%delta_iter, used_time=used_time)
             CALL rt_write_input_restart(force_env=force_env)
-            IF (rtp_control%localize == rtp_localize_each .OR. &
-                rtp_control%localize == rtp_localize_once) THEN
-               CALL rtp_localize(qs_env, rtp, rtp_control%localize)
+            IF (MODULO(i_step, dft_control%localize_each) == 0) THEN
+               CALL rtp_localize(qs_env, rtp, dft_control%localize_each)
             END IF
             IF (should_stop) EXIT
          ELSE

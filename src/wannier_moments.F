@@ -222,7 +222,7 @@ contains
          end do
 
          ! get the states list for each subset
-         if (first_time) then 
+         if (.not. associated(qs_env%persistent_states)) then 
             allocate(qs_env%persistent_states(nspins, nsubsets))
             current_states => qs_env%persistent_states
             do i = 1, nspins
@@ -254,8 +254,7 @@ contains
                   end if
                end do
             end do
-         end if
-         if (.not. first_time) then
+         else
             current_states => qs_env%persistent_states
          end if
 

@@ -391,6 +391,8 @@ CONTAINS
          p_loc = p_loc .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
          print_key => section_vals_get_subs_vals(loc_print_section, "WANNIER_MOMENTS")
          p_loc = p_loc .OR. BTEST(cp_print_key_should_output(logger%iter_info, print_key), cp_p_file)
+         p_loc = p_loc .AND. (MODULO(logger%iter_info%iteration(SIZE(logger%iter_info%iteration)), &
+                                     dft_control%localize_each) == 0)
       ELSE
          p_loc = .FALSE.
       END IF

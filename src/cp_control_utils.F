@@ -94,7 +94,7 @@ CONTAINS
       CHARACTER(LEN=default_string_length), &
          DIMENSION(:), POINTER                           :: tmpstringlist
       INTEGER                                            :: excitations, irep, isize, method_id, &
-                                                            nrep, xc_deriv_method_id
+                                                            nrep, xc_deriv_method_id, localize_each
       LOGICAL                                            :: do_ot, do_rtp, explicit, is_present, &
                                                             l_param, not_SE, was_present
       REAL(KIND=dp)                                      :: density_cut, gradient_cut, tau_cut
@@ -506,6 +506,9 @@ CONTAINS
       ! Read the external vxc input section
       tmp_section => section_vals_get_subs_vals(dft_section, "EXTERNAL_VXC")
       CALL section_vals_get(tmp_section, explicit=dft_control%apply_external_vxc)
+
+      tmp_section => section_vals_get_subs_vals(dft_section, "LOCALIZE")
+      CALL section_vals_val_get(tmp_section, "EACH", i_val=dft_control%localize_each)
 
    END SUBROUTINE read_dft_control
 
@@ -2032,8 +2035,6 @@ CONTAINS
                                 l_val=dft_control%rtp_control%apply_delta_pulse)
       CALL section_vals_val_get(rtp_section, "PERIODIC", &
                                 l_val=dft_control%rtp_control%periodic)
-      CALL section_vals_val_get(rtp_section, "LOCALIZE", &
-                                i_val=dft_control%rtp_control%localize)
       CALL section_vals_val_get(rtp_section, "DENSITY_PROPAGATION", &
                                 l_val=dft_control%rtp_control%linear_scaling)
       CALL section_vals_val_get(rtp_section, "MCWEENY_MAX_ITER", &

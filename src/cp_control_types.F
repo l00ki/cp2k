@@ -53,7 +53,6 @@ MODULE cp_control_types
       INTEGER                              :: sc_check_start
       LOGICAL                              :: apply_delta_pulse
       LOGICAL                              :: periodic
-      INTEGER                              :: localize
       LOGICAL                              :: linear_scaling
       LOGICAL                              :: write_restart
       INTEGER                              :: mcweeny_max_iter
@@ -500,7 +499,8 @@ MODULE cp_control_types
                                               auto_basis_lri_aux = 1, &
                                               auto_basis_ri_hxc = 1, &
                                               auto_basis_ri_xas = 1, &
-                                              auto_basis_ri_hfx = 1
+                                              auto_basis_ri_hfx = 1, &
+                                              localize_each = 1
       REAL(KIND=dp)                        :: relax_multiplicity, &
                                               sic_scaling_a, &
                                               sic_scaling_b, &
