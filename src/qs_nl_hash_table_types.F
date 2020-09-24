@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -107,9 +109,6 @@ CONTAINS
       INTEGER(KIND=int_8), INTENT(IN)                    :: key
       TYPE(neighbor_list_task_type), INTENT(IN), POINTER :: val
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_add', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: islot
       LOGICAL                                            :: check_ok
 
@@ -149,9 +148,6 @@ CONTAINS
       TYPE(nl_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(IN), OPTIONAL                      :: nmax
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_create', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: my_nmax
       LOGICAL                                            :: check_ok
 
@@ -184,9 +180,6 @@ CONTAINS
       TYPE(neighbor_list_task_type), INTENT(OUT), &
          POINTER                                         :: val
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_get_from_index', &
-         routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: check_ok
 
       CPASSERT((idx .GT. 0) .AND. (idx .LE. hash_table%obj%nmax))
@@ -218,9 +211,6 @@ CONTAINS
    SUBROUTINE nl_hash_table_init(hash_table, nmax)
       TYPE(nl_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(IN), OPTIONAL                      :: nmax
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_init', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ii, my_nmax, two_to_power
       LOGICAL                                            :: check_ok
@@ -268,9 +258,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: key
       LOGICAL, INTENT(OUT)                               :: is_null
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_is_null', &
-         routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: check_ok
 
       check_ok = nl_hash_table_has_data(hash_table)
@@ -294,9 +281,6 @@ CONTAINS
    RECURSIVE SUBROUTINE nl_hash_table_rehash(hash_table, nmax)
       TYPE(nl_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(IN), OPTIONAL                      :: nmax
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_rehash', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ii, my_nmax
       TYPE(nl_hash_table_element), ALLOCATABLE, &
@@ -333,9 +317,6 @@ CONTAINS
    SUBROUTINE nl_hash_table_release(hash_table)
       TYPE(nl_hash_table_obj), INTENT(INOUT)             :: hash_table
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_release', &
-         routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: check_ok
 
       IF (ASSOCIATED(hash_table%obj)) THEN
@@ -365,9 +346,6 @@ CONTAINS
    SUBROUTINE nl_hash_table_status(hash_table, nelements, nmax, prime)
       TYPE(nl_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(OUT), OPTIONAL                     :: nelements, nmax, prime
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'nl_hash_table_status', &
-         routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: check_ok
 

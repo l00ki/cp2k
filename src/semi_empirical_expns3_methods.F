@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -44,9 +46,6 @@ CONTAINS
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
       TYPE(semi_empirical_control_type), POINTER         :: se_control
       INTEGER, INTENT(IN)                                :: method_id
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'semi_empirical_expns3_setup', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, itype, j, nkinds
       LOGICAL                                            :: check
@@ -95,8 +94,6 @@ CONTAINS
    SUBROUTINE setup_c3_coeff(sepi, sepj, ikind, jkind, itype)
       TYPE(semi_empirical_type), POINTER                 :: sepi, sepj
       INTEGER, INTENT(IN)                                :: ikind, jkind, itype
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'setup_c3_coeff', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ij, j, kl, kr, li, lk
       REAL(KIND=dp)                                      :: core_core, e1b(9), e2a(9), r, zi, zj

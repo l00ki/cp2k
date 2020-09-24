@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE optimize_dmfet_potential
@@ -213,7 +215,7 @@ CONTAINS
       LOGICAL                                            :: open_shell, open_shell_embed
       TYPE(cp_fm_type), POINTER                          :: dm_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_full_dm', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'build_full_dm'
 
       INTEGER                                            :: handle, homo, nao
       REAL(KIND=dp)                                      :: coeff

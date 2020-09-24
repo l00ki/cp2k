@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -94,8 +96,7 @@ CONTAINS
       LOGICAL, INTENT(in)                                :: use_virial
       TYPE(atprop_type), POINTER                         :: atprop
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'tb_spme_evaluate', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'tb_spme_evaluate'
 
       INTEGER                                            :: group, handle, i, ig, ipart, j, n, &
                                                             npart, o_spline, p1
@@ -356,8 +357,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: use_virial
       TYPE(atprop_type), POINTER                         :: atprop
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tb_ewald_overlap', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'tb_ewald_overlap'
 
       INTEGER                                            :: handle, i, iatom, jatom, nmat
       REAL(KIND=dp)                                      :: dfr, dr, fr, pfr, rij(3)

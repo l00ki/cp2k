@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -49,9 +51,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_motion_print_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_motion_print_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key
@@ -258,9 +257,6 @@ CONTAINS
       TYPE(section_type), POINTER                        :: section
       LOGICAL, INTENT(IN)                                :: pos
       CHARACTER(LEN=*), INTENT(IN)                       :: description
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'add_format_keyword', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(section))
       CPASSERT(.NOT. ASSOCIATED(keyword))

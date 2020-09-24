@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -57,9 +59,6 @@ CONTAINS
 
       CHARACTER(LEN=*), INTENT(IN)                       :: file_name
       INTEGER, INTENT(IN)                                :: unit_number
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'assign_preconnection', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ic, islot, nc
 
@@ -120,8 +119,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: unit_number
       CHARACTER(LEN=*), INTENT(IN), OPTIONAL             :: file_status
       LOGICAL, INTENT(IN), OPTIONAL                      :: keep_preconnection
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'close_file', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2*default_path_length)               :: message
       CHARACTER(LEN=6)                                   :: status_string
@@ -204,9 +201,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN)                       :: file_name
       INTEGER                                            :: unit_number
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'delete_preconnection', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ic, nc
 
       nc = SIZE(preconnected)
@@ -276,9 +270,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE init_preconnection_list()
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'init_preconnection_list', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ic, nc
 
       nc = SIZE(preconnected)
@@ -322,7 +313,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: skip_get_unit_number
       CHARACTER(LEN=*), INTENT(IN), OPTIONAL             :: file_access
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'open_file', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'open_file'
 
       CHARACTER(LEN=11) :: access_string, action_string, current_action, current_form, &
          form_string, pad_string, position_string, status_string
@@ -594,9 +585,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE print_preconnection_list(output_unit)
       INTEGER, INTENT(IN), OPTIONAL                      :: output_unit
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'print_preconnection_list', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ic, nc, unit
 

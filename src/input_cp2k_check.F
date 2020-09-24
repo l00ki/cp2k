@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -65,8 +67,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER, INTENT(IN), OPTIONAL                      :: output_unit
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'check_cp2k_input', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'check_cp2k_input'
 
       INTEGER                                            :: handle, iforce_eval, nforce_eval, &
                                                             run_type
@@ -140,9 +141,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE xc_functionals_expand(functionals, xc_section)
       TYPE(section_vals_type), POINTER                   :: functionals, xc_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_functionals_expand', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: shortcut
 
@@ -284,8 +282,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER, INTENT(IN)                                :: output_unit
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'handle_ext_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'handle_ext_restart'
 
       CHARACTER(default_path_length)                     :: binary_restart_file, r_file_path
       CHARACTER(default_string_length)                   :: path
@@ -796,9 +793,6 @@ CONTAINS
       CHARACTER(LEN=default_string_length), &
          DIMENSION(:), POINTER                           :: restarted_infos
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'set_restart_info', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: isize
 
       isize = 0
@@ -823,9 +817,6 @@ CONTAINS
          DIMENSION(:), POINTER                           :: restarted_infos
       CHARACTER(LEN=*), INTENT(IN)                       :: r_file_path, binary_restart_file
       INTEGER, INTENT(IN)                                :: output_unit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'release_restart_info', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j
 
@@ -876,9 +867,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: input_file, restart_file
       CHARACTER(LEN=*), INTENT(IN)                       :: path
       LOGICAL, INTENT(IN), OPTIONAL                      :: check
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'restart_thermostat', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: input_region, input_type, &
                                                             restart_region, restart_type
@@ -969,7 +957,7 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN)                       :: tag_section
       LOGICAL                                            :: do_restart
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'check_restart', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'check_restart'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: explicit1, explicit2
@@ -995,8 +983,7 @@ CONTAINS
    SUBROUTINE remove_restart_info(input_file)
       TYPE(section_vals_type), POINTER                   :: input_file
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'remove_restart_info', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'remove_restart_info'
 
       INTEGER                                            :: handle, iforce_eval, nforce_eval1
       LOGICAL                                            :: explicit1
@@ -1099,8 +1086,7 @@ CONTAINS
    SUBROUTINE handle_defaults_restart(r_section)
       TYPE(section_vals_type), POINTER                   :: r_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'handle_defaults_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'handle_defaults_restart'
 
       INTEGER                                            :: handle, ik, nval
       LOGICAL                                            :: restart_default

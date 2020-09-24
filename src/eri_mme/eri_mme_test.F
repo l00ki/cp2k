@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 !> \brief Methods for testing / debugging.
@@ -68,9 +70,6 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: potential
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: pot_par
       INTEGER, INTENT(OUT), OPTIONAL                     :: G_count, R_count
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eri_mme_2c_perf_acc_test', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iab, irep, izet, l, nR, nzet
       LOGICAL                                            :: acc_check
@@ -199,9 +198,6 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: potential
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: pot_par
       INTEGER, INTENT(OUT), OPTIONAL                     :: GG_count, GR_count, RR_count
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eri_mme_3c_perf_acc_test', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ira, irb, irc, irep, ixyz, izeta, izetb, &
                                                             izetc, la, lb, lc, nintg, nR, ns, nzet

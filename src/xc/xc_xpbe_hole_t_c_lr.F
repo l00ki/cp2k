@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -149,8 +151,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: order
       TYPE(section_vals_type), POINTER                   :: params
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xpbe_hole_t_c_lr_lda_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'xpbe_hole_t_c_lr_lda_eval'
 
       INTEGER                                            :: handle, npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo
@@ -244,9 +245,6 @@ CONTAINS
       REAL(kind=dp), DIMENSION(1:npoints), INTENT(inout) :: rho, norm_drho, e_0, e_rho, e_ndrho
       REAL(kind=dp), INTENT(in)                          :: epsilon_rho, sx, R
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xpbe_hole_t_c_lr_lda_calc', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ip
       REAL(dp)                                           :: my_ndrho, my_rho
       REAL(KIND=dp)                                      :: ss, ss2, sscale, t1, t2, t3, t4, t6, t7, &
@@ -309,8 +307,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: order
       TYPE(section_vals_type), POINTER                   :: params
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xpbe_hole_t_c_lr_lsd_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'xpbe_hole_t_c_lr_lsd_eval'
 
       INTEGER                                            :: handle, npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo
@@ -414,9 +411,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: npoints, order
       REAL(kind=dp), DIMENSION(1:npoints), INTENT(inout) :: rho, norm_drho, e_0, e_rho, e_ndrho
       REAL(kind=dp), INTENT(in)                          :: epsilon_rho, sx, R
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xpbe_hole_t_c_lr_lsd_calc', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ip
       REAL(dp)                                           :: my_ndrho, my_rho

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -53,8 +55,7 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: elem
       TYPE(tmc_env_type), POINTER                        :: tmc_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'add_to_canceling_list', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'add_to_canceling_list'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: need_to_cancel
@@ -116,9 +117,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE free_cancelation_list(cancel_list)
       TYPE(elem_list_type), POINTER                      :: cancel_list
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'free_cancelation_list', &
-         routineP = moduleN//':'//routineN
 
       TYPE(elem_list_type), POINTER                      :: tmp_element
 

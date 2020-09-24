@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -102,8 +104,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3), INTENT(OUT), OPTIONAL :: force_a, force_b
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(INOUT), &
          OPTIONAL                                        :: fs
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'os_3center', routineP = moduleN//':'//routineN
 
       INTEGER :: ax, ay, az, bx, by, bz, cda, cdax, cday, cdaz, cdb, cdbx, cdby, cdbz, coa, coamx, &
          coamy, coamz, coapx, coapy, coapz, cob, cobmx, cobmy, cobmz, cobpx, cobpy, cobpz, da, &
@@ -563,8 +563,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: va
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT), &
          OPTIONAL                                        :: dva
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'os_2center', routineP = moduleN//':'//routineN
 
       INTEGER :: ax, ay, az, coa, coamx, coamy, coamz, coapx, coapy, coapz, da_max, i, ipgf, ir, &
          ir1, ir2, irm(3), irr(3), irx, iry, irz, ix, ixx(1), la, la_max, la_min, llr, m, mmax, na

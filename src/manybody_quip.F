@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE manybody_quip
@@ -59,10 +61,6 @@ CONTAINS
       REAL(kind=dp)                            :: pot_quip
       TYPE(cp_para_env_type), OPTIONAL, &
          POINTER                                :: para_env
-
-      CHARACTER(LEN=*), PARAMETER :: &
-         routineN = 'quip_energy_store_force_virial', &
-         routineP = moduleN//':'//routineN
 
 #ifdef __QUIP
       CHARACTER(len=2), ALLOCATABLE            :: elem_symbol(:)
@@ -196,9 +194,6 @@ CONTAINS
    SUBROUTINE quip_add_force_virial(fist_nonbond_env, force, virial)
       TYPE(fist_nonbond_env_type), POINTER     :: fist_nonbond_env
       REAL(KIND=dp)                            :: force(:, :), virial(3, 3)
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'quip_add_force_virial', &
-                                     routineP = moduleN//':'//routineN
 
 #ifdef __QUIP
       INTEGER                                  :: iat, iat_use

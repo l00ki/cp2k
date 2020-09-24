@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -90,9 +92,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: qmmm_periodic, print_section
       REAL(KIND=dp), INTENT(IN)                          :: eps_mm_rspace, maxchrg
       INTEGER, INTENT(IN)                                :: ncp(3), ncpl(3)
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qmmm_per_potential_init', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: I, idim, ig, ig_start, iw, ix, iy, iz, &
                                                             K, Kmax(3), n_rep_real(3), &
@@ -288,9 +287,6 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(section_vals_type), POINTER                   :: qmmm_per_section, print_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qmmm_per_pot_type_create', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: npts(3)
       INTEGER, DIMENSION(:), POINTER                     :: ngrids
       REAL(KIND=dp)                                      :: hmat(3, 3)
@@ -344,9 +340,6 @@ CONTAINS
       TYPE(cell_type), POINTER                           :: mm_cell
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(section_vals_type), POINTER                   :: qmmm_periodic, print_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qmmm_ewald_potential_init', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ewald_type, gmax(3), iw, o_spline, ounit
       LOGICAL                                            :: do_multipoles

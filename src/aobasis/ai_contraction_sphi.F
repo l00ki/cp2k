@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -51,7 +53,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(IN)         :: sab, sphi_a, sphi_b
       INTEGER, INTENT(IN)                                :: ncoa, ncob, nsgfa, nsgfb
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ab_contract', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ab_contract'
 
       INTEGER                                            :: handle, m1, m2, msphia, msphib, nn
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: cpp
@@ -100,7 +102,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :)                     :: sphi_a, sphi_b, sphi_c
       INTEGER, INTENT(IN)                                :: ncoa, ncob, ncoc, nsgfa, nsgfb, nsgfc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'abc_contract', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'abc_contract'
 
       INTEGER                                            :: handle, i, m1, m2, m3, msphia, msphib, &
                                                             msphic
@@ -163,7 +165,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ncoa, ncob, ncoc, ncod, nsgfa, nsgfb, &
                                                             nsgfc, nsgfd
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'abcd_contract', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'abcd_contract'
 
       INTEGER                                            :: handle, isgfc, isgfd, m1, m2, m3, m4, &
                                                             msphia, msphib, msphic, msphid
@@ -248,8 +250,7 @@ CONTAINS
       REAL(dp), DIMENSION(nsgfa*ncob)                    :: cpp_buffer
       REAL(dp), DIMENSION(nsgfa*nsgfb*ncoc)              :: ccp_buffer
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'libxsmm_abc_contract', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'libxsmm_abc_contract'
 
       INTEGER                                            :: handle, i
 #if(__LIBXSMM)

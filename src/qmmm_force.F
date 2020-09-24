@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -73,9 +75,6 @@ CONTAINS
    SUBROUTINE qmmm_calc_energy_force(qmmm_env, calc_force, consistent_energies, linres)
       TYPE(qmmm_env_type), POINTER                       :: qmmm_env
       LOGICAL, INTENT(IN)                                :: calc_force, consistent_energies, linres
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qmmm_calc_energy_force', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: description, iter
       INTEGER                                            :: ip, j, nres, output_unit

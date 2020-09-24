@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -98,7 +100,7 @@ CONTAINS
       LOGICAL, INTENT(in), OPTIONAL                      :: rebuild_ao, rebuild_grids, admm
       TYPE(pw_env_type), OPTIONAL, POINTER               :: pw_env_external
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_rho_rebuild', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_rho_rebuild'
 
       CHARACTER(LEN=default_string_length)               :: headline
       INTEGER                                            :: handle, i, ic, nimg, nspins
@@ -340,8 +342,7 @@ CONTAINS
       TYPE(pw_env_type), OPTIONAL, POINTER               :: pw_env_external
       TYPE(task_list_type), OPTIONAL, POINTER            :: task_list_external
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_rho_update_rho', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_rho_update_rho'
 
       INTEGER                                            :: handle, img, ispin, nimg, nspins
       INTEGER, DIMENSION(:, :, :), POINTER               :: cell_to_index
@@ -569,8 +570,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho_input, rho_output
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'duplicate_rho_type', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'duplicate_rho_type'
 
       INTEGER                                            :: handle, i, nspins, rebuild_each_in
       LOGICAL :: drho_g_valid_in, drho_r_valid_in, rho_g_valid_in, rho_r_valid_in, soft_valid_in, &

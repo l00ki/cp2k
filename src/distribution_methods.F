@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -117,8 +119,7 @@ CONTAINS
          POINTER                                         :: prev_molecule_kind_set
       TYPE(distribution_1d_type), OPTIONAL, POINTER      :: prev_local_molecules
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribute_molecules_1d', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'distribute_molecules_1d'
 
       INTEGER :: atom_a, bin, group, handle, iatom, imolecule, imolecule_kind, imolecule_local, &
          imolecule_prev_kind, iparticle_kind, ipe, iw, kind_a, molecule_a, mype, n, natom, nbins, &
@@ -486,8 +487,7 @@ CONTAINS
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
       TYPE(section_vals_type), POINTER                   :: force_env_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribute_molecules_2d', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'distribute_molecules_2d'
 
       INTEGER :: cluster_price, cost_model, group, handle, iatom, iatom_mol, iatom_one, ikind, &
          imol, imolecule, imolecule_kind, iparticle_kind, ipcol, iprow, iw, kind_a, mypcol, &
@@ -848,8 +848,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: npcols
       INTEGER, DIMENSION(:), INTENT(OUT)                 :: col_distribution
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'make_basic_distribution', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'make_basic_distribution'
 
       INTEGER                                            :: bin, cluster, cluster_index, &
                                                             cluster_price, nbins, nclusters, pcol, &
@@ -914,8 +913,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: npcols
       INTEGER, DIMENSION(:), INTENT(OUT)                 :: col_distribution
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'make_basic_spatial_distribution', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'make_basic_spatial_distribution'
 
       INTEGER                                            :: handle, iatom, natoms, nbins, pgrid_gcd
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: bin_costs, distribution
@@ -1025,8 +1023,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: npcols
       INTEGER, DIMENSION(:, :), INTENT(OUT)              :: col_distribution
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'make_cluster_distribution', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'make_cluster_distribution'
 
       INTEGER                                            :: handle, i, icluster, level, natom, &
                                                             output_unit
@@ -1126,8 +1123,7 @@ CONTAINS
                                                             cluster_assign
       INTEGER                                            :: nproc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'assign_clusters', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'assign_clusters'
 
       INTEGER                                            :: handle, i, ilevel, offset, &
                                                             piv_pcost(nproc), sort_proc_cost(nproc)
@@ -1172,9 +1168,6 @@ CONTAINS
       INTEGER(KIND=int_8), INTENT(INOUT)                 :: ncluster
       INTEGER, INTENT(INOUT)                             :: icluster
       INTEGER, DIMENSION(:), INTENT(INOUT)               :: fin_cluster_cost
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cluster_recurse', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ibeg, iend, maxv(1), min_seed, &
                                                             natoms, nleft, nsplits, seed, tot_cost
@@ -1299,7 +1292,7 @@ CONTAINS
       INTEGER                                            :: seed
       REAL(KIND=dp)                                      :: tot_var
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'kmeans', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'kmeans'
 
       INTEGER                                            :: handle, i, ind, itn, j, nat, oldc
       LOGICAL                                            :: changed

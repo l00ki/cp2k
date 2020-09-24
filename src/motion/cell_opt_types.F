@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -81,9 +83,6 @@ CONTAINS
       TYPE(cell_opt_env_type), POINTER                   :: cell_env
       TYPE(force_env_type), POINTER                      :: force_env
       TYPE(section_vals_type), POINTER                   :: geo_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cell_opt_env_create', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=4)                                   :: label
       INTEGER                                            :: ip, output_unit
@@ -177,9 +176,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cell_opt_env_release(cell_env)
       TYPE(cell_opt_env_type), POINTER                   :: cell_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cell_opt_env_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(cell_env)) THEN
          CPASSERT(cell_env%ref_count > 0)

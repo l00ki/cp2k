@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -58,8 +60,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(OUT), OPTIONAL :: transl
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT), &
          OPTIONAL                                        :: rot, drmsd3
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'rmsd3', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ix, j, k, natom
       LOGICAL                                            :: my_rotate

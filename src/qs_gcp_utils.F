@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -111,8 +113,6 @@ CONTAINS
       TYPE(qs_gcp_type), POINTER                         :: gcp_env
       TYPE(section_vals_type), POINTER                   :: xc_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_gcp_env_set', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_string_length), &
          DIMENSION(:), POINTER                           :: tmpstringlist
       INTEGER                                            :: i_rep, n_rep
@@ -161,7 +161,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_gcp_type), POINTER                         :: gcp_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_gcp_init', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: epsc = 1.e-6_dp
 
       CHARACTER(LEN=10)                                  :: aname

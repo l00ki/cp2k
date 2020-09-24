@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -85,8 +87,6 @@ CONTAINS
       TYPE(pao_env_type), POINTER                        :: pao
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_ml_init', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
       TYPE(cp_para_env_type), POINTER                    :: para_env
@@ -142,9 +142,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(training_list_type), DIMENSION(:)             :: training_lists
       CHARACTER(LEN=default_path_length)                 :: filename
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'add_to_training_list', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: param
       INTEGER                                            :: iatom, ikind, natoms, nkinds, nparams

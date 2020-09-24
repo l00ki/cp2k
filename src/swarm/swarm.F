@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -63,7 +65,7 @@ CONTAINS
       TYPE(global_environment_type), POINTER             :: globenv
       CHARACTER(LEN=*), INTENT(IN)                       :: input_path
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'run_swarm', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'run_swarm'
 
       INTEGER                                            :: handle, iw, n_workers
       TYPE(cp_logger_type), POINTER                      :: logger

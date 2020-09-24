@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 #:include '../common/cp_linked_list.fypp'
@@ -30,8 +32,6 @@ MODULE cp_linked_list_xc_deriv
    function cp_sll_deriv_less_q(el1, el2) result(res)
       type(xc_derivative_type), pointer :: el1, el2
       logical :: res
-
-      character(len=*), parameter :: routineN = 'cp_sll_deriv_less_q', routineP = moduleN//':'//routineN
 
       CPASSERT(associated(el1))
       CPASSERT(associated(el1%split_desc))

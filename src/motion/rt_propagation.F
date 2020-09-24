@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -100,8 +102,6 @@ CONTAINS
 
    SUBROUTINE rt_prop_setup(force_env)
       TYPE(force_env_type), POINTER                      :: force_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'rt_prop_setup', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: aspc_order
       LOGICAL                                            :: magnetic, vel_reprs
@@ -279,8 +279,7 @@ CONTAINS
       TYPE(force_env_type), POINTER                      :: force_env
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'run_propagation', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'run_propagation'
 
       INTEGER                                            :: aspc_order, handle, i_iter, i_step, &
                                                             max_iter, max_steps, unit_nr
@@ -385,9 +384,6 @@ CONTAINS
       TYPE(md_environment_type), OPTIONAL, POINTER       :: md_env
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'rt_write_input_restart', &
-         routineP = moduleN//':'//routineN
-
       TYPE(section_vals_type), POINTER                   :: motion_section, root_section, rt_section
 
       root_section => force_env%root_section
@@ -416,9 +412,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(force_env_type), POINTER                      :: force_env
       TYPE(rtp_control_type), POINTER                    :: rtp_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'rt_initial_guess', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: homo, ispin
       LOGICAL                                            :: energy_consistency

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -392,8 +394,6 @@ CONTAINS
 
       TYPE(lri_environment_type), POINTER                :: lri_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'lri_env_create', routineP = moduleN//':'//routineN
-
       ALLOCATE (lri_env)
 
       last_lri_env_id = last_lri_env_id + 1
@@ -441,9 +441,6 @@ CONTAINS
    SUBROUTINE lri_env_release(lri_env)
 
       TYPE(lri_environment_type), POINTER                :: lri_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'lri_env_release', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ikind, j, nkind
 
@@ -558,9 +555,6 @@ CONTAINS
 
       TYPE(lri_density_type), POINTER                    :: lri_density
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'lri_density_create', &
-         routineP = moduleN//':'//routineN
-
       ALLOCATE (lri_density)
 
       last_lri_density_id = last_lri_density_id + 1
@@ -581,9 +575,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE lri_density_release(lri_density)
       TYPE(lri_density_type), POINTER                    :: lri_density
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'lri_density_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(lri_density)) THEN
          lri_density%ref_count = 0
@@ -609,9 +600,6 @@ CONTAINS
       TYPE(lri_environment_type), POINTER                :: lri_env
       TYPE(lri_list_type), POINTER                       :: lri_ints
       INTEGER, INTENT(IN)                                :: nkind
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_lri_ints', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iac, iatom, ikind, ilist, jatom, &
                                                             jkind, jneighbor, nba, nbb, nfa, nfb, &
@@ -797,9 +785,6 @@ CONTAINS
       TYPE(lri_ppl_int_type), POINTER                    :: lri_ppl_ints
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_lri_ppl_ints', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ikind, natom, nfa, nkind
       TYPE(atomic_kind_type), POINTER                    :: atomic_kind
       TYPE(gto_basis_set_type), POINTER                  :: fbasa
@@ -830,9 +815,6 @@ CONTAINS
       TYPE(lri_environment_type), POINTER                :: lri_env
       TYPE(lri_list_type), POINTER                       :: lri_ints_rho
       INTEGER, INTENT(IN)                                :: nkind
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_lri_ints_rho', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iac, iatom, ikind, ilist, jatom, &
                                                             jkind, jneighbor, nba, nbb, nlist, &
@@ -907,9 +889,6 @@ CONTAINS
       TYPE(lri_environment_type), POINTER                :: lri_env
       TYPE(lri_list_p_type), DIMENSION(:), POINTER       :: lri_rhos
       INTEGER, INTENT(IN)                                :: nspin, nkind
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_lri_rhos', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iac, iatom, ikind, ilist, ispin, &
                                                             jatom, jkind, jneighbor, nfa, nfb, &
@@ -1021,9 +1000,6 @@ CONTAINS
       TYPE(lri_density_type), POINTER                    :: lri_density
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_lri_coefs', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ikind, ispin, natom, nkind, nsgf, nspin
       TYPE(atomic_kind_type), POINTER                    :: atomic_kind
       TYPE(gto_basis_set_type), POINTER                  :: fbas
@@ -1075,9 +1051,6 @@ CONTAINS
       TYPE(lri_force_type), POINTER                      :: lri_force
       INTEGER, INTENT(IN)                                :: nfa, nfb
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_lri_force_components', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nn
 
       nn = nfa + nfb
@@ -1105,9 +1078,6 @@ CONTAINS
    SUBROUTINE deallocate_bas_properties(lri_env)
 
       TYPE(lri_environment_type), POINTER                :: lri_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_bas_properties', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -1156,9 +1126,6 @@ CONTAINS
    SUBROUTINE deallocate_lri_ints(lri_ints)
 
       TYPE(lri_list_type), POINTER                       :: lri_ints
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_lri_ints', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iatom, ijkind, inode, natom, nkind, &
                                                             nnode
@@ -1267,9 +1234,6 @@ CONTAINS
 
       TYPE(lri_ppl_int_type), POINTER                    :: lri_ppl_ints
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_lri_ppl_ints', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ikind, nkind
 
       CPASSERT(ASSOCIATED(lri_ppl_ints))
@@ -1293,9 +1257,6 @@ CONTAINS
    SUBROUTINE deallocate_lri_ints_rho(lri_ints_rho)
 
       TYPE(lri_list_type), POINTER                       :: lri_ints_rho
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_lri_ints_rho', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iatom, ijkind, inode, natom, nkind, nnode
 
@@ -1335,9 +1296,6 @@ CONTAINS
    SUBROUTINE deallocate_lri_rhos(lri_rhos)
 
       TYPE(lri_list_p_type), DIMENSION(:), POINTER       :: lri_rhos
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_lri_rhos', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iatom, ijkind, inode, natom, nkind, &
                                                             nnode
@@ -1397,9 +1355,6 @@ CONTAINS
    SUBROUTINE deallocate_lri_coefs(lri_coefs)
       TYPE(lri_spin_type), DIMENSION(:), POINTER         :: lri_coefs
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_lri_coefs', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, j
 
       IF (ASSOCIATED(lri_coefs)) THEN
@@ -1433,9 +1388,6 @@ CONTAINS
    SUBROUTINE deallocate_lri_force_components(lri_force)
 
       TYPE(lri_force_type), POINTER                      :: lri_force
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_lri_force_components', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(lri_force)) THEN
 

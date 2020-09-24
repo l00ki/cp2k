@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -98,8 +100,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_dftb_matrices', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_dftb_matrices'
 
       INTEGER :: after, atom_a, atom_b, handle, i, iatom, ic, icol, ikind, img, irow, iw, jatom, &
          jkind, l1, l2, la, lb, llm, lmaxi, lmaxj, m, n1, n2, n_urpoly, natom, natorb_a, natorb_b, &
@@ -508,8 +509,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(in)                                :: calculate_forces, just_energy
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_dftb_ks_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'build_dftb_ks_matrix'
 
       INTEGER                                            :: atom_a, handle, iatom, ikind, img, &
                                                             ispin, natom, nkind, nspins, &
@@ -672,8 +672,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nderivative
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_dftb_overlap', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_dftb_overlap'
 
       INTEGER :: handle, i, iatom, icol, ikind, indder, irow, j, jatom, jkind, l1, l2, la, lb, &
          llm, lmaxi, lmaxj, m, n1, n2, natom, natorb_a, natorb_b, ngrd, ngrdcut, nkind
@@ -886,9 +885,6 @@ CONTAINS
       TYPE(neighbor_list_set_p_type), DIMENSION(:), &
          POINTER                                         :: sab_nl
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'setup_matrices1', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(1)                                       :: symmetry_type
       CHARACTER(LEN=default_string_length)               :: matnames
       INTEGER                                            :: i, natom, neighbor_list_id, nkind, nmat, &
@@ -975,9 +971,6 @@ CONTAINS
       CHARACTER(LEN=*)                                   :: mnames
       TYPE(neighbor_list_set_p_type), DIMENSION(:), &
          POINTER                                         :: sab_nl
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'setup_matrices2', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(1)                                       :: symmetry_type
       CHARACTER(LEN=default_string_length)               :: matnames

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,9 +89,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(IN)                                :: calc_forces
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_energies_init', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: img, ispin, nimg, nspin
       LOGICAL                                            :: has_unit_metric, molecule_only
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_w_mp2
@@ -154,8 +153,7 @@ CONTAINS
    SUBROUTINE qs_energies_init_kg(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_energies_init_kg', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_energies_init_kg'
 
       INTEGER                                            :: handle, isubset, natom
       TYPE(cp_para_env_type), POINTER                    :: para_env
@@ -250,8 +248,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: calc_forces
       LOGICAL                                            :: molecule_only
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_energies_init_hamiltonians', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_energies_init_hamiltonians'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: do_kpoints

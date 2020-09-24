@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -112,8 +114,7 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(cell_type), POINTER                           :: cell
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_initialize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'kpoint_initialize'
 
       INTEGER                                            :: handle, i, ik, iounit, ir, is, natom, &
                                                             nr, ns
@@ -269,8 +270,7 @@ CONTAINS
 
       TYPE(kpoint_type), POINTER                         :: kpoint
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_env_initialize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_env_initialize'
 
       INTEGER                                            :: comm_cart, comm_inter_kp, comm_kp, &
                                                             handle, igr, ik, ikk, ngr, niogrp, &
@@ -425,8 +425,7 @@ CONTAINS
       TYPE(mo_set_p_type), DIMENSION(:), POINTER         :: mos
       INTEGER, INTENT(IN), OPTIONAL                      :: added_mos
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_initialize_mos', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_initialize_mos'
 
       INTEGER                                            :: handle, ic, ik, is, nadd, nao, nc, &
                                                             nelectron, nkp_loc, nmo, nmorig(2), &
@@ -565,8 +564,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(dft_control_type), POINTER                    :: dft_control
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_init_cell_index', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_init_cell_index'
 
       INTEGER                                            :: handle, i1, i2, i3, ic, icount, it, &
                                                             ncount
@@ -701,7 +699,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: is_complex
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: rs_sign
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rskp_transform', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'rskp_transform'
 
       INTEGER                                            :: handle, iatom, ic, icol, irow, jatom
       INTEGER, DIMENSION(3)                              :: cell
@@ -788,8 +786,7 @@ CONTAINS
       TYPE(kpoint_type), POINTER                         :: kpoint
       TYPE(smear_type), POINTER                          :: smear
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_set_mo_occupation', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_set_mo_occupation'
 
       INTEGER                                            :: handle, ik, ikpgr, ispin, kplocal, nb, &
                                                             ne_a, ne_b, nelectron, nkp, nmo, nspin
@@ -899,8 +896,7 @@ CONTAINS
       TYPE(kpoint_type), POINTER                         :: kpoint
       LOGICAL, OPTIONAL                                  :: energy_weighted
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_density_matrices', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_density_matrices'
 
       INTEGER                                            :: handle, ikpgr, ispin, kplocal, nao, nmo, &
                                                             nspin
@@ -1008,8 +1004,7 @@ CONTAINS
          POINTER                                         :: sab_nl
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: fmwork
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_density_transform', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_density_transform'
 
       INTEGER                                            :: handle, ic, ik, ikk, indx, is, ispin, &
                                                             nc, nimg, nkp, nspin
@@ -1198,7 +1193,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3), INTENT(IN)            :: xkp
       REAL(KIND=dp), INTENT(IN)                          :: wkp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'transform_dmat', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'transform_dmat'
 
       INTEGER                                            :: handle, iatom, icell, icol, irow, jatom
       INTEGER, DIMENSION(3)                              :: cell
@@ -1269,7 +1264,7 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: f0
       LOGICAL, INTENT(IN), OPTIONAL                      :: symmetric, antisymmetric
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'symtrans', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'symtrans'
 
       INTEGER                                            :: handle, iatom, icol, ip, irow, jcol, jp, &
                                                             jrow, natom, numnodes

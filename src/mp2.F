@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -149,7 +151,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(IN)                                :: calc_forces
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mp2_main', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'mp2_main'
 
       INTEGER :: bin, cholesky_method, dimen, handle, handle2, i, i_thread, iatom, ikind, irep, &
          ispin, max_nset, my_bin_size, n_rep_hf, n_threads, nao, natom, ncol_block, ndep, &
@@ -296,9 +298,11 @@ CONTAINS
             WRITE (unit_nr, '(T3,A,T76,I5)') 'Requested number of processes per group:', mp2_env%mp2_num_proc
          mp2_env%mp2_num_proc = para_env%num_pe
       ENDIF
-      IF (unit_nr > 0) WRITE (unit_nr, '(T3,A,T76,I5)') 'Used number of processes per group:', mp2_env%mp2_num_proc
-      IF (unit_nr > 0) WRITE (unit_nr, '(T3,A,T68,F9.2,A4)') 'Maximum allowed memory usage per MPI process:', &
-         mp2_env%mp2_memory, ' MiB'
+      IF (.NOT. mp2_env%do_im_time) THEN
+         IF (unit_nr > 0) WRITE (unit_nr, '(T3,A,T76,I5)') 'Used number of processes per group:', mp2_env%mp2_num_proc
+         IF (unit_nr > 0) WRITE (unit_nr, '(T3,A,T68,F9.2,A4)') 'Maximum allowed memory usage per MPI process:', &
+            mp2_env%mp2_memory, ' MiB'
+      END IF
 
       IF ((mp2_env%method .NE. mp2_method_gpw) .AND. &
           (mp2_env%method .NE. ri_mp2_method_gpw) .AND. &
@@ -876,8 +880,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(dimen), INTENT(IN), &
          OPTIONAL                                        :: Auto_j
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mp2_direct_energy', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'mp2_direct_energy'
       REAL(KIND=dp), PARAMETER                           :: zero = 0.D+00
 
       INTEGER :: batch_number, color_sub, comm_sub, counter, elements_ij_proc, group_counter, &
@@ -1155,7 +1158,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_gw, do_admm
       REAL(KIND=dp), INTENT(IN)                          :: E_ex_from_GW, t3
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_exx', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'calculate_exx'
 
       INTEGER                                            :: handle, i, irep, n_rep_hf, ns
       REAL(KIND=dp)                                      :: eh1, ehfx, t1, t2
@@ -1264,8 +1267,7 @@ CONTAINS
    SUBROUTINE remove_exc_energy(energy)
       TYPE(qs_energy_type), POINTER                      :: energy
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'remove_exc_energy', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'remove_exc_energy'
 
       INTEGER                                            :: handle
 
@@ -1304,8 +1306,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: energy_ex, t3
       INTEGER, INTENT(IN)                                :: unit_nr
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_vec_Sigma_x_minus_vxc_gw', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_vec_Sigma_x_minus_vxc_gw'
 
       CHARACTER(4)                                       :: occ_virt
       CHARACTER(LEN=40)                                  :: line
@@ -1378,6 +1379,7 @@ CONTAINS
          IF (do_kpoints_cubic_RPA) THEN
 
             CALL get_qs_env(qs_env, &
+                            admm_env=admm_env, &
                             matrix_ks_kp=matrix_ks_transl, &
                             rho=rho, &
                             input=input, &
@@ -1392,6 +1394,7 @@ CONTAINS
          ELSE
 
             CALL get_qs_env(qs_env, &
+                            admm_env=admm_env, &
                             matrix_ks=matrix_ks, &
                             rho=rho, &
                             input=input, &
@@ -1414,9 +1417,10 @@ CONTAINS
 
       ! If ADMM we should make the ks matrix up-to-date
       IF (dft_control%do_admm) THEN
-      DO ispin = 1, SIZE(matrix_ks)
-         CALL admm_correct_for_eigenvalues(ispin, admm_env, matrix_ks(ispin)%matrix)
-      END DO
+         CPASSERT(ASSOCIATED(admm_env))
+         DO ispin = 1, SIZE(matrix_ks)
+            CALL admm_correct_for_eigenvalues(ispin, admm_env, matrix_ks(ispin)%matrix)
+         END DO
       END IF
 
       IF (do_kpoints_cubic_RPA) THEN
@@ -1839,8 +1843,7 @@ CONTAINS
       INTEGER                                            :: nmo
       TYPE(mp2_type), POINTER                            :: mp2_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'transform_sigma_x_minus_vxc_to_MO_basis', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'transform_sigma_x_minus_vxc_to_MO_basis'
 
       INTEGER :: dimen, gw_corr_lev_occ, gw_corr_lev_virt, handle, homo, i_global, iiB, ikp, &
          ispin, j_global, jjB, ncol_local, nkp, nrow_local, nspins
@@ -2021,8 +2024,7 @@ CONTAINS
                                                             matrix_ks_kp_im
       TYPE(kpoint_type), POINTER                         :: kpoints
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'transform_matrix_ks_to_kp', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'transform_matrix_ks_to_kp'
 
       INTEGER                                            :: handle, ikp, ispin, nkp, nspin
       INTEGER, DIMENSION(:, :, :), POINTER               :: cell_to_index
@@ -2069,8 +2071,7 @@ CONTAINS
                                                             matrix_ks_kp_im
       TYPE(kpoint_type), POINTER                         :: kpoints
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'allocate_matrix_ks_kp', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'allocate_matrix_ks_kp'
 
       INTEGER                                            :: handle, ikp, ispin, nkp, nspin
       INTEGER, DIMENSION(:, :, :), POINTER               :: cell_to_index

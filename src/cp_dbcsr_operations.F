@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -480,9 +482,6 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dbcsr_copy_columns_hack', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nfullcols_total, nfullrows_total
       TYPE(cp_fm_struct_type), POINTER                   :: fm_struct
       TYPE(cp_fm_type), POINTER                          :: fm_matrix_a, fm_matrix_b
@@ -566,8 +565,7 @@ CONTAINS
       INTEGER, INTENT(in), OPTIONAL                      :: ncol
       REAL(dp), INTENT(IN), OPTIONAL                     :: alpha
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dbcsr_multiply_local', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dbcsr_multiply_local'
 
       INTEGER                                            :: blk, col, coloff, my_ncol, row, rowoff, &
                                                             timing_handle
@@ -639,6 +637,108 @@ CONTAINS
       CALL timestop(timing_handle)
    END SUBROUTINE dbcsr_multiply_local
 
+! **************************************************************************************************
+!> \brief multiply a dbcsr with a fm matrix
+!>
+!> For backwards compatibility with BLAS XGEMM, this routine supports
+!> the multiplication of matrices with incompatible dimensions.
+!>
+!> \param[in]  matrix         DBCSR matrix
+!> \param fm_in full matrix
+!> \param fm_out full matrix
+!> \param[in]  ncol           nbr of columns
+!> \param[in]  alpha          alpha
+!> \param[in]  beta           beta
+!>
+! **************************************************************************************************
+   SUBROUTINE cp_dbcsr_sm_fm_multiply(matrix, fm_in, fm_out, ncol, alpha, beta)
+      TYPE(dbcsr_type), INTENT(IN)                    :: matrix
+      TYPE(cp_fm_type), POINTER                          :: fm_in, fm_out
+      INTEGER, INTENT(IN)                                :: ncol
+      REAL(dp), INTENT(IN), OPTIONAL                     :: alpha, beta
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_sm_fm_multiply'
+
+      INTEGER                                            :: k_in, k_out, timing_handle, &
+                                                            timing_handle_mult, &
+                                                            a_ncol, a_nrow, b_ncol, b_nrow, c_ncol, c_nrow
+      INTEGER, DIMENSION(:), POINTER                     :: col_blk_size_right_in, &
+                                                            col_blk_size_right_out, row_blk_size, &
+                                                            !row_cluster, col_cluster,&
+                                                            row_dist, col_dist, col_blk_size
+      TYPE(dbcsr_type)                                   :: in, out
+      REAL(dp)                                           :: my_alpha, my_beta
+      TYPE(dbcsr_distribution_type)                       :: dist, dist_right_in, product_dist
+
+      CALL timeset(routineN, timing_handle)
+
+      my_alpha = 1.0_dp
+      my_beta = 0.0_dp
+      IF (PRESENT(alpha)) my_alpha = alpha
+      IF (PRESENT(beta)) my_beta = beta
+
+      ! TODO
+      CALL cp_fm_get_info(fm_in, ncol_global=b_ncol, nrow_global=b_nrow)
+      CALL cp_fm_get_info(fm_out, ncol_global=c_ncol, nrow_global=c_nrow)
+      CALL dbcsr_get_info(matrix, nfullrows_total=a_nrow, nfullcols_total=a_ncol)
+      !WRITE(*,*) "cp_dbcsr_sm_fm_multiply: A ", a_nrow, "x", a_ncol
+      !WRITE(*,*) "cp_dbcsr_sm_fm_multiply: B ", b_nrow, "x", b_ncol
+      !WRITE(*,*) "cp_dbcsr_sm_fm_multiply: C ", c_nrow, "x", c_ncol
+
+      CALL cp_fm_get_info(fm_out, ncol_global=k_out)
+
+      CALL cp_fm_get_info(fm_in, ncol_global=k_in)
+      !write(*,*)routineN//" -----------------------------------"
+      !IF (k_in .NE. k_out) &
+      !   WRITE(*,'(3(A,I5,1X),2(A,F5.2,1X))')&
+      !   routineN//" ncol", ncol,'k_in',k_in,'k_out',k_out,&
+      !   'alpha',my_alpha,'beta',my_beta
+
+      IF (ncol .GT. 0 .AND. k_out .GT. 0 .AND. k_in .GT. 0) THEN
+         CALL dbcsr_get_info(matrix, row_blk_size=row_blk_size, col_blk_size=col_blk_size, distribution=dist)
+         CALL dbcsr_create_dist_r_unrot(dist_right_in, dist, k_in, col_blk_size_right_in)
+
+         CALL dbcsr_create(in, "D", dist_right_in, dbcsr_type_no_symmetry, &
+                           col_blk_size, col_blk_size_right_in, nze=0)
+
+         CALL dbcsr_distribution_get(dist, row_dist=row_dist)
+         CALL dbcsr_distribution_get(dist_right_in, col_dist=col_dist)
+         CALL dbcsr_distribution_new(product_dist, template=dist, &
+                                     row_dist=row_dist, col_dist=col_dist)
+         ALLOCATE (col_blk_size_right_out(SIZE(col_blk_size_right_in)))
+         col_blk_size_right_out = col_blk_size_right_in
+         CALL match_col_sizes(col_blk_size_right_out, col_blk_size_right_in, k_out)
+
+         !if (k_in .ne. k_out) then
+         !   write(*,*)routineN//" in cs", col_blk_size_right_in
+         !   write(*,*)routineN//" out cs", col_blk_size_right_out
+         !endif
+
+         CALL dbcsr_create(out, "D", product_dist, dbcsr_type_no_symmetry, &
+                           row_blk_size, col_blk_size_right_out, nze=0)
+
+         CALL copy_fm_to_dbcsr(fm_in, in)
+         IF (ncol .NE. k_out .OR. my_beta .NE. 0.0_dp) &
+            CALL copy_fm_to_dbcsr(fm_out, out)
+
+         CALL timeset(routineN//'_core', timing_handle_mult)
+         CALL dbcsr_multiply("N", "N", my_alpha, matrix, in, my_beta, out, &
+                             last_column=ncol)
+         CALL timestop(timing_handle_mult)
+
+         CALL copy_dbcsr_to_fm(out, fm_out)
+
+         CALL dbcsr_release(in)
+         CALL dbcsr_release(out)
+         DEALLOCATE (col_blk_size_right_in, col_blk_size_right_out)
+         CALL dbcsr_distribution_release(dist_right_in)
+         CALL dbcsr_distribution_release(product_dist)
+
+      ENDIF
+
+      CALL timestop(timing_handle)
+
+   END SUBROUTINE cp_dbcsr_sm_fm_multiply
 
 ! **************************************************************************************************
 !> \brief ...
@@ -697,8 +797,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: alpha
       LOGICAL, INTENT(IN), OPTIONAL                      :: keep_sparsity
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_plus_fm_fm_t_native', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_plus_fm_fm_t_native'
 
       INTEGER                                            :: npcols, k, nao, timing_handle, data_type
       INTEGER, DIMENSION(:), POINTER                     :: col_blk_size_left, &
@@ -839,9 +938,6 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: fm_in
       TYPE(dbcsr_type), INTENT(IN)                    :: template
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_fm_to_dbcsr_row_template', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: k_in, data_type
       INTEGER, DIMENSION(:), POINTER                     :: col_blk_size_right_in, row_blk_size
       TYPE(dbcsr_distribution_type)                       :: tmpl_dist, dist_right_in
@@ -877,9 +973,6 @@ CONTAINS
       INTEGER                                            :: m, n
       CHARACTER, OPTIONAL                                :: sym
       INTEGER, OPTIONAL                                  :: data_type
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_m_by_n_from_template', &
-                                     routineP = moduleN//':'//routineN
 
       CHARACTER                                          :: mysym
       INTEGER                                            :: my_data_type, nprows, npcols
@@ -931,9 +1024,6 @@ CONTAINS
       INTEGER                                            :: n
       CHARACTER, OPTIONAL                                :: sym
       INTEGER, OPTIONAL                                  :: data_type
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_m_by_n_from_row_template', &
-                                     routineP = moduleN//':'//routineN
 
       CHARACTER                                          :: mysym
       INTEGER                                            :: my_data_type, npcols
@@ -1082,9 +1172,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ncolumns
       INTEGER, DIMENSION(:), INTENT(OUT), POINTER        :: right_col_blk_sizes
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'dbcsr_create_dist_r_unrot', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: multiplicity, nimages, ncols, nprows, npcols
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: tmp_images
       INTEGER, DIMENSION(:), POINTER                     :: right_col_dist, right_row_dist, old_col_dist, dummy
@@ -1153,9 +1240,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: source_bins
       INTEGER, INTENT(IN)                                :: nbins, multiplicity, nimages
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'rebin_distribution', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: bin, i, old_nbins, virtual_bin
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: bin_multiplier
 
@@ -1205,8 +1289,7 @@ CONTAINS
       INTEGER, DIMENSION(:, :), POINTER                  :: pgrid
       INTEGER, DIMENSION(:), INTENT(OUT), POINTER        :: row_blk_sizes, col_blk_sizes
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'dbcsr_create_dist_block_cyclic', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'dbcsr_create_dist_block_cyclic'
 
       INTEGER                                            :: nblkcols, nblkrows, npcols, nprows, &
                                                             pdim, sz
@@ -1281,9 +1364,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_set
       INTEGER, INTENT(IN)                                :: nmatrix
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_dbcsr_matrix_set_1d', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: imatrix
 
       IF (ASSOCIATED(matrix_set)) CALL dbcsr_deallocate_matrix_set(matrix_set)
@@ -1304,9 +1384,6 @@ CONTAINS
    SUBROUTINE allocate_dbcsr_matrix_set_2d(matrix_set, nmatrix, mmatrix)
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: matrix_set
       INTEGER, INTENT(IN)                                :: nmatrix, mmatrix
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_dbcsr_matrix_set_2d', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: imatrix, jmatrix
 
@@ -1331,9 +1408,6 @@ CONTAINS
    SUBROUTINE allocate_dbcsr_matrix_set_3d(matrix_set, nmatrix, mmatrix, pmatrix)
       TYPE(dbcsr_p_type), DIMENSION(:, :, :), POINTER    :: matrix_set
       INTEGER, INTENT(IN)                                :: nmatrix, mmatrix, pmatrix
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_dbcsr_matrix_set_3d', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: imatrix, jmatrix, kmatrix
 
@@ -1360,9 +1434,6 @@ CONTAINS
    SUBROUTINE allocate_dbcsr_matrix_set_4d(matrix_set, nmatrix, mmatrix, pmatrix, qmatrix)
       TYPE(dbcsr_p_type), DIMENSION(:, :, :, :), POINTER    :: matrix_set
       INTEGER, INTENT(IN)                                :: nmatrix, mmatrix, pmatrix, qmatrix
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_dbcsr_matrix_set_4d', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: imatrix, jmatrix, kmatrix, lmatrix
 
@@ -1392,9 +1463,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:, :, :, :, :), POINTER    :: matrix_set
       INTEGER, INTENT(IN)                                :: nmatrix, mmatrix, pmatrix, qmatrix, smatrix
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_dbcsr_matrix_set_5d', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: imatrix, jmatrix, kmatrix, lmatrix, hmatrix
 
       IF (ASSOCIATED(matrix_set)) CALL dbcsr_deallocate_matrix_set(matrix_set)
@@ -1422,9 +1490,6 @@ CONTAINS
 
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_dbcsr_matrix_set_1d', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: imatrix
 
       IF (ASSOCIATED(matrix_set)) THEN
@@ -1445,9 +1510,6 @@ CONTAINS
    SUBROUTINE deallocate_dbcsr_matrix_set_2d(matrix_set)
 
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: matrix_set
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_dbcsr_matrix_set_2d', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: imatrix, jmatrix
 
@@ -1470,9 +1532,6 @@ CONTAINS
    SUBROUTINE deallocate_dbcsr_matrix_set_3d(matrix_set)
 
       TYPE(dbcsr_p_type), DIMENSION(:, :, :), POINTER    :: matrix_set
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_dbcsr_matrix_set_3d', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: imatrix, jmatrix, kmatrix
 
@@ -1497,9 +1556,6 @@ CONTAINS
    SUBROUTINE deallocate_dbcsr_matrix_set_4d(matrix_set)
 
       TYPE(dbcsr_p_type), DIMENSION(:, :, :, :), POINTER    :: matrix_set
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_dbcsr_matrix_set_4d', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: imatrix, jmatrix, kmatrix, lmatrix
 
@@ -1526,9 +1582,6 @@ CONTAINS
    SUBROUTINE deallocate_dbcsr_matrix_set_5d(matrix_set)
 
       TYPE(dbcsr_p_type), DIMENSION(:, :, :, :, :), POINTER    :: matrix_set
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_dbcsr_matrix_set_5d', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: imatrix, jmatrix, kmatrix, hmatrix, lmatrix
 

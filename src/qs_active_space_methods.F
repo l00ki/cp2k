@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -158,8 +160,7 @@ CONTAINS
       TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'active_space_main', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'active_space_main'
 
       CHARACTER(len=10)                                  :: cshell, lnam(5)
       INTEGER :: eri_method, eri_operator, eri_print, handle, i, iatom, ishell, isp, ispin, iw, j, &
@@ -768,8 +769,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(active_space_type), POINTER                   :: active_space_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_operators', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_operators'
 
       INTEGER                                            :: handle, is, nmo, nspins
       TYPE(cp_fm_type), POINTER                          :: hmat, ksmat, mo_coeff, vxcmat
@@ -858,8 +858,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: op_matrix
       TYPE(cp_fm_type), POINTER                          :: op_sub
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'subspace_operator', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'subspace_operator'
 
       INTEGER                                            :: handle, ncol, nrow
       TYPE(cp_fm_type), POINTER                          :: vectors
@@ -902,9 +901,6 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: orbitals, op_sub
       INTEGER, INTENT(IN)                                :: n
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_subspace_matrix', &
-         routineP = moduleN//':'//routineN
-
       TYPE(cp_fm_struct_type), POINTER                   :: fm_struct
 
       CPASSERT(.NOT. ASSOCIATED(op_sub))
@@ -938,8 +934,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: iw
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_eri_gpw', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'calculate_eri_gpw'
 
       INTEGER :: handle, i_multigrid, icount2, intcount, irange(2), isp, isp1, isp2, ispin, iwa1, &
          iwa12, iwa2, iwb1, iwb2, iwbs, iwbt, iwfn, n_multigrid, nmm, nmo, nmo1, nmo2, nspins, nx
@@ -1229,9 +1224,6 @@ CONTAINS
       TYPE(greens_fn_type), POINTER                      :: green
       TYPE(eri_type)                                     :: eri_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_eri_green_create', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ig
       REAL(KIND=dp)                                      :: a, ea, g2, g3d, ga, gg, rg, rlength
       TYPE(pw_grid_type), POINTER                        :: grid
@@ -1395,9 +1387,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(mo_set_p_type), DIMENSION(:)                  :: mos
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_orbital_cubes', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_path_length)                 :: filebody, filename, title
       INTEGER                                            :: i, imo, isp, nmo, str(3), unit_nr
       INTEGER, DIMENSION(:), POINTER                     :: alist, blist, istride
@@ -1500,8 +1489,6 @@ CONTAINS
       TYPE(active_space_type), POINTER                   :: active_space_env
       TYPE(section_vals_type), POINTER                   :: as_input
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fcidump', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, i1, i2, i3, i4, isym, iw, nspins
       REAL(KIND=dp)                                      :: esub, mval
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: fmat
@@ -1574,9 +1561,6 @@ CONTAINS
    SUBROUTINE subspace_fock_matrix(active_space_env)
 
       TYPE(active_space_type), POINTER                   :: active_space_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'subspace_fock_matrix', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i1, i12, i12l, i2, i3, i34, i34l, i4, &
                                                             irange(2), irptr, is, nelec, nindex, &
@@ -1707,9 +1691,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: nshell
       CHARACTER(len=*), DIMENSION(:), INTENT(IN)         :: lnam
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_pro_basis', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(len=6), DIMENSION(:), POINTER            :: sym
       INTEGER                                            :: i, l, nj
       INTEGER, DIMENSION(4, 7)                           :: ne
@@ -1766,8 +1747,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(active_space_type), POINTER                   :: active_space_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'update_active_space', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'update_active_space'
 
       INTEGER                                            :: handle, ispin, nao, nmo, nspins
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: p_ref
@@ -1833,8 +1813,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cp_fm_sqrt(amat)
       TYPE(cp_fm_type), POINTER                          :: amat
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_sqrt', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, n
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: eigv

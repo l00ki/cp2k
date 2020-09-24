@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 !!****** cp2k/ai_overlap3 [1.0] *
 !!
@@ -121,7 +123,7 @@ CONTAINS
          INTENT(INOUT), OPTIONAL                         :: sdabc, sabdc
       REAL(dp), INTENT(OUT), OPTIONAL                    :: int_abc_ext
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'overlap3', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'overlap3'
 
       INTEGER :: ax, ay, az, bx, by, bz, coa, coax, coay, coaz, coc, cocx, cocy, cocz, cx, cy, cz, &
          handle, i, ipgf, j, jpgf, k, kpgf, l, la, la_max, la_min, la_start, lai, lb, lb_max, &
@@ -1089,8 +1091,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: s
       REAL(KIND=dp), DIMENSION(:, :, :, :), POINTER      :: sda, sdc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'derivatives_overlap3', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'derivatives_overlap3'
 
       INTEGER :: ax, ay, az, bx, by, bz, coa, coamx, coamy, coamz, coapx, coapy, coapz, cob, coc, &
          cocmx, cocmy, cocmz, cocpx, cocpy, cocpz, cx, cy, cz, devx, devy, devz, handle, la, lb, lc

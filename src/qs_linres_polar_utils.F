@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,7 +89,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'polar_env_init', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'polar_env_init'
 
       INTEGER                                            :: handle, idir, iounit, ispin, m, nao, &
                                                             nmo, nspins
@@ -199,7 +201,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'polar_polar', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'polar_polar'
 
       INTEGER                                            :: handle, i, iounit, ispin, nspins, z
       LOGICAL                                            :: do_periodic, do_raman, run_stopped
@@ -285,8 +287,6 @@ CONTAINS
    SUBROUTINE polar_print(qs_env)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'polar_print', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: description
       INTEGER                                            :: iounit, unit_p
@@ -377,7 +377,7 @@ CONTAINS
       TYPE(qs_p_env_type), POINTER                       :: p_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'polar_response', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'polar_response'
 
       INTEGER                                            :: handle, idir, iounit, ispin, nao, nmo, &
                                                             nspins
@@ -528,9 +528,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: time
       CHARACTER(LEN=default_string_length), INTENT(IN), &
          OPTIONAL                                        :: pos, act
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_polarisability_tensor', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: my_act, my_pos
       INTEGER                                            :: iounit

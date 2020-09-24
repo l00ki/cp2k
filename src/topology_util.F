@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -90,8 +92,7 @@ CONTAINS
       TYPE(qmmm_env_mm_type), OPTIONAL, POINTER          :: qmmm_env_mm
       TYPE(section_vals_type), POINTER                   :: subsys_section, force_env_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'topology_reorder_atoms', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'topology_reorder_atoms'
 
       CHARACTER(LEN=default_string_length)               :: mol_id
       CHARACTER(LEN=default_string_length), POINTER      :: molname(:), telement(:), &
@@ -465,9 +466,6 @@ CONTAINS
       INTEGER, DIMENSION(:, :), POINTER                  :: map_mol
       INTEGER, DIMENSION(:), POINTER                     :: atm_map1, atm_map2, atm_map3
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'setup_graph_set', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ldim
       TYPE(graph_type), DIMENSION(:), POINTER            :: tmp_graph_set
 
@@ -497,9 +495,6 @@ CONTAINS
    SUBROUTINE allocate_graph_set(graph_set_in, graph_set_out, ldim_in, ldim_out)
       TYPE(graph_type), DIMENSION(:), POINTER            :: graph_set_in, graph_set_out
       INTEGER, INTENT(IN), OPTIONAL                      :: ldim_in, ldim_out
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'allocate_graph_set', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: b_dim, i, j, mydim_in, mydim_out, v_dim
 
@@ -557,8 +552,6 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER                     :: atm_map1, atm_map2
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: atm_map3
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'setup_graph', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, idim, ifirst, ilast, j, nbonds, &
                                                             nelement
 
@@ -604,9 +597,6 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER                     :: Ilist1
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: Ilist2, Ilist3, Ilist4
       INTEGER, INTENT(IN)                                :: nsize, ndim
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'reorder_list_array', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iend, istart, ldim
       INTEGER, DIMENSION(:), POINTER                     :: tmp, wrk
@@ -671,9 +661,6 @@ CONTAINS
                                                ldim, istart, iend)
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: Ilist2, Ilist3, Ilist4
       INTEGER, INTENT(IN)                                :: nsize, ldim, istart, iend
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'reorder_list_array_low', &
-         routineP = moduleN//':'//routineN
 
       INTEGER, DIMENSION(:), POINTER                     :: tmp_2, tmp_3, tmp_4
 
@@ -786,9 +773,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: list1, list2
       INTEGER, INTENT(IN)                                :: N
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'reorder_structure1d', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: I, index1, index2, Nsize
       INTEGER, DIMENSION(:), POINTER                     :: wrk_tmp
 
@@ -828,9 +812,6 @@ CONTAINS
          INTENT(INOUT)                                   :: work
       INTEGER, DIMENSION(:), INTENT(IN)                  :: list1, list2, list3
       INTEGER, INTENT(IN)                                :: N
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'reorder_structure2d', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: I, index1, index2, index3, Nsize
       INTEGER, DIMENSION(:), POINTER                     :: wrk_tmp
@@ -939,8 +920,7 @@ CONTAINS
       TYPE(topology_parameters_type), INTENT(INOUT)      :: topology
       TYPE(section_vals_type), POINTER                   :: subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'topology_set_atm_mass', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'topology_set_atm_mass'
 
       CHARACTER(LEN=2)                                   :: upper_sym_1
       CHARACTER(LEN=default_string_length)               :: atmname_upper
@@ -1018,8 +998,7 @@ CONTAINS
       TYPE(topology_parameters_type), INTENT(INOUT)      :: topology
       TYPE(section_vals_type), POINTER                   :: subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'topology_molecules_check', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'topology_molecules_check'
 
       INTEGER                                            :: counter, first, first_loc, handle, i, &
                                                             iatom, iw, k, loc_counter, mol_num, &
@@ -1157,9 +1136,6 @@ CONTAINS
       CHARACTER(len=default_string_length), INTENT(OUT)  :: element_out
       TYPE(section_vals_type), POINTER                   :: subsys_section
       LOGICAL                                            :: use_mm_map_first
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'check_subsys_element', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_string_length)               :: atom_name, element_symbol, keyword
       INTEGER                                            :: i, i_rep, n_rep

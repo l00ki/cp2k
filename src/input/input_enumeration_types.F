@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -68,8 +70,6 @@ CONTAINS
          OPTIONAL                                        :: desc
       LOGICAL, INTENT(in), OPTIONAL                      :: strict
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'enum_create', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, j, n
 
       CPASSERT(.NOT. ASSOCIATED(enum))
@@ -113,8 +113,6 @@ CONTAINS
    SUBROUTINE enum_retain(enum)
       TYPE(enumeration_type), POINTER                    :: enum
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'enum_retain', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(enum))
       CPASSERT(enum%ref_count > 0)
       enum%ref_count = enum%ref_count + 1
@@ -127,8 +125,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE enum_release(enum)
       TYPE(enumeration_type), POINTER                    :: enum
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'enum_release', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -159,8 +155,6 @@ CONTAINS
       TYPE(enumeration_type), POINTER                    :: enum
       INTEGER, INTENT(in)                                :: i
       CHARACTER(len=default_string_length)               :: res
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'enum_i2c', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: j
       LOGICAL                                            :: found
@@ -201,8 +195,6 @@ CONTAINS
       TYPE(enumeration_type), POINTER                    :: enum
       CHARACTER(len=*), INTENT(in)                       :: c
       INTEGER                                            :: res
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'enum_c2i', routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_string_length)               :: upc
       INTEGER                                            :: iostat, j

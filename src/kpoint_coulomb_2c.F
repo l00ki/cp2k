@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -74,8 +76,7 @@ CONTAINS
       INTEGER                                            :: size_lattice_sum, operator_type
       REAL(dp)                                           :: cutoff
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_2c_coulomb_matrix_kp', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_2c_coulomb_matrix_kp'
 
       INTEGER                                            :: handle, total_periodicity
       TYPE(dbcsr_type), POINTER                          :: matrix_v_L_tmp
@@ -126,7 +127,7 @@ CONTAINS
       INTEGER                                            :: operator_type
       REAL(dp)                                           :: cutoff
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'lattice_sum', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'lattice_sum'
 
       INTEGER :: factor, handle, i_block, i_x, i_x_inner, i_x_outer, ik, j_y, j_y_inner, &
          j_y_outer, k_z, k_z_inner, k_z_outer, nkp, x_max, x_min, y_max, y_min, z_max, z_min
@@ -272,8 +273,7 @@ CONTAINS
       TYPE(two_d_util_type), ALLOCATABLE, &
          DIMENSION(:, :, :)                              :: blocks_of_v_kp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'set_blocks_to_matrix_v_kp', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'set_blocks_to_matrix_v_kp'
 
       INTEGER                                            :: col, handle, i_block, i_real_im, ik, row
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: data_block
@@ -336,8 +336,7 @@ CONTAINS
       INTEGER                                            :: operator_type
       REAL(dp)                                           :: cutoff
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_v_transl', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'compute_v_transl'
 
       INTEGER                                            :: col, handle, i_block, kind_a, kind_b, &
                                                             natom, row
@@ -410,8 +409,7 @@ CONTAINS
       TYPE(two_d_util_type), ALLOCATABLE, &
          DIMENSION(:, :, :)                              :: blocks_of_v_kp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_blocks_of_v_kp', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_blocks_of_v_kp'
 
       INTEGER                                            :: handle, i_block, i_real_img, ik
 
@@ -438,8 +436,7 @@ CONTAINS
    SUBROUTINE deallocate_blocks_of_v_L(blocks_of_v_L)
       TYPE(two_d_util_type), ALLOCATABLE, DIMENSION(:)   :: blocks_of_v_L
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_blocks_of_v_L', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_blocks_of_v_L'
 
       INTEGER                                            :: handle, i_block
 
@@ -464,8 +461,7 @@ CONTAINS
       TYPE(two_d_util_type), ALLOCATABLE, DIMENSION(:)   :: blocks_of_v_L
       TYPE(dbcsr_type), POINTER                          :: matrix_v_L_tmp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_blocks_of_v_L', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_blocks_of_v_L'
 
       INTEGER                                            :: col, handle, i_block, nblocks, row
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: data_block
@@ -520,8 +516,7 @@ CONTAINS
          DIMENSION(:, :, :)                              :: blocks_of_v_kp
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: matrix_v_kp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_blocks_of_v_kp', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_blocks_of_v_kp'
 
       INTEGER                                            :: col, handle, i_block, i_real_img, ik, &
                                                             nblocks, row
@@ -586,8 +581,7 @@ CONTAINS
       TYPE(kpoint_type), POINTER                         :: kpoints
       INTEGER                                            :: total_periodicity
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_periodicity', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'check_periodicity'
 
       INTEGER                                            :: handle
       INTEGER, DIMENSION(3)                              :: nkp_grid, periodic
@@ -623,7 +617,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: matrix_v_L_tmp
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: matrix_v_kp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_tmp', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'allocate_tmp'
 
       INTEGER                                            :: handle
 
@@ -649,7 +643,7 @@ CONTAINS
 
       TYPE(dbcsr_type), POINTER                          :: matrix_v_L_tmp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_tmp', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'deallocate_tmp'
 
       INTEGER                                            :: handle
 

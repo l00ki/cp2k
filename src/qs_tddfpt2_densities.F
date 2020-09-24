@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE qs_tddfpt2_densities
@@ -59,8 +61,7 @@ CONTAINS
       TYPE(tddfpt_subgroup_env_type), INTENT(in)         :: sub_env
       TYPE(cp_fm_type), POINTER                          :: wfm_rho_orb
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_construct_ground_state_orb_density', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_construct_ground_state_orb_density'
 
       INTEGER                                            :: handle, ispin, nao, nspins
       INTEGER, DIMENSION(maxspins)                       :: nmo_occ
@@ -120,8 +121,7 @@ CONTAINS
       TYPE(tddfpt_subgroup_env_type), INTENT(in)         :: sub_env
       TYPE(cp_fm_type), POINTER                          :: wfm_rho_orb, wfm_rho_aux_fit, wfm_aux_orb
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_construct_aux_fit_density', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_construct_aux_fit_density'
 
       INTEGER                                            :: handle, ispin, nao, nao_aux, nspins
       REAL(kind=dp), DIMENSION(:), POINTER               :: tot_rho_aux_fit_r

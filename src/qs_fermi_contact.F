@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -75,8 +77,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_fc
       REAL(dp), DIMENSION(3), INTENT(IN)                 :: rc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_fermi_contact_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'build_fermi_contact_matrix'
 
       INTEGER :: after, handle, iatom, icol, ikind, inode, irow, iset, iw, jatom, jkind, jset, &
          last_jatom, ldai, ldfc, maxco, maxlgto, maxsgf, natom, ncoa, ncob, nkind, nseta, nsetb, &

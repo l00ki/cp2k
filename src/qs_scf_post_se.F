@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -91,8 +93,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'scf_post_calculation_se', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'scf_post_calculation_se'
 
       INTEGER                                            :: handle, output_unit
       LOGICAL                                            :: explicit, my_localized_wfn
@@ -209,9 +210,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: input
       TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_post_moments', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: description, dipole_type
       COMPLEX(KIND=dp)                                   :: dzeta, zeta
@@ -397,8 +395,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :)                  :: mom
       TYPE(gto_basis_set_type), POINTER                  :: basis_set
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'atomic_moments', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, iset, jset, ncoa, ncob, nm, nset, &
                                                             sgfa, sgfb
       INTEGER, DIMENSION(:), POINTER                     :: la_max, la_min, npgf, nsgf
@@ -465,15 +461,12 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_post_charges', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=2)                                   :: ana
       CHARACTER(LEN=default_string_length)               :: aname
       INTEGER                                            :: i, iat, iatom, ikind, j, nat, natom, &
                                                             natorb, nkind, nspin, unit_nr
       LOGICAL                                            :: found
-      REAL(KIND=dp)                                      :: zeff
+      REAL(KIND=dp)                                      :: npe, zeff
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: mcharge
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: charges
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: pblock
@@ -499,6 +492,7 @@ CONTAINS
          unit_nr = cp_print_key_unit_nr(logger, input, "DFT%PRINT%MULLIKEN", extension=".mulliken", log_filename=.FALSE.)
          CALL qs_rho_get(rho, rho_ao=matrix_p)
          nspin = SIZE(matrix_p)
+         npe = REAL(para_env%num_pe, KIND=dp)
          ALLOCATE (charges(natom, nspin), mcharge(natom))
          charges = 0.0_dp
          mcharge = 0.0_dp
@@ -519,7 +513,7 @@ CONTAINS
                      END DO
                   END IF
                END DO
-               mcharge(iat) = zeff - SUM(charges(iat, 1:nspin))
+               mcharge(iat) = zeff/npe - SUM(charges(iat, 1:nspin))
             END DO
          END DO
          !
@@ -599,8 +593,7 @@ CONTAINS
    SUBROUTINE write_available_results(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_available_results', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'write_available_results'
 
       INTEGER                                            :: after, handle, ispin, iw, output_unit
       LOGICAL                                            :: omit_headers

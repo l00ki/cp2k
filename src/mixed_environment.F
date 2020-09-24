@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -64,7 +66,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: force_env_section
       LOGICAL, INTENT(IN)                                :: use_motion_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_init', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'mixed_init'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: use_ref_cell
@@ -125,8 +127,7 @@ CONTAINS
       TYPE(cell_type), POINTER                           :: cell, cell_ref
       TYPE(section_vals_type), POINTER                   :: force_env_section, subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_init_subsys', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'mixed_init_subsys'
 
       INTEGER                                            :: handle
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set

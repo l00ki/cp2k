@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -45,9 +47,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_optimize_basis_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_optimize_basis_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -160,9 +159,6 @@ CONTAINS
    SUBROUTINE create_fit_kinds_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_fit_kinds_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
 
@@ -248,9 +244,6 @@ CONTAINS
    SUBROUTINE create_derived_sets_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_derived_sets_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       NULLIFY (keyword)
@@ -302,9 +295,6 @@ CONTAINS
    SUBROUTINE create_constrain_exp_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_constrain_exp_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       NULLIFY (keyword)
@@ -316,7 +306,7 @@ CONTAINS
 
       CALL keyword_create(keyword, __LOCATION__, name="USE_EXP", &
                           description="Defines the exponent to be constraint. The two integers indicate "// &
-                          "the set number and i'th exponent. The value -1 can be used to mark all sets/expoenents in a set.", &
+                          "the set number and i'th exponent. The value -1 can be used to mark all sets/exponents in a set.", &
                           repeats=.FALSE., usage="USE_EXP SET IEXP", type_of_var=integer_t, n_var=2)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
@@ -343,9 +333,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_training_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_training_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 
@@ -378,9 +365,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_powell_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_powell_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 

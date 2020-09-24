@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE qs_tddfpt2_subgroups
@@ -170,8 +172,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(in)       :: mos_occ
       INTEGER, INTENT(in)                                :: kernel
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_sub_env_init', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_sub_env_init'
 
       INTEGER                                            :: handle, ispin, nao, nao_aux, nmo_occ, &
                                                             nspins
@@ -339,8 +340,7 @@ CONTAINS
    SUBROUTINE tddfpt_sub_env_release(sub_env)
       TYPE(tddfpt_subgroup_env_type), INTENT(inout)      :: sub_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_sub_env_release', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_sub_env_release'
 
       INTEGER                                            :: handle, i
 
@@ -413,8 +413,7 @@ CONTAINS
       TYPE(tddfpt2_control_type), POINTER                :: tddfpt_control
       TYPE(mgrid_saved_parameters), INTENT(out)          :: mgrid_saved
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'init_tddfpt_mgrid', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'init_tddfpt_mgrid'
 
       INTEGER                                            :: handle, igrid, ngrids
 
@@ -477,8 +476,7 @@ CONTAINS
       TYPE(qs_control_type), POINTER                     :: qs_control
       TYPE(mgrid_saved_parameters), INTENT(in)           :: mgrid_saved
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'restore_qs_mgrid', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'restore_qs_mgrid'
 
       INTEGER                                            :: handle
 
@@ -515,8 +513,7 @@ CONTAINS
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_build_distribution_2d', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_build_distribution_2d'
 
       INTEGER                                            :: handle
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
@@ -576,8 +573,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(in)                                :: skip_load_balance, reorder_grid_ranks
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_build_tasklist', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_build_tasklist'
 
       INTEGER                                            :: handle, ikind, nkinds
       LOGICAL, ALLOCATABLE, DIMENSION(:)                 :: orb_present
@@ -658,8 +654,7 @@ CONTAINS
       TYPE(neighbor_list_set_p_type), DIMENSION(:), &
          POINTER                                         :: sab
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_dbcsr_create_by_dist', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_dbcsr_create_by_dist'
 
       CHARACTER                                          :: matrix_type
       CHARACTER(len=default_string_length)               :: matrix_name
@@ -710,8 +705,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: fm_src, fm_dest_sub
       TYPE(tddfpt_subgroup_env_type), INTENT(in)         :: sub_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_fm_replicate_across_subgroups', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_fm_replicate_across_subgroups'
 
       INTEGER :: handle, igroup, igroup_local, ncols_global_dest, ncols_global_src, ngroups, &
          nrows_global_dest, nrows_global_src

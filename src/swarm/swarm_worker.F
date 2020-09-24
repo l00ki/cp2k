@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -66,9 +68,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN)                       :: input_path
       INTEGER, INTENT(in)                                :: worker_id
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'swarm_worker_init', &
-         routineP = moduleN//':'//routineN
-
       TYPE(cp_logger_type), POINTER                      :: logger
 
       worker%id = worker_id
@@ -105,9 +104,6 @@ CONTAINS
       TYPE(swarm_message_type), INTENT(OUT)              :: report
       LOGICAL, INTENT(INOUT)                             :: should_stop
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'swarm_worker_execute', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_string_length)               :: command
 
       CALL swarm_message_get(cmd, "command", command)
@@ -139,9 +135,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE swarm_worker_finalize(worker)
       TYPE(swarm_worker_type), INTENT(INOUT)             :: worker
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'swarm_worker_finalize', &
-         routineP = moduleN//':'//routineN
 
       SELECT CASE (worker%behavior)
       CASE (swarm_do_glbopt)

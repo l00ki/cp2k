@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -71,8 +73,7 @@ CONTAINS
       TYPE(dbcsr_type)                                   :: matrix_s
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_init_matrix_S', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_init_matrix_S'
 
       INTEGER                                            :: handle, unit_nr
       REAL(KIND=dp)                                      :: frob_matrix, frob_matrix_base
@@ -222,8 +223,7 @@ CONTAINS
       REAL(KIND=dp)                                      :: eps_lanczos
       INTEGER                                            :: max_iter_lanczos
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_matrix_preconditioner', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_matrix_preconditioner'
 
       INTEGER                                            :: datatype, handle, iblock_col, iblock_row
       LOGICAL                                            :: block_needed
@@ -328,8 +328,7 @@ CONTAINS
       CHARACTER(LEN=*)                                   :: direction
       TYPE(dbcsr_type), INTENT(INOUT)                    :: matrix_bs_sqrt, matrix_bs_sqrt_inv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'apply_matrix_preconditioner', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'apply_matrix_preconditioner'
 
       INTEGER                                            :: handle
       TYPE(dbcsr_type)                                   :: matrix_tmp
@@ -394,8 +393,7 @@ CONTAINS
       INTEGER, OPTIONAL                                  :: submatrix_sign_method
       TYPE(dbcsr_type), INTENT(IN), OPTIONAL             :: matrix_s_sqrt_inv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_sign', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_sign'
       REAL(KIND=dp), PARAMETER                           :: initial_increment = 0.01_dp
 
       INTEGER                                            :: handle, iter, unit_nr, &
@@ -504,8 +502,7 @@ CONTAINS
       INTEGER                                            :: submatrix_sign_method
       TYPE(dbcsr_type), INTENT(IN), OPTIONAL             :: matrix_s_sqrt_inv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_sign_fixed_mu', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_sign_fixed_mu'
 
       INTEGER                                            :: handle, unit_nr
       REAL(KIND=dp)                                      :: frob_matrix
@@ -587,13 +584,12 @@ CONTAINS
                           0.0_dp, matrix_tmp, filter_eps=threshold)
       CALL dbcsr_add(matrix_tmp, matrix_p_ud, 1.0_dp, -1.0_dp)
       frob_matrix = dbcsr_frobenius_norm(matrix_tmp)
-      CALL dbcsr_release(matrix_tmp)
       IF (unit_nr > 0) WRITE (unit_nr, '(T2,A,F20.12)') "Deviation from idempotency: ", frob_matrix
 
       IF (sign_symmetric) THEN
          CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_s_sqrt_inv, matrix_p_ud, &
-                             0.0_dp, matrix_p, filter_eps=threshold)
-         CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_p, matrix_s_sqrt_inv, &
+                             0.0_dp, matrix_tmp, filter_eps=threshold)
+         CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_tmp, matrix_s_sqrt_inv, &
                              0.0_dp, matrix_p, filter_eps=threshold)
       ELSE
 
@@ -602,6 +598,7 @@ CONTAINS
                              0.0_dp, matrix_p, filter_eps=threshold)
       ENDIF
       CALL dbcsr_release(matrix_p_ud)
+      CALL dbcsr_release(matrix_tmp)
 
       CALL timestop(handle)
 
@@ -637,8 +634,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nelectron
       TYPE(dbcsr_type), INTENT(IN)                       :: matrix_s_sqrt_inv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_sign_internal_mu', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_sign_internal_mu'
 
       INTEGER                                            :: handle, unit_nr
       REAL(KIND=dp)                                      :: frob_matrix
@@ -698,14 +694,14 @@ CONTAINS
                           0.0_dp, matrix_tmp, filter_eps=threshold)
       CALL dbcsr_add(matrix_tmp, matrix_p_ud, 1.0_dp, -1.0_dp)
       frob_matrix = dbcsr_frobenius_norm(matrix_tmp)
-      CALL dbcsr_release(matrix_tmp)
       IF (unit_nr > 0) WRITE (unit_nr, '(T2,A,F20.12)') "Deviation from idempotency: ", frob_matrix
 
       CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_s_sqrt_inv, matrix_p_ud, &
-                          0.0_dp, matrix_p, filter_eps=threshold)
-      CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_p, matrix_s_sqrt_inv, &
+                          0.0_dp, matrix_tmp, filter_eps=threshold)
+      CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_tmp, matrix_s_sqrt_inv, &
                           0.0_dp, matrix_p, filter_eps=threshold)
       CALL dbcsr_release(matrix_p_ud)
+      CALL dbcsr_release(matrix_tmp)
 
       CALL timestop(handle)
 
@@ -746,8 +742,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: eps_lanczos
       LOGICAL, INTENT(OUT), OPTIONAL                     :: converged
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_trs4', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_trs4'
       INTEGER, PARAMETER                                 :: max_iter = 100
       REAL(KIND=dp), PARAMETER                           :: gamma_max = 6.0_dp, gamma_min = 0.0_dp
 
@@ -1040,8 +1035,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: eps_lanczos
       INTEGER, INTENT(IN)                                :: max_iter_lanczos
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_tc2', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_tc2'
       INTEGER, PARAMETER                                 :: max_iter = 100
 
       INTEGER                                            :: handle, i, j, k, unit_nr
@@ -1068,10 +1062,11 @@ CONTAINS
 
       ! init X = (eps_n*I - H)/(eps_n - eps_0)  ... H* = S^-1/2*H*S^-1/2
       CALL dbcsr_create(matrix_x, template=matrix_ks, matrix_type=dbcsr_type_no_symmetry)
+      CALL dbcsr_create(matrix_xsq, template=matrix_ks, matrix_type=dbcsr_type_no_symmetry)
 
       CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_s_sqrt_inv, matrix_ks, &
-                          0.0_dp, matrix_x, filter_eps=threshold)
-      CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_x, matrix_s_sqrt_inv, &
+                          0.0_dp, matrix_xsq, filter_eps=threshold)
+      CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_xsq, matrix_s_sqrt_inv, &
                           0.0_dp, matrix_x, filter_eps=threshold)
 
       IF (unit_nr > 0) THEN
@@ -1094,7 +1089,6 @@ CONTAINS
       CALL dbcsr_add_on_diag(matrix_x, eps_max)
       CALL dbcsr_scale(matrix_x, 1/(eps_max - eps_min))
 
-      CALL dbcsr_create(matrix_xsq, template=matrix_ks, matrix_type=dbcsr_type_no_symmetry)
       CALL dbcsr_copy(matrix_xsq, matrix_x)
 
       CALL dbcsr_create(matrix_tmp, template=matrix_ks, matrix_type=dbcsr_type_no_symmetry)
@@ -1204,14 +1198,14 @@ CONTAINS
       occ_matrix = dbcsr_get_occupation(matrix_x)
       IF (unit_nr > 0) WRITE (unit_nr, '(T6,A,I3,1X,1F10.8,1X,1F10.8)') 'Final TC2 iteration  ', i, occ_matrix, ABS(nu(i))
 
-      CALL dbcsr_release(matrix_xsq)
-      CALL dbcsr_release(matrix_tmp)
-
       ! output to matrix_p, P = inv(S)^0.5 X inv(S)^0.5
       CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_x, matrix_s_sqrt_inv, &
+                          0.0_dp, matrix_tmp, filter_eps=threshold)
+      CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_s_sqrt_inv, matrix_tmp, &
                           0.0_dp, matrix_p, filter_eps=threshold)
-      CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_s_sqrt_inv, matrix_p, &
-                          0.0_dp, matrix_p, filter_eps=threshold)
+
+      CALL dbcsr_release(matrix_xsq)
+      CALL dbcsr_release(matrix_tmp)
 
       ! ALGO 3 from. SIAM DOI. 10.1137/130911585
       X(1) = 1.0_dp
@@ -1301,9 +1295,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: eps_lanczos
       REAL(KIND=dp)                                      :: homo, lumo
       INTEGER                                            :: unit_nr
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_homo_lumo', &
-         routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: converged
       REAL(KIND=dp)                                      :: max_eig, min_eig, shift1, shift2

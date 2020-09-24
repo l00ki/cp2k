@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 !******************************************************************************
@@ -50,8 +52,7 @@ CONTAINS
       REAL(dp), DIMENSION(*)                             :: x
       TYPE(opt_state_type)                               :: optstate
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'powell_optimize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'powell_optimize'
 
       INTEGER                                            :: handle, npt
 

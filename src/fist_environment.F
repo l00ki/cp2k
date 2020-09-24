@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -103,7 +105,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: use_motion_section
       TYPE(cp_subsys_type), OPTIONAL, POINTER            :: prev_subsys
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_init', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'fist_init'
 
       INTEGER                                            :: handle, iw
       LOGICAL                                            :: qmmm, shell_adiabatic, shell_present
@@ -236,8 +238,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: force_env_section, subsys_section
       TYPE(cp_subsys_type), OPTIONAL, POINTER            :: prev_subsys
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_init_subsys', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'fist_init_subsys'
 
       INTEGER                                            :: handle, max_multipole
       LOGICAL                                            :: do_multipoles

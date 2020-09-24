@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -97,8 +99,7 @@ CONTAINS
       TYPE(dbcsr_type), INTENT(IN)                       :: sample_err, sample_var
       INTEGER, INTENT(IN)                                :: error_type, max_length
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_init_dbcsr', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_init_dbcsr'
 
       INTEGER                                            :: handle, idomain, im, ndomains
 
@@ -162,8 +163,7 @@ CONTAINS
          INTENT(IN)                                      :: sample_err
       INTEGER, INTENT(IN)                                :: error_type, max_length
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_init_domain', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_init_domain'
 
       INTEGER                                            :: handle, idomain, ndomains
 
@@ -223,8 +223,7 @@ CONTAINS
       TYPE(domain_submatrix_type), DIMENSION(:), &
          INTENT(IN), OPTIONAL                            :: d_var, d_err
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_push', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_push'
 
       INTEGER                                            :: handle, idomain, in_point, irow, &
                                                             ndomains, old_buffer_length
@@ -343,8 +342,7 @@ CONTAINS
       TYPE(domain_submatrix_type), DIMENSION(:), &
          INTENT(INOUT), OPTIONAL                         :: d_extr_var
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_extrapolate', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_extrapolate'
 
       INTEGER                                            :: handle, idomain, im, INFO, LWORK, &
                                                             ndomains, unit_nr
@@ -480,8 +478,7 @@ CONTAINS
          OPTIONAL                                        :: d_A, d_B
       REAL(KIND=dp)                                      :: almo_scf_diis_error_overlap
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_error_overlap', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_error_overlap'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: trace
@@ -532,8 +529,7 @@ CONTAINS
    SUBROUTINE almo_scf_diis_release(diis_env)
       TYPE(almo_scf_diis_type), INTENT(INOUT)            :: diis_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_release', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_diis_release'
 
       INTEGER                                            :: handle, im
 

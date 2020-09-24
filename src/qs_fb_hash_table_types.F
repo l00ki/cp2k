@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -109,9 +111,6 @@ CONTAINS
       INTEGER(KIND=int_8), INTENT(IN)                    :: key
       INTEGER, INTENT(IN)                                :: val
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_add', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: islot
       LOGICAL                                            :: check_ok
 
@@ -147,9 +146,6 @@ CONTAINS
       TYPE(fb_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(IN), OPTIONAL                      :: nmax
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_create', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: my_nmax
       LOGICAL                                            :: check_ok
 
@@ -183,9 +179,6 @@ CONTAINS
       INTEGER(KIND=int_8), INTENT(IN)                    :: key
       INTEGER, INTENT(OUT)                               :: val
       LOGICAL, INTENT(OUT)                               :: found
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_get', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: islot
       LOGICAL                                            :: check_ok
@@ -227,9 +220,6 @@ CONTAINS
    SUBROUTINE fb_hash_table_init(hash_table, nmax)
       TYPE(fb_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(IN), OPTIONAL                      :: nmax
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_init', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ii, my_nmax, power
       LOGICAL                                            :: check_ok
@@ -285,9 +275,6 @@ CONTAINS
       TYPE(fb_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(IN), OPTIONAL                      :: nmax
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_rehash', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ii, my_nmax
       TYPE(fb_hash_table_element), ALLOCATABLE, &
          DIMENSION(:)                                    :: tmp_table
@@ -324,9 +311,6 @@ CONTAINS
    SUBROUTINE fb_hash_table_release(hash_table)
       TYPE(fb_hash_table_obj), INTENT(INOUT)             :: hash_table
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_release', &
-         routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: check_ok
 
       IF (ASSOCIATED(hash_table%obj)) THEN
@@ -355,9 +339,6 @@ CONTAINS
    SUBROUTINE fb_hash_table_remove(hash_table, key)
       TYPE(fb_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER(KIND=int_8), INTENT(IN)                    :: key
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_remove', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: islot
       LOGICAL                                            :: check_ok
@@ -391,9 +372,6 @@ CONTAINS
    SUBROUTINE fb_hash_table_retain(hash_table)
       TYPE(fb_hash_table_obj), INTENT(INOUT)             :: hash_table
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_retain', &
-         routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: check_ok
 
       check_ok = ASSOCIATED(hash_table%obj)
@@ -414,9 +392,6 @@ CONTAINS
    SUBROUTINE fb_hash_table_status(hash_table, nelements, nmax, prime)
       TYPE(fb_hash_table_obj), INTENT(INOUT)             :: hash_table
       INTEGER, INTENT(OUT), OPTIONAL                     :: nelements, nmax, prime
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fb_hash_table_status', &
-         routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: check_ok
 

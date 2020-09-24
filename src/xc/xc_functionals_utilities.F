@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -69,9 +71,6 @@ CONTAINS
       INTEGER, INTENT(OUT)                               :: m(0:, :)
       LOGICAL, INTENT(OUT)                               :: calc(0:)
       INTEGER, INTENT(IN)                                :: tag
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'setup_calculation', &
-         routineP = moduleN//':'//routineN
 
       IF (ABS(order) > 3) &
          CPABORT("Order of derivative too high")
@@ -178,8 +177,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: rho
       REAL(KIND=dp), DIMENSION(:), INTENT(OUT)           :: rs
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calc_rs_array', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: k
 
       IF (SIZE(rs) < SIZE(rho)) THEN
@@ -265,9 +262,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(*), INTENT(IN)            :: rho, grho
       REAL(KIND=dp), DIMENSION(:), INTENT(OUT)           :: s
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calc_wave_vector', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ip, n
       REAL(KIND=dp)                                      :: fac
 
@@ -317,8 +311,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(*), INTENT(IN)            :: rhoa, rhob
       REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: fx
       INTEGER, INTENT(IN)                                :: m
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'calc_fx_array', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ip
       REAL(KIND=dp)                                      :: rhoab, x

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -68,8 +70,7 @@ CONTAINS
       TYPE(tmp_variables_type), OPTIONAL, POINTER        :: tmp
       LOGICAL, INTENT(IN), OPTIONAL                      :: check
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'optimize_shell_core', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'optimize_shell_core'
 
       INTEGER                                            :: handle, i, iat, nshell
       LOGICAL                                            :: do_update, explicit, my_check, optimize
@@ -189,9 +190,6 @@ CONTAINS
                                                             core_particle_set
       TYPE(cp_para_env_type), POINTER                    :: para_env
       LOGICAL, INTENT(INOUT)                             :: optimize
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_shell_core_distance', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ikind, iparticle, iparticle_local, &
                                                             itest, nkind, nparticle_local, &

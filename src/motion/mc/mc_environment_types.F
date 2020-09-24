@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -51,8 +53,6 @@ CONTAINS
    SUBROUTINE mc_env_create(mc_env)
 
       TYPE(mc_environment_type), POINTER                 :: mc_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mc_env_create', routineP = moduleN//':'//routineN
 
       ALLOCATE (mc_env)
 
@@ -121,8 +121,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE mc_env_release(mc_env)
       TYPE(mc_environment_type), POINTER                 :: mc_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'mc_env_release', routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(mc_env)) THEN
          CPASSERT(mc_env%ref_count > 0)

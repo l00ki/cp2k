@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -83,8 +85,7 @@ CONTAINS
       TYPE(dielectric_type), POINTER                     :: dielectric
       TYPE(pw_pool_type), INTENT(IN), OPTIONAL, POINTER  :: pw_pool
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'dielectric_release', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'dielectric_release'
 
       INTEGER                                            :: handle, i
       LOGICAL                                            :: can_give_back
@@ -127,9 +128,6 @@ CONTAINS
    SUBROUTINE dielectric_parameters_dealloc(dielec_params)
 
       TYPE(dielectric_parameters), INTENT(INOUT)         :: dielec_params
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_parameters_dealloc', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(dielec_params%aa_cuboidal_xxtnt)) DEALLOCATE (dielec_params%aa_cuboidal_xxtnt)
       IF (ASSOCIATED(dielec_params%aa_cuboidal_yxtnt)) DEALLOCATE (dielec_params%aa_cuboidal_yxtnt)

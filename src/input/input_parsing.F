@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -67,8 +69,7 @@ CONTAINS
       TYPE(cp_unit_set_type), POINTER                    :: default_units
       LOGICAL, INTENT(in), OPTIONAL                      :: root_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'section_vals_parse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'section_vals_parse'
 
       CHARACTER(len=max_line_length)                     :: token
       INTEGER                                            :: desc_level, handle, ik, imatch, irs, is, &
@@ -330,8 +331,7 @@ CONTAINS
       TYPE(cp_unit_set_type), POINTER                    :: default_units
       TYPE(val_type), OPTIONAL, POINTER                  :: default_value
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'val_create_parsing', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'val_create_parsing'
 
       CHARACTER(len=default_string_length)               :: c_val, info, location
       CHARACTER(len=default_string_length), &
@@ -650,8 +650,6 @@ CONTAINS
       TYPE(cp_unit_set_type), POINTER                    :: default_units
       CHARACTER(len=default_string_length), &
          INTENT(INOUT)                                   :: c_val
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_r_val', routineP = moduleN//':'//routineN
 
       TYPE(cp_unit_type), POINTER                        :: my_unit
 

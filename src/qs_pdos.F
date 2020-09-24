@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -152,8 +154,7 @@ CONTAINS
          OPTIONAL                                        :: xas_mittle
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: external_matrix_shalf
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_projected_dos', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_projected_dos'
 
       CHARACTER(LEN=16)                                  :: fmtstr2
       CHARACTER(LEN=27)                                  :: fmtstr1
@@ -936,9 +937,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: evals_virt
       TYPE(cp_fm_type), POINTER                          :: mo_virt
       INTEGER, INTENT(IN)                                :: nvirt, ispin
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'generate_virtual_mo', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nmo, nrow_global
       TYPE(cp_blacs_env_type), POINTER                   :: context

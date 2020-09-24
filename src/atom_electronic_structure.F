@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE atom_electronic_structure
@@ -60,7 +62,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: noguess
       LOGICAL, INTENT(OUT), OPTIONAL                     :: converged
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_atom', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'calculate_atom'
 
       INTEGER                                            :: handle, method
       LOGICAL                                            :: explicit
@@ -127,8 +129,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: noguess
       LOGICAL, INTENT(OUT), OPTIONAL                     :: converged
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_atom_restricted', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_atom_restricted'
 
       INTEGER                                            :: handle, i, iter, l, max_iter, method, &
                                                             reltyp
@@ -445,8 +446,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: noguess
       LOGICAL, INTENT(OUT), OPTIONAL                     :: converged
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_atom_unrestricted', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_atom_unrestricted'
 
       INTEGER                                            :: handle, i, iter, k, l, max_iter, method, &
                                                             reltyp

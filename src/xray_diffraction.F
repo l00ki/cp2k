@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -92,8 +94,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: unit_number
       REAL(KIND=dp), INTENT(IN)                          :: q_max
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'xray_diffraction_spectrum', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'xray_diffraction_spectrum'
       INTEGER, PARAMETER                                 :: nblock = 100
 
       INTEGER                                            :: group, handle, i, ig, ig_shell, ipe, &
@@ -505,8 +506,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: rho_hard, rho_soft
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: fsign
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_rhotot_elec_gspace', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_rhotot_elec_gspace'
 
       INTEGER :: atom, handle, iatom, ico, ico1_pgf, ico1_set, ikind, ipgf, iset, iso, iso1_pgf, &
          iso1_set, ison, ispin, jco, jco1_pgf, jco1_set, jpgf, jset, jso, jso1_pgf, jso1_set, &
@@ -693,12 +693,12 @@ CONTAINS
                               ison = o2nindex(iso)
                               json = o2nindex(jso)
                               CALL dgemm("N", "N", nso(la), nco(lb), nso(lb), 1.0_dp, &
-                                         delta_cpc(ison, json), SIZE(delta_cpc, 1), &
+                                         delta_cpc(ison:ison + nso(la) - 1, json), SIZE(delta_cpc, 1), &
                                          orbtramat(lb)%slm, nso(lb), 0.0_dp, work, &
                                          maxso)
                               CALL dgemm("T", "N", nco(la), nco(lb), nso(la), 1.0_dp, &
                                          orbtramat(la)%slm, nso(la), work, maxso, &
-                                         0.0_dp, pab(ico, jco), SIZE(pab, 1))
+                                         0.0_dp, pab(ico:ico + nco(la) - 1, jco), SIZE(pab, 1))
                               jco = jco + nco(lb)
                               jso = jso + nso(lb)
                            END DO ! next lb
@@ -796,8 +796,7 @@ CONTAINS
       REAL(dp), INTENT(IN)                               :: eps_rho_gspace, gsq_max
       TYPE(pw_type), POINTER                             :: pw
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'collocate_pgf_product_gspace', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'collocate_pgf_product_gspace'
 
       COMPLEX(dp), DIMENSION(3)                          :: phasefactor
       COMPLEX(dp), DIMENSION(:), POINTER                 :: rag, rbg

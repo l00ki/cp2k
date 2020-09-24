@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -81,8 +83,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: eps1_mao
       INTEGER, INTENT(IN), OPTIONAL                      :: unit_nr
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mao_generate_basis', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'mao_generate_basis'
 
       CHARACTER(len=10)                                  :: mao_basis_set
       INTEGER                                            :: handle, iab, iatom, ikind, ispin, iw, &

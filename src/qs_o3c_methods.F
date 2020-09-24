@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 !> \brief Methods used with 3-center overlap type integrals containers
@@ -48,8 +50,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: matrix_p
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_o3c_integrals', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_o3c_integrals'
 
       INTEGER :: egfa, egfb, egfc, handle, i, iatom, icol, ikind, irow, iset, ispin, j, jatom, &
          jkind, jset, katom, kkind, kset, mepos, ncoa, ncob, ncoc, ni, nj, nk, nseta, nsetb, &
@@ -314,7 +315,7 @@ CONTAINS
       TYPE(o3c_container_type), POINTER                  :: o3c
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_p
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'contract12_o3c', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'contract12_o3c'
 
       INTEGER                                            :: handle, iatom, icol, ik, irow, ispin, &
                                                             jatom, mepos, nk, nspin, nthread
@@ -397,7 +398,7 @@ CONTAINS
       TYPE(o3c_vec_type), DIMENSION(:), POINTER          :: vec
       TYPE(dbcsr_type), POINTER                          :: matrix
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'contract3_o3c', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'contract3_o3c'
 
       INTEGER                                            :: handle, iatom, icol, ik, irow, jatom, &
                                                             katom, mepos, nk, nthread, s1, s2

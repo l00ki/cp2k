@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,8 +89,7 @@ CONTAINS
       TYPE(cp_para_env_type), OPTIONAL, POINTER          :: para_env
       TYPE(section_vals_type), POINTER                   :: mm_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'energy_manybody', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'energy_manybody'
 
       INTEGER :: atom_a, atom_b, handle, i, iend, ifirst, igrp, ikind, ilast, ilist, indexa, &
          ipair, iparticle, iparticle_local, istart, iunique, jkind, junique, mpair, nkinds, &
@@ -444,8 +445,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: f_nonbond, pv_nonbond
       LOGICAL, INTENT(IN)                                :: use_virial
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'force_nonbond_manybody', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'force_nonbond_manybody'
 
       INTEGER :: atom_a, atom_b, handle, i, i_a, i_b, iend, ifirst, igrp, ikind, ilast, ilist, &
          ipair, istart, iunique, jkind, junique, kind_a, kind_b, mpair, nkinds, nloc_size, npairs, &

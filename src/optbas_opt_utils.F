@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 MODULE optbas_opt_utils
    USE admm_types,                      ONLY: admm_type
@@ -43,9 +45,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_ks
       TYPE(cp_fm_type), POINTER                          :: S_inv_orb, Q, tmp1
       REAL(KIND=dp)                                      :: energy
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'evaluate_energy', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ispin, naux, nmo, norb
       REAL(KIND=dp)                                      :: tmp_energy
@@ -97,8 +96,6 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: Q, Snew
       TYPE(admm_type), POINTER                           :: admm_env
       REAL(KIND=dp)                                      :: fval, S_cond_number
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'evaluate_fval', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ispin, nao_aux_fit, nao_orb, nmo, nspins
       REAL(KIND=dp)                                      :: trace

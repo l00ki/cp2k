@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -101,9 +103,6 @@ CONTAINS
 
       TYPE(outer_scf_control_type)                       :: outer_scf
       TYPE(section_vals_type), POINTER                   :: outer_scf_section
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_scf_read_parameters', &
-         routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: exists
 

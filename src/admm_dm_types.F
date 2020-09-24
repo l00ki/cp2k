@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -62,8 +64,6 @@ CONTAINS
       TYPE(admm_control_type), POINTER                   :: admm_control
       INTEGER, INTENT(IN)                                :: nspins, natoms
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'admm_dm_create', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, iatom, iblock, j, jatom
 
       ALLOCATE (admm_dm)
@@ -97,9 +97,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE admm_dm_release(admm_dm)
       TYPE(admm_dm_type), POINTER                        :: admm_dm
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'admm_dm_release', &
-         routineP = moduleN//':'//routineN
 
       IF (.NOT. ASSOCIATED(admm_dm)) RETURN
 

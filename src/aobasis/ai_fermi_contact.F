@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -76,8 +78,6 @@ CONTAINS
       REAL(KIND=dp)                                      :: dab
       INTEGER, INTENT(IN)                                :: ldfc
       REAL(KIND=dp), DIMENSION(ldfc, *), INTENT(INOUT)   :: fcab
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fermi_contact', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ax, ay, az, bx, by, bz, coa, cob, i, &
                                                             ipgf, j, jpgf, la, lb, ma, mb, na, nb

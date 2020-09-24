@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -142,7 +144,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_ri_mp2, do_ri_rpa, &
                                                             do_ri_sos_laplace_mp2
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mp2_gpw_main', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'mp2_gpw_main'
 
       INTEGER :: blacs_grid_layout, color_sub, comm_sub, dimen, dimen_RI, dimen_RI_red, &
          eri_method, gw_corr_lev_occ, gw_corr_lev_occ_beta, gw_corr_lev_virt, &
@@ -252,33 +254,6 @@ CONTAINS
          local_unit_nr = default_output_unit
       ENDIF
 
-      IF (unit_nr > 0) THEN
-         WRITE (UNIT=unit_nr, FMT="(T3,A,T71,F10.1)") &
-            "GPW_INFO| Density cutoff [a.u.]:", mp2_env%mp2_gpw%cutoff*0.5_dp
-         WRITE (UNIT=unit_nr, FMT="(T3,A,T71,F10.1)") &
-            "GPW_INFO| Relative density cutoff [a.u.]:", mp2_env%mp2_gpw%relative_cutoff*0.5_dp
-         CALL m_flush(unit_nr)
-      ENDIF
-
-      ! a logger
-      NULLIFY (logger_sub)
-      CALL cp_logger_create(logger_sub, para_env=para_env_sub, &
-                            default_global_unit_nr=local_unit_nr, close_global_unit_on_dealloc=.FALSE.)
-      CALL cp_logger_set(logger_sub, local_filename="MP2_localLog")
-      ! set to a custom print level (we could also have a different print level for para_env%source)
-      logger_sub%iter_info%print_level = mp2_env%mp2_gpw%print_level
-      CALL cp_add_default_logger(logger_sub)
-
-      ! a blacs_env (ignore the globenv stored defaults for now)
-      blacs_grid_layout = BLACS_GRID_SQUARE
-      blacs_repeatable = .TRUE.
-      NULLIFY (blacs_env_sub)
-      CALL cp_blacs_env_create(blacs_env_sub, para_env_sub, &
-                               blacs_grid_layout, &
-                               blacs_repeatable)
-
-      blacs_env_sub_mat_munu => blacs_env_sub
-
       ! get stuff
       CALL get_qs_env(qs_env, &
                       ks_env=ks_env, &
@@ -294,18 +269,6 @@ CONTAINS
       CALL get_cell(cell=cell, periodic=periodic)
 
       IF (do_im_time) THEN
-
-         IF (.NOT. mp2_env%ri_rpa_im_time%group_size_internal) THEN
-            ASSOCIATE (group_size_3c=>mp2_env%ri_rpa_im_time%group_size_3c, group_size_P=>mp2_env%ri_rpa_im_time%group_size_P)
-               DO WHILE (MOD(para_env%num_pe, group_size_3c) .NE. 0)
-                  group_size_3c = group_size_3c - 1
-               END DO
-
-               DO WHILE (MOD(para_env%num_pe, group_size_P) .NE. 0)
-                  group_size_P = group_size_P - 1
-               END DO
-            END ASSOCIATE
-         ENDIF
 
          IF (mp2_env%ri_metric%potential_type == ri_default) THEN
             IF (SUM(periodic) > 0) THEN
@@ -333,6 +296,33 @@ CONTAINS
          IF (mp2_env%ri_rpa_im_time%do_im_time_kpoints) mp2_env%eri_method = do_eri_os
       END IF
       eri_method = mp2_env%eri_method
+
+      IF (unit_nr > 0 .AND. mp2_env%eri_method == do_eri_gpw) THEN
+         WRITE (UNIT=unit_nr, FMT="(T3,A,T71,F10.1)") &
+            "GPW_INFO| Density cutoff [a.u.]:", mp2_env%mp2_gpw%cutoff*0.5_dp
+         WRITE (UNIT=unit_nr, FMT="(T3,A,T71,F10.1)") &
+            "GPW_INFO| Relative density cutoff [a.u.]:", mp2_env%mp2_gpw%relative_cutoff*0.5_dp
+         CALL m_flush(unit_nr)
+      ENDIF
+
+      ! a logger
+      NULLIFY (logger_sub)
+      CALL cp_logger_create(logger_sub, para_env=para_env_sub, &
+                            default_global_unit_nr=local_unit_nr, close_global_unit_on_dealloc=.FALSE.)
+      CALL cp_logger_set(logger_sub, local_filename="MP2_localLog")
+      ! set to a custom print level (we could also have a different print level for para_env%source)
+      logger_sub%iter_info%print_level = mp2_env%mp2_gpw%print_level
+      CALL cp_add_default_logger(logger_sub)
+
+      ! a blacs_env (ignore the globenv stored defaults for now)
+      blacs_grid_layout = BLACS_GRID_SQUARE
+      blacs_repeatable = .TRUE.
+      NULLIFY (blacs_env_sub)
+      CALL cp_blacs_env_create(blacs_env_sub, para_env_sub, &
+                               blacs_grid_layout, &
+                               blacs_repeatable)
+
+      blacs_env_sub_mat_munu => blacs_env_sub
 
       matrix_s(1:1) => matrix_s_kp(1:1, 1)
 
@@ -772,8 +762,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: gw_corr_lev_occ, gw_corr_lev_virt
       LOGICAL, INTENT(IN), OPTIONAL                      :: only_mo_coeff_all
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'replicate_mat_to_subgroup', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'replicate_mat_to_subgroup'
 
       INTEGER :: handle, i_global, iiB, j_global, jjB, max_row_col_local, my_mu_end, my_mu_size, &
          my_mu_start, ncol_local, ncol_rec, nrow_local, nrow_rec, proc_receive, &
@@ -984,8 +973,7 @@ CONTAINS
       TYPE(group_dist_d1_type), INTENT(IN)               :: gd_array
       INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(IN)     :: proc_map
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_mo_coeff_v_o_all', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_mo_coeff_v_o_all'
 
       INTEGER :: blk, col, col_offset, col_size, handle, i, i_global, j, j_global, proc_receive, &
          proc_send, proc_shift, rec_mu_end, rec_mu_size, rec_mu_start, row, row_offset, row_size
@@ -1106,8 +1094,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: group_size_prim
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_im_time
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_mat_munu', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'create_mat_munu'
 
       INTEGER                                            :: handle, ikind, natom, nkind
       INTEGER, DIMENSION(:), POINTER                     :: col_blk_sizes, row_blk_sizes
@@ -1332,8 +1319,7 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(cell_type), POINTER                           :: cell
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_matrix_P', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'create_matrix_P'
 
       INTEGER                                            :: blacs_grid_layout, handle
       LOGICAL                                            :: blacs_repeatable

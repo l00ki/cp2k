@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -181,8 +183,6 @@ CONTAINS
          POINTER                                         :: exclusions
       TYPE(fist_efield_type), OPTIONAL, POINTER          :: efield
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_env_get', routineP = moduleN//':'//routineN
-
       TYPE(atomic_kind_list_type), POINTER               :: atomic_kinds
       TYPE(molecule_kind_list_type), POINTER             :: molecule_kinds
       TYPE(molecule_list_type), POINTER                  :: molecules
@@ -317,8 +317,6 @@ CONTAINS
          POINTER                                         :: exclusions
       TYPE(fist_efield_type), OPTIONAL, POINTER          :: efield
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_env_set', routineP = moduleN//':'//routineN
-
       TYPE(atomic_kind_list_type), POINTER               :: atomic_kinds
       TYPE(molecule_kind_list_type), POINTER             :: molecule_kinds
       TYPE(molecule_list_type), POINTER                  :: molecules
@@ -422,9 +420,6 @@ CONTAINS
       TYPE(fist_environment_type), POINTER               :: fist_env
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_env_create', &
-         routineP = moduleN//':'//routineN
-
       ALLOCATE (fist_env)
       CALL init_fist_env(fist_env, para_env=para_env)
    END SUBROUTINE fist_env_create
@@ -438,9 +433,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE fist_env_retain(fist_env)
       TYPE(fist_environment_type), POINTER               :: fist_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_env_retain', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(fist_env))
       CPASSERT(fist_env%ref_count > 0)
@@ -456,9 +448,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE fist_env_release(fist_env)
       TYPE(fist_environment_type), POINTER               :: fist_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_env_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(fist_env)) THEN
          CPASSERT(fist_env%ref_count > 0)

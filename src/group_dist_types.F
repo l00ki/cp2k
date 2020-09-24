@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -66,9 +68,6 @@ CONTAINS
       TYPE(group_dist_d1_type), INTENT(INOUT)            :: this
       INTEGER, INTENT(IN)                                :: ngroups, dimen, pos
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_group_dist_d0', &
-         routineP = moduleN//':'//routineN
-
       INTEGER, DIMENSION(2)                              :: itmp
 
       itmp = get_limit(dimen, ngroups, pos)
@@ -87,9 +86,6 @@ CONTAINS
    PURE SUBROUTINE create_group_dist_d1_i1(this, ngroups, dimen)
       TYPE(group_dist_d1_type), INTENT(INOUT)            :: this
       INTEGER, INTENT(IN)                                :: ngroups, dimen
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_group_dist_d1_i1', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iproc
       INTEGER, DIMENSION(2)                              :: itmp
@@ -119,9 +115,6 @@ CONTAINS
       TYPE(group_dist_d1_type), INTENT(INOUT)            :: this
       INTEGER, INTENT(IN)                                :: ngroups
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_group_dist_d1_0', &
-         routineP = moduleN//':'//routineN
-
       ALLOCATE (this%starts(0:ngroups - 1))
       this%starts = 0
       ALLOCATE (this%ends(0:ngroups - 1))
@@ -144,8 +137,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: starts, ends, sizes
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_group_dist_d1_i3', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_group_dist_d1_i3'
 
       INTEGER                                            :: handle
 
@@ -181,8 +173,7 @@ CONTAINS
       TYPE(group_dist_d0_type), INTENT(IN)               :: group_dist_ext
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_group_dist_d1_gd', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_group_dist_d1_gd'
 
       INTEGER                                            :: handle
 
@@ -218,9 +209,6 @@ CONTAINS
       TYPE(group_dist_d0_type), INTENT(IN)               :: this
       INTEGER, INTENT(OUT), OPTIONAL                     :: starts, ends, sizes
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_group_dist_d0', &
-         routineP = moduleN//':'//routineN
-
       IF (PRESENT(starts)) starts = this%starts
       IF (PRESENT(ends)) ends = this%ends
       IF (PRESENT(sizes)) sizes = this%sizes
@@ -241,9 +229,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: pos
       INTEGER, INTENT(OUT), OPTIONAL                     :: starts, ends, sizes
       TYPE(group_dist_d0_type), INTENT(OUT), OPTIONAL    :: group_dist_ext
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_group_dist_d1', &
-         routineP = moduleN//':'//routineN
 
       IF (PRESENT(starts)) starts = this%starts(pos)
       IF (PRESENT(ends)) ends = this%ends(pos)
@@ -270,9 +255,6 @@ CONTAINS
       TYPE(group_dist_d1_type), INTENT(INOUT)            :: group_dist_ext
       INTEGER, INTENT(IN)                                :: pos_ext
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_group_dist_gd1', &
-         routineP = moduleN//':'//routineN
-
       group_dist_ext%starts(pos_ext) = this%starts(pos)
       group_dist_ext%ends(pos_ext) = this%ends(pos)
       group_dist_ext%sizes(pos_ext) = this%sizes(pos)
@@ -285,9 +267,6 @@ CONTAINS
 ! **************************************************************************************************
    PURE SUBROUTINE release_group_dist_d1(this)
       TYPE(group_dist_d1_type), INTENT(INOUT)            :: this
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'release_group_dist_d1', &
-         routineP = moduleN//':'//routineN
 
       DEALLOCATE (this%starts)
       DEALLOCATE (this%ends)
@@ -303,8 +282,6 @@ CONTAINS
    ELEMENTAL FUNCTION maxsize(this) RESULT(res)
       TYPE(group_dist_d1_type), INTENT(IN)               :: this
       INTEGER                                            :: res
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'maxsize', routineP = moduleN//':'//routineN
 
       res = MAXVAL(this%sizes)
 

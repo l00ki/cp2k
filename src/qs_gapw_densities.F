@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -52,8 +54,7 @@ CONTAINS
       TYPE(qs_kind_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: kind_set_external
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'prepare_gapw_den', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'prepare_gapw_den'
 
       INTEGER                                            :: handle, ikind, ispin, natom, nspins, &
                                                             output_unit

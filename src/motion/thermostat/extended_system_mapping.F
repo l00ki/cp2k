@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -60,8 +62,7 @@ CONTAINS
       TYPE(simpar_type), POINTER                         :: simpar
       TYPE(lnhc_parameters_type), POINTER                :: nhc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_barostat_mapping', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_barostat_mapping'
 
       INTEGER                                            :: handle, i, number
       TYPE(map_info_type), POINTER                       :: map_info
@@ -141,8 +142,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_particle_mapping', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_particle_mapping'
 
       INTEGER                                            :: handle, i, imap, j, natoms_local, &
                                                             sum_of_thermostats
@@ -249,8 +249,7 @@ CONTAINS
       TYPE(global_constraint_type), POINTER              :: gci
       LOGICAL, INTENT(IN), OPTIONAL                      :: shell
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_adiabatic_thermostat', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_adiabatic_thermostat'
 
       INTEGER                                            :: handle, nkind, number, region
       LOGICAL                                            :: do_shell
@@ -309,8 +308,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_particle_mapping_slow', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_particle_mapping_slow'
 
       INTEGER                                            :: handle, i, imap, j, natoms_local, &
                                                             sum_of_thermostats
@@ -405,8 +403,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_particle_mapping_fast', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_particle_mapping_fast'
 
       INTEGER                                            :: handle, i, imap, j, natoms_local, &
                                                             sum_of_thermostats
@@ -510,8 +507,7 @@ CONTAINS
       TYPE(global_constraint_type), POINTER              :: gci
       LOGICAL, INTENT(IN), OPTIONAL                      :: shell
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_nhc_thermostat', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_nhc_thermostat'
 
       INTEGER                                            :: handle, nkind, number, region
       LOGICAL                                            :: do_shell
@@ -569,8 +565,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_shell_mapping', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'nhc_to_shell_mapping'
 
       INTEGER                                            :: handle, i, imap, j, nshell_local, &
                                                             sum_of_thermostats

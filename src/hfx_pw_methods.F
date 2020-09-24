@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -92,7 +94,7 @@ CONTAINS
       TYPE(pw_pool_type), POINTER                        :: auxbas_pw_pool
       INTEGER                                            :: irep
 
-      CHARACTER(*), PARAMETER :: routineN = 'pw_hfx', routineP = moduleN//':'//routineN
+      CHARACTER(*), PARAMETER                            :: routineN = 'pw_hfx'
 
       INTEGER                                            :: blocksize, handle, ig, iloc, iorb, &
                                                             iorb_block, ispin, iw, jloc, jorb, &

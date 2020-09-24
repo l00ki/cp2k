@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -79,8 +81,7 @@ CONTAINS
       REAL(dp), DIMENSION(:, :)                          :: charges1
       REAL(dp), DIMENSION(:)                             :: mcharge1, mcharge
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xtb_coulomb_hessian', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'xtb_coulomb_hessian'
 
       INTEGER :: blk, ewald_type, handle, i, ia, iatom, icol, ikind, irow, is, j, jatom, jkind, &
          la, lb, lmaxa, lmaxb, natom, natorb_a, natorb_b, ni, nj, nkind, nmat, za, zb
@@ -221,7 +222,7 @@ CONTAINS
 
       IF (do_ewald) THEN
          ! add self charge interaction and background charge contribution
-         gmcharge(:, 1) = gmcharge(:, 1) - 2._dp*alpha*oorootpi*mcharge(:)
+         gmcharge(:, 1) = gmcharge(:, 1) - 2._dp*alpha*oorootpi*mcharge1(:)
          IF (ANY(periodic(:) == 1)) THEN
             gmcharge(:, 1) = gmcharge(:, 1) - pi/alpha**2/deth
          END IF
@@ -251,10 +252,10 @@ CONTAINS
             DO j = 1, nj
                la = laoa(i) + 1
                lb = laob(j) + 1
-               gcij(i, j) = 0.5_dp*(gchrg(irow, la, 1) + gchrg(icol, lb, 1))
+               gcij(i, j) = gchrg(irow, la, 1) + gchrg(icol, lb, 1)
             END DO
          END DO
-         gmij = 0.5_dp*(gmcharge(irow, 1) + gmcharge(icol, 1))
+         gmij = gmcharge(irow, 1) + gmcharge(icol, 1)
          DO is = 1, SIZE(ks_matrix)
             NULLIFY (ksblock)
             CALL dbcsr_get_block_p(matrix=ks_matrix(is)%matrix, &
@@ -303,8 +304,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: ks_matrix
       REAL(dp), DIMENSION(:)                             :: mcharge, mcharge1, xgamma
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'dftb3_diagonal_hessian', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'dftb3_diagonal_hessian'
 
       INTEGER                                            :: blk, handle, icol, ikind, irow, is, &
                                                             jkind, natom
@@ -337,7 +337,7 @@ CONTAINS
             CALL dbcsr_get_block_p(matrix=ks_matrix(is)%matrix, &
                                    row=irow, col=icol, block=ksblock, found=found)
             CPASSERT(found)
-            ksblock = ksblock + 0.5_dp*gmij*sblock
+            ksblock = ksblock + gmij*sblock
          END DO
       ENDDO
       CALL dbcsr_iterator_stop(iter)

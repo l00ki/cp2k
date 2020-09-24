@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -75,8 +77,6 @@ CONTAINS
 
       TYPE(lri_opt_type), POINTER                        :: lri_opt
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_lri_opt', routineP = moduleN//':'//routineN
-
       ALLOCATE (lri_opt)
 
       NULLIFY (lri_opt%ri_gcc_orig)
@@ -102,9 +102,6 @@ CONTAINS
    SUBROUTINE deallocate_lri_opt(lri_opt)
 
       TYPE(lri_opt_type), POINTER                        :: lri_opt
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_lri_opt', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -144,9 +141,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: gcc_orig
       TYPE(gto_basis_set_type), POINTER                  :: gto_basis_set
       TYPE(lri_opt_type), POINTER                        :: lri_opt
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_original_gcc', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: il, ipgf, iset, ishell, l, maxpgf, &
                                                             maxshell, nl, nset
@@ -210,9 +204,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: gcc
       TYPE(gto_basis_set_type), POINTER                  :: gto_basis_set
       TYPE(lri_opt_type), POINTER                        :: lri_opt
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'orthonormalize_gcc', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: il, iset, ishell, ishell1, ishell2, &
                                                             istart, nset

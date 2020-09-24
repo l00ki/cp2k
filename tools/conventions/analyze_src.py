@@ -19,22 +19,28 @@ portable_filename_re = re.compile(r"^[a-zA-Z0-9._/#~=+-]*$")
 BANNER_F = """\
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - {:4}  CP2K developers group                                               !
+!   Copyright 2000-{:d} CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 """
 
 BANNER_Fypp = """\
 #!-------------------------------------------------------------------------------------------------!
 #!   CP2K: A general program to perform molecular dynamics simulations                             !
-#!   Copyright (C) 2000 - {:4}  CP2K developers group                                              !
+#!   Copyright 2000-{:d} CP2K developers group <https://cp2k.org>                                  !
+#!                                                                                                 !
+#!   SPDX-License-Identifier: GPL-2.0-or-later                                                     !
 #!-------------------------------------------------------------------------------------------------!
 """
 
 BANNER_C = """\
-/*****************************************************************************
- *  CP2K: A general program to perform molecular dynamics simulations        *
- *  Copyright (C) 2000 - {:d}  CP2K developers group                         *
- *****************************************************************************/
+/*----------------------------------------------------------------------------*/
+/*  CP2K: A general program to perform molecular dynamics simulations         */
+/*  Copyright 2000-{:d} CP2K developers group <https://cp2k.org>              */
+/*                                                                            */
+/*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
+/*----------------------------------------------------------------------------*/
 """
 
 DEFAULT_EXCLUDED_DIRS = (
@@ -111,15 +117,16 @@ def validate(cp2k_dir, filelist=None, excluded_dirs=DEFAULT_EXCLUDED_DIRS):
                 warnings += ["%s: Copyright banner malformed" % fn]
 
             # find all flags
+            line_continuation = False
             for line in content.split("\n"):
-                if len(line) == 0:
-                    continue
-                if line[0] != "#":
-                    continue
-                if line.split()[0] not in ("#if", "#ifdef", "#ifndef", "#elif"):
-                    continue
+                if not line_continuation:
+                    if len(line) == 0 or line[0] != "#":
+                        continue
+                    if line.split()[0] not in ("#if", "#ifdef", "#ifndef", "#elif"):
+                        continue
                 line = line.split("//", 1)[0]
-                line = re.sub("[|()!&><=*/+-]", " ", line)
+                line_continuation = line.strip().endswith("\\")
+                line = re.sub(r"[\\|()!&><=*/+-]", " ", line)
                 line = line.replace("defined", " ")
                 for m in line.split()[1:]:
                     if re.match("[0-9]+[ulUL]*", m):
@@ -182,22 +189,6 @@ def validate(cp2k_dir, filelist=None, excluded_dirs=DEFAULT_EXCLUDED_DIRS):
                 continue  # skip binary files
             if b"\r\n" in content:
                 warnings += ["Text file %s contains DOS linebreaks" % shortfn]
-
-            # check for non-ascii chars
-            if re.search(b"[\x80-\xFF]", content):
-                if absfn.endswith(".py"):
-                    continue  # python files are utf8 encoded by default
-
-                if b"# -*- coding: utf-8 -*-" in content:
-                    continue
-
-                for lineno, line in enumerate(content.splitlines()):
-                    m = re.search(b"[\x80-\xFF]", line)
-                    if m:
-                        warnings += [
-                            "Found non-ascii char in %s line %d at position %d"
-                            % (shortfn, lineno + 1, m.start(0) + 1)
-                        ]
 
     return warnings
 

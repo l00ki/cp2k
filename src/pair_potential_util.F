@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -44,8 +46,6 @@ CONTAINS
       TYPE(pair_potential_single_type), POINTER          :: pot
       REAL(KIND=dp), INTENT(IN)                          :: r, energy_cutoff
       REAL(KIND=dp)                                      :: value
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ener_pot', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, index, j, n
       REAL(KIND=dp)                                      :: damp, dampexp, dampsum, f6, f8, &

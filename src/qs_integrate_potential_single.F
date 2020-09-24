@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -99,8 +101,7 @@ CONTAINS
       TYPE(pw_p_type), INTENT(INOUT)                     :: rho_rspace
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_ppl_rspace', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_ppl_rspace'
 
       INTEGER                                            :: atom_a, handle, iatom, ikind, j, lppl, &
                                                             n, natom_of_kind, ni, npme
@@ -288,8 +289,7 @@ CONTAINS
       TYPE(pw_p_type), INTENT(INOUT)                     :: rho_rspace
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_rho_nlcc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_rho_nlcc'
 
       INTEGER                                            :: atom_a, handle, iatom, iexp_nlcc, ikind, &
                                                             ithread, j, n, natom, nc, nexp_nlcc, &
@@ -491,8 +491,7 @@ CONTAINS
       TYPE(pw_p_type), INTENT(INOUT)                     :: v_rspace
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_v_core_rspace', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_v_core_rspace'
 
       INTEGER                                            :: atom_a, handle, iatom, ikind, j, natom, &
                                                             natom_of_kind, npme
@@ -661,8 +660,7 @@ CONTAINS
       CHARACTER(len=*), INTENT(IN)                       :: basis_type
       INTEGER, DIMENSION(:), OPTIONAL                    :: atomlist
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_v_rspace_one_center', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_v_rspace_one_center'
 
       INTEGER :: atom_a, dir, group_size, handle, i, iatom, igrid_level, ikind, ipgf, iset, m1, &
          maxco, maxsgf_set, my_pos, na1, natom_of_kind, ncoa, nkind, nseta, offset, sgfa
@@ -901,8 +899,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: calculate_forces
       CHARACTER(len=*), INTENT(IN)                       :: basis_type
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_v_rspace_diagonal', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_v_rspace_diagonal'
 
       INTEGER :: atom_a, dir, group_size, handle, i, iatom, igrid_level, ikind, ipgf, iset, jpgf, &
          jset, m1, maxco, maxsgf_set, my_pos, na1, na2, natom_of_kind, nb1, nb2, ncoa, ncob, &

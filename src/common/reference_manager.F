@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -131,8 +133,6 @@ CONTAINS
       CHARACTER(LEN=*), DIMENSION(:)                     :: ISI_record
       CHARACTER(LEN=*)                                   :: DOI
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'add_reference', routineP = moduleN//':'//routineN
-
       CHARACTER                                          :: tmp
       CHARACTER(LEN=ISI_length)                          :: author, citation_key, year
       INTEGER                                            :: commaloc, i, ires, line, match, mylen, &
@@ -224,9 +224,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: cited_only, sorted
       INTEGER, INTENT(IN)                                :: FORMAT, unit
       INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL        :: list
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_all_references', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: I, irecord, nref
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: indx, irank, ival
@@ -320,9 +317,6 @@ CONTAINS
    SUBROUTINE print_reference(key, FORMAT, unit)
       INTEGER, INTENT(IN)                                :: key, FORMAT, unit
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_reference', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: I
 
       IF (key < 1 .OR. key > max_reference) CPABORT("citation key out of range")
@@ -351,9 +345,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE print_reference_journal(key, unit)
       INTEGER, INTENT(IN)                                :: key, unit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_reference_journal', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=4*ISI_length)                        :: journal
       CHARACTER(LEN=ISI_length)                          :: author, title

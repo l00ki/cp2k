@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -54,7 +56,7 @@ CONTAINS
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: stride
       LOGICAL, INTENT(IN), OPTIONAL                      :: zero_tails, mpi_io
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_to_cube', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pw_to_cube'
       INTEGER, PARAMETER                                 :: entry_len = 13, num_entries_line = 6
 
       INTEGER :: checksum, dest, gid, handle, i, I1, I2, I3, iat, ip, L1, L2, L3, msglen, my_rank, &
@@ -232,7 +234,7 @@ CONTAINS
       REAL(kind=dp), INTENT(in)                          :: scaling
       LOGICAL, INTENT(in)                                :: parallel_read
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_to_pw', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cube_to_pw'
       INTEGER, PARAMETER                                 :: entry_len = 13, num_entries_line = 6
 
       INTEGER                                            :: extunit, gid, handle, i, ip, j, k, &
@@ -365,8 +367,6 @@ CONTAINS
       REAL(kind=dp), INTENT(in)                          :: scaling
       INTEGER, INTENT(in)                                :: msglen
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_to_pw_parallel', &
-         routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: entry_len = 13, num_entries_line = 6
 
       INTEGER, DIMENSION(3)                              :: lbounds, lbounds_local, npoints, &
@@ -627,8 +627,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: zero_tails
       INTEGER, INTENT(IN)                                :: msglen
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_to_cube_parallel', &
-         routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: entry_len = 13, header_len = 41, &
                                                             header_len_z = 53, num_entries_line = 6
 
@@ -816,8 +814,7 @@ CONTAINS
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: stride
       TYPE(pw_type), OPTIONAL, POINTER                   :: pw2
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_to_simple_volumetric', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pw_to_simple_volumetric'
 
       INTEGER                                            :: checksum, dest, gid, handle, i, I1, I2, &
                                                             I3, ip, L1, L2, L3, my_rank, &

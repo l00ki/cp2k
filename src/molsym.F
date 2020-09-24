@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -123,8 +125,6 @@ CONTAINS
       TYPE(molsym_type), POINTER                         :: sym
       INTEGER, INTENT(IN)                                :: natoms
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_molsym', routineP = moduleN//':'//routineN
-
       IF (ASSOCIATED(sym)) CALL release_molsym(sym)
 
       ALLOCATE (sym)
@@ -141,8 +141,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE release_molsym(sym)
       TYPE(molsym_type), POINTER                         :: sym
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'release_molsym', routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(sym))
 
@@ -189,8 +187,6 @@ CONTAINS
       REAL(dp), DIMENSION(3), INTENT(IN)                 :: a
       TYPE(molsym_type), INTENT(inout)                   :: sym
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'addsec', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: isec
       REAL(dp)                                           :: length_of_a, scapro
       REAL(dp), DIMENSION(3)                             :: d
@@ -228,8 +224,6 @@ CONTAINS
       REAL(dp), DIMENSION(3), INTENT(IN)                 :: a
       TYPE(molsym_type), INTENT(inout)                   :: sym
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'addses', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ises
       REAL(dp)                                           :: length_of_a, scapro
       REAL(dp), DIMENSION(3)                             :: d
@@ -265,8 +259,6 @@ CONTAINS
       REAL(dp), DIMENSION(3), INTENT(IN)                 :: a
       TYPE(molsym_type), INTENT(inout)                   :: sym
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'addsig', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: isig
       REAL(dp)                                           :: length_of_a, scapro
       REAL(dp), DIMENSION(3)                             :: d
@@ -297,8 +289,6 @@ CONTAINS
    SUBROUTINE atomsym(sym)
       TYPE(molsym_type), INTENT(inout)                   :: sym
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'atomsym', routineP = moduleN//':'//routineN
-
 ! Set point group symbol
 
       sym%point_group_symbol = "R(3)"
@@ -322,8 +312,6 @@ CONTAINS
    SUBROUTINE axsym(coord, sym)
       REAL(Kind=dp), DIMENSION(:, :), INTENT(inout)      :: coord
       TYPE(molsym_type), INTENT(inout)                   :: sym
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'axsym', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iatom, isig, jatom, m, n, natoms, nx, &
                                                             ny, nz
@@ -455,9 +443,6 @@ CONTAINS
    SUBROUTINE build_symequ_list(sym, coord)
       TYPE(molsym_type), INTENT(inout)                   :: sym
       REAL(Kind=dp), DIMENSION(:, :), INTENT(inout)      :: coord
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_symequ_list', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iatom, icn, iequatom, incr, isec, &
                                                             ises, isig, isn, jatom, jcn, jsn, &
@@ -959,8 +944,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: atype
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: weight
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_symmetry', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, iatom, natoms
 
 ! Define the Cartesian axis vectors
@@ -1061,8 +1044,6 @@ CONTAINS
       TYPE(molsym_type), INTENT(inout)                   :: sym
       REAL(KIND=dp), DIMENSION(:, :), INTENT(inout)      :: coord
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'lowsym', routineP = moduleN//':'//routineN
-
       REAL(KIND=dp)                                      :: phi
       REAL(KIND=dp), DIMENSION(3)                        :: d
 
@@ -1104,8 +1085,7 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: atype
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: weight
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'molecular_symmetry', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'molecular_symmetry'
 
       INTEGER                                            :: handle, natoms
 
@@ -1150,8 +1130,6 @@ CONTAINS
    SUBROUTINE moleculesym(sym, coord)
       TYPE(molsym_type), INTENT(inout)                   :: sym
       REAL(KIND=dp), DIMENSION(:, :), INTENT(inout)      :: coord
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'moleculesym', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: icn, isec, isn
       LOGICAL                                            :: failed
@@ -1420,8 +1398,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(in)            :: weight
       INTEGER, INTENT(IN)                                :: iw, plevel
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_symmetry', routineP = moduleN//':'//routineN
-
       CHARACTER(3)                                       :: string
       INTEGER                                            :: i, icn, iequatom, isec, ises, isig, isn, &
                                                             j, secount
@@ -1528,9 +1504,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3), INTENT(IN)            :: a
       TYPE(molsym_type), INTENT(inout)                   :: sym
       REAL(KIND=dp), DIMENSION(:, :), INTENT(inout)      :: coord
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'rotate_molecule', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
       REAL(KIND=dp)                                      :: length_of_a
@@ -1667,8 +1640,6 @@ CONTAINS
    SUBROUTINE tensor(sym, coord)
       TYPE(molsym_type), INTENT(inout)                   :: sym
       REAL(KIND=dp), DIMENSION(:, :), INTENT(inout)      :: coord
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'tensor', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: natoms
       REAL(KIND=dp)                                      :: tt

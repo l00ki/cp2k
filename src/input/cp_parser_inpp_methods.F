@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -83,9 +85,6 @@ CONTAINS
       TYPE(inpp_type), POINTER                           :: inpp
       CHARACTER(LEN=*), INTENT(INOUT)                    :: input_line, input_file_name
       INTEGER, INTENT(INOUT)                             :: input_line_number, input_unit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'inpp_process_directive', &
-                                     routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_path_length)                 :: cond1, cond2, filename, mytag, value, &
                                                             varname
@@ -524,9 +523,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(INOUT)                    :: input_file_name
       INTEGER, INTENT(INOUT)                             :: input_line_number, input_unit
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'inpp_end_include', &
-                                     routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(inpp))
       IF (inpp%io_stack_level > 0) THEN
          CALL close_file(input_unit)
@@ -556,9 +552,6 @@ CONTAINS
       TYPE(inpp_type), POINTER                           :: inpp
       CHARACTER(LEN=*), INTENT(INOUT)                    :: input_line, input_file_name
       INTEGER, INTENT(IN)                                :: input_line_number
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'inpp_expand_variables', &
-                                     routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_path_length)                 :: newline
       CHARACTER(LEN=max_message_length)                  :: message

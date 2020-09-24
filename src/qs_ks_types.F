@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -235,9 +237,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE qs_ks_env_create(ks_env)
       TYPE(qs_ks_env_type), POINTER                      :: ks_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_ks_env_create', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(ks_env)) CPABORT("ks_env already associated")
       ALLOCATE (ks_env)
@@ -771,8 +770,6 @@ CONTAINS
    SUBROUTINE qs_ks_release(ks_env)
       TYPE(qs_ks_env_type), POINTER                      :: ks_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ks_release', routineP = moduleN//':'//routineN
-
       IF (ASSOCIATED(ks_env)) THEN
          CPASSERT(ks_env%ref_count > 0)
          ks_env%ref_count = ks_env%ref_count - 1
@@ -894,8 +891,6 @@ CONTAINS
    SUBROUTINE qs_ks_retain(ks_env)
       TYPE(qs_ks_env_type), POINTER                      :: ks_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ks_retain', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(ks_env))
       CPASSERT(ks_env%ref_count > 0)
       ks_env%ref_count = ks_env%ref_count + 1
@@ -923,8 +918,7 @@ CONTAINS
       LOGICAL, INTENT(in), OPTIONAL                      :: s_mstruct_changed, rho_changed, &
                                                             potential_changed, full_reset
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ks_did_change', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ks_did_change'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: my_mstruct_chg

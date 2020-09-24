@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -45,8 +47,7 @@ CONTAINS
       TYPE(md_environment_type), POINTER                 :: md_env
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'velocity_verlet', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'velocity_verlet'
 
       INTEGER                                            :: handle
       TYPE(force_env_type), POINTER                      :: force_env

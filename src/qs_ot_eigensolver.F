@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -79,7 +81,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: silent
       TYPE(qs_ot_settings_type), INTENT(IN), OPTIONAL    :: ot_settings
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ot_eigensolver', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ot_eigensolver'
       INTEGER, PARAMETER                                 :: max_iter_inner_loop = 40
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 

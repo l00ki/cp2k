@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -136,8 +138,7 @@ CONTAINS
       TYPE(qs_p_env_type), POINTER                       :: p_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'current_response', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'current_response'
 
       CHARACTER(LEN=default_path_length)                 :: my_pos
       INTEGER :: first_center, handle, i, icenter, idir, ii, iii, ispin, ist_true, istate, j, &
@@ -589,8 +590,7 @@ CONTAINS
       TYPE(current_env_type)                             :: current_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'current_env_init', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'current_env_init'
 
       INTEGER :: handle, homo, i, iao, iatom, ibox, icenter, icount, idir, ii, ini, ir, is, ispin, &
          istate, istate2, istate_next, ix, iy, iz, j, jstate, k, max_nbr_center, max_states, n, &
@@ -1349,9 +1349,6 @@ CONTAINS
 
       TYPE(current_env_type)                             :: current_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'current_env_cleanup', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, idir, ispin
       TYPE(pw_env_type), POINTER                         :: pw_env

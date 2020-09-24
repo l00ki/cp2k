@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -104,9 +106,6 @@ CONTAINS
 
       TYPE(pwdft_environment_type), POINTER              :: pwdft_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pwdft_env_retain', &
-         routineP = moduleN//':'//routineN
-
 !   ------------------------------------------------------------------------
 
       CPASSERT(ASSOCIATED(pwdft_env))
@@ -124,9 +123,6 @@ CONTAINS
    SUBROUTINE pwdft_env_release(pwdft_env)
 
       TYPE(pwdft_environment_type), POINTER              :: pwdft_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pwdft_env_release', &
-         routineP = moduleN//':'//routineN
 
 !   ------------------------------------------------------------------------
 
@@ -192,8 +188,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3, 3), OPTIONAL           :: stress
       TYPE(C_PTR), OPTIONAL                              :: sctx, gs_handler, ks_handler
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pwdft_env_get', routineP = moduleN//':'//routineN
-
 !   ------------------------------------------------------------------------
 
       CPASSERT(ASSOCIATED(pwdft_env))
@@ -254,8 +248,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3, 3), OPTIONAL           :: stress
       TYPE(C_PTR), OPTIONAL                              :: sctx, gs_handler, ks_handler
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pwdft_env_set', routineP = moduleN//':'//routineN
-
 !   ------------------------------------------------------------------------
 
       CPASSERT(ASSOCIATED(pwdft_env))
@@ -295,9 +287,6 @@ CONTAINS
 
       TYPE(pwdft_environment_type), POINTER              :: pwdft_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pwdft_env_clear', &
-         routineP = moduleN//':'//routineN
-
 !   ------------------------------------------------------------------------
 
       CPASSERT(ASSOCIATED(pwdft_env))
@@ -331,9 +320,6 @@ CONTAINS
    SUBROUTINE pwdft_env_create(pwdft_env)
 
       TYPE(pwdft_environment_type), POINTER              :: pwdft_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pwdft_env_create', &
-         routineP = moduleN//':'//routineN
 
       ALLOCATE (pwdft_env)
 

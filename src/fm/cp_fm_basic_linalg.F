@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -92,8 +94,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(in), OPTIONAL                :: beta
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: matrix_b
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_scale_and_add', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_scale_and_add'
 
       INTEGER                                            :: handle, size_a
       REAL(KIND=dp)                                      :: my_beta
@@ -197,8 +198,7 @@ CONTAINS
       CHARACTER, INTENT(IN) :: trans
       TYPE(cp_fm_type), POINTER :: matrix_a, matrix_b
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_geadd', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_geadd'
 
       INTEGER :: nrow_global, ncol_global, handle
       REAL(KIND=dp), DIMENSION(:, :), POINTER :: aa, bb
@@ -278,8 +278,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)               :: almost_determinant
       LOGICAL, INTENT(IN), OPTIONAL            :: correct_sign
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_lu_decompose', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_lu_decompose'
 
       INTEGER                                  :: handle, i, info, n
       INTEGER, ALLOCATABLE, DIMENSION(:)       :: ipivot
@@ -301,7 +300,7 @@ CONTAINS
 #if defined(__SCALAPACK)
       MARK_USED(correct_sign)
       desca(:) = matrix_a%matrix_struct%descriptor(:)
-      CALL pdgetrf(n, n, a(1, 1), 1, 1, desca, ipivot, info)
+      CALL pdgetrf(n, n, a, 1, 1, desca, ipivot, info)
 
       ALLOCATE (diag(n))
       diag(:) = 0.0_dp
@@ -315,7 +314,7 @@ CONTAINS
       DEALLOCATE (diag)
 #else
       lda = SIZE(a, 1)
-      CALL dgetrf(n, n, a(1, 1), lda, ipivot, info)
+      CALL dgetrf(n, n, a, lda, ipivot, info)
       determinant = 1.0_dp
       IF (correct_sign) THEN
          DO i = 1, n
@@ -375,8 +374,7 @@ CONTAINS
                                                   b_first_col, b_first_row, &
                                                   c_first_col, c_first_row
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_gemm', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_gemm'
 
       INTEGER                                  :: handle, i_a, i_b, i_c, j_a, &
                                                   j_b, j_c
@@ -445,8 +443,8 @@ CONTAINS
 
       ELSEIF ((.NOT. matrix_a%use_sp) .AND. (.NOT. matrix_b%use_sp) .AND. (.NOT. matrix_c%use_sp)) THEN
 
-         CALL pdgemm(transa, transb, m, n, k, alpha, a(1, 1), i_a, j_a, desca, b(1, 1), i_b, j_b, &
-                     descb, beta, c(1, 1), i_c, j_c, descc)
+         CALL pdgemm(transa, transb, m, n, k, alpha, a, i_a, j_a, desca, b, i_b, j_b, &
+                     descb, beta, c, i_c, j_c, descc)
 
       ELSE
          CPABORT("Mixed precision gemm NYI")
@@ -509,8 +507,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                :: beta
       TYPE(cp_fm_type), POINTER                :: matrix_c
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_symm', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_symm'
 
       INTEGER                                  :: handle
       REAL(KIND=dp), DIMENSION(:, :), POINTER  :: a, b, c
@@ -557,8 +554,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                :: matrix_a
       REAL(KIND=dp), INTENT(inout)             :: norm
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_frobenius_norm', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_frobenius_norm'
 
       INTEGER                                  :: handle, size_a
       REAL(KIND=dp), DIMENSION(:, :), POINTER  :: a
@@ -609,8 +605,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                :: beta
       TYPE(cp_fm_type), POINTER                :: matrix_c
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_syrk', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_syrk'
 
       INTEGER                                  :: handle, n
       REAL(KIND=dp), DIMENSION(:, :), POINTER  :: a, c
@@ -658,8 +653,7 @@ CONTAINS
 
       TYPE(cp_fm_type), POINTER                          :: matrix_a, matrix_b, matrix_c
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_schur_product', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_schur_product'
 
       INTEGER                                            :: handle, icol_local, irow_local, mypcol, &
                                                             myprow, ncol_local, npcol, nprow, &
@@ -710,8 +704,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: matrix_a, matrix_b
       REAL(KIND=dp), INTENT(OUT)                         :: trace
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_trace_a0b0t0', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_trace_a0b0t0'
 
       INTEGER                                            :: group, handle, mypcol, myprow, &
                                                             ncol_local, npcol, nprow, nrow_local
@@ -782,8 +775,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: matrix_b
       REAL(kind=dp), DIMENSION(:), INTENT(out)           :: trace
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_trace_a1b0t1', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_trace_a1b0t1'
 
       INTEGER                                            :: group, handle, imatrix, n_matrices, &
                                                             ncols_local, nrows_local
@@ -856,8 +848,7 @@ CONTAINS
       REAL(kind=dp), DIMENSION(:), INTENT(out)           :: trace
       LOGICAL, INTENT(IN), OPTIONAL                      :: accurate
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_trace_a1b1t1', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_trace_a1b1t1'
 
       INTEGER                                            :: group, handle, imatrix, n_matrices, &
                                                             ncols_local, nrows_local
@@ -925,8 +916,7 @@ CONTAINS
       REAL(kind=dp), DIMENSION(:, :), INTENT(out)        :: trace
       LOGICAL, INTENT(IN), OPTIONAL                      :: accurate
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_contracted_trace_a2b2t2', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_contracted_trace_a2b2t2'
 
       INTEGER                                            :: group, handle, ia, ib, iz, na, nb, &
                                                             ncols_local, nrows_local, nz
@@ -1044,8 +1034,7 @@ CONTAINS
       INTEGER, INTENT(in), OPTIONAL                      :: n_rows, n_cols
       REAL(KIND=dp), INTENT(in), OPTIONAL                :: alpha
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_triangular_multiply', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_triangular_multiply'
 
       CHARACTER                                          :: side_char, transa, unit_diag, uplo
       INTEGER                                            :: handle, m, n
@@ -1128,7 +1117,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: alpha
       TYPE(cp_fm_type), POINTER                          :: matrix_a
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_scale', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_fm_scale'
 
       INTEGER                                            :: handle, size_a
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: a
@@ -1160,8 +1149,7 @@ CONTAINS
    SUBROUTINE cp_fm_transpose(matrix, matrixt)
       TYPE(cp_fm_type), POINTER                :: matrix, matrixt
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_transpose', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_transpose'
 
       INTEGER                                  :: handle, ncol_global, &
                                                   nrow_global, ncol_globalt, nrow_globalt
@@ -1213,8 +1201,7 @@ CONTAINS
 
       TYPE(cp_fm_type), POINTER                :: matrix, work
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_upper_to_full', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_upper_to_full'
 
       INTEGER                                  :: handle, icol_global, irow_global, &
                                                   mypcol, myprow, ncol_global, &
@@ -1374,18 +1361,18 @@ CONTAINS
                       irow_local, icol_local, iprow, ipcol)
          IF ((ipcol == mypcol)) THEN
             IF (matrixa%use_sp) THEN
-               CALL SSCAL(n, REAL(scaling(icol_global), sp), a_sp(1, icol_local), 1)
+               CALL SSCAL(n, REAL(scaling(icol_global), sp), a_sp(:, icol_local), 1)
             ELSE
-               CALL DSCAL(n, scaling(icol_global), a(1, icol_local), 1)
+               CALL DSCAL(n, scaling(icol_global), a(:, icol_local), 1)
             ENDIF
          END IF
       ENDDO
 #else
       DO i = 1, k
          IF (matrixa%use_sp) THEN
-            CALL SSCAL(n, REAL(scaling(i), sp), a_sp(1, i), 1)
+            CALL SSCAL(n, REAL(scaling(i), sp), a_sp(:, i), 1)
          ELSE
-            CALL DSCAL(n, scaling(i), a(1, i), 1)
+            CALL DSCAL(n, scaling(i), a(:, i), 1)
          ENDIF
       ENDDO
 #endif
@@ -1475,9 +1462,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER, &
          INTENT(INOUT), OPTIONAL               :: eigval
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_fm_invert', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                  :: n
       INTEGER, ALLOCATABLE, DIMENSION(:)       :: ipivot
       REAL(KIND=dp)                            :: determinant, my_eps_svd
@@ -1515,7 +1499,7 @@ CONTAINS
          lwork = 3*n
          liwork = 3*n
          desca(:) = matrix_lu%matrix_struct%descriptor(:)
-         CALL pdgetrf(n, n, a(1, 1), 1, 1, desca, ipivot, info)
+         CALL pdgetrf(n, n, a, 1, 1, desca, ipivot, info)
 
          IF (PRESENT(det_a) .OR. PRESENT(eigval)) THEN
 
@@ -1654,8 +1638,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                :: matrix_a
       CHARACTER, INTENT(IN), OPTIONAL          :: uplo_tr
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_fm_triangular_invert', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_fm_triangular_invert'
 
       CHARACTER                                :: unit_diag, uplo
       INTEGER                                  :: handle, info, ncol_global
@@ -1704,8 +1687,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL            :: nrow_fact, ncol_fact, &
                                                   first_row, first_col
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_fm_qr_factorization', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_fm_qr_factorization'
 
       INTEGER                                  :: handle, i, icol, info, irow, &
                                                   j, lda, lwork, ncol, &
@@ -1785,8 +1767,7 @@ CONTAINS
    SUBROUTINE cp_fm_solve(matrix_a, general_a)
       TYPE(cp_fm_type), POINTER                :: matrix_a, general_a
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_solve', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_solve'
 
       INTEGER                                  :: handle, info, n
       INTEGER, ALLOCATABLE, DIMENSION(:)       :: ipivot
@@ -1807,15 +1788,15 @@ CONTAINS
 #if defined(__SCALAPACK)
       desca(:) = matrix_a%matrix_struct%descriptor(:)
       descb(:) = general_a%matrix_struct%descriptor(:)
-      CALL pdgetrf(n, n, a(1, 1), 1, 1, desca, ipivot, info)
-      CALL pdgetrs("N", n, n, a(1, 1), 1, 1, desca, ipivot, a_general(1, 1), &
+      CALL pdgetrf(n, n, a, 1, 1, desca, ipivot, info)
+      CALL pdgetrs("N", n, n, a, 1, 1, desca, ipivot, a_general, &
                    1, 1, descb, info)
 
 #else
       lda = SIZE(a, 1)
       ldb = SIZE(a_general, 1)
-      CALL dgetrf(n, n, a(1, 1), lda, ipivot, info)
-      CALL dgetrs("N", n, n, a(1, 1), lda, ipivot, a_general, ldb, info)
+      CALL dgetrf(n, n, a, lda, ipivot, info)
+      CALL dgetrs("N", n, n, a, lda, ipivot, a_general, ldb, info)
 
 #endif
       ! info is allowed to be zero
@@ -1864,8 +1845,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: a_first_col, a_first_row, b_first_col, &
                                                             b_first_row, c_first_col, c_first_row
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_complex_fm_gemm', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_complex_fm_gemm'
 
       INTEGER                                            :: handle
 
@@ -1915,8 +1895,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                :: matrix
       INTEGER, INTENT(OUT), OPTIONAL           :: info_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_lu_invert', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_lu_invert'
 
       INTEGER :: nrows_global, handle, info, lwork
       INTEGER, DIMENSION(:), ALLOCATABLE       :: ipivot
@@ -2046,8 +2025,7 @@ CONTAINS
       CHARACTER, INTENT(IN) :: mode
       REAL(KIND=dp) :: res
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_norm', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_norm'
 
       INTEGER :: nrows, ncols, handle, lwork, nrows_local, ncols_local
       REAL(KIND=sp) :: res_sp
@@ -2136,8 +2114,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER :: matrix
       REAL(KIND=dp) :: res
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_latra', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_latra'
 
       INTEGER :: nrows, ncols, handle
       REAL(KIND=sp) :: res_sp
@@ -2202,8 +2179,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: tau
       INTEGER, INTENT(IN)                                :: nrow, ncol, first_row, first_col
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_pdgeqpf', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_pdgeqpf'
 
       INTEGER                                            :: handle
       INTEGER                                            :: info, lwork
@@ -2272,8 +2248,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: tau
       INTEGER, INTENT(IN)                                :: nrow, first_row, first_col
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_pdorgqr', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_pdorgqr'
 
       INTEGER                                            :: handle
       INTEGER                                            :: info, lwork

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 MODULE qs_grid_atom
@@ -71,9 +73,6 @@ CONTAINS
 
       TYPE(grid_atom_type), POINTER                      :: grid_atom
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'allocate_grid_atom', &
-         routineP = moduleN//':'//routineN
-
       IF (ASSOCIATED(grid_atom)) CALL deallocate_grid_atom(grid_atom)
 
       ALLOCATE (grid_atom)
@@ -104,9 +103,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE deallocate_grid_atom(grid_atom)
       TYPE(grid_atom_type), POINTER                      :: grid_atom
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_grid_atom', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(grid_atom)) THEN
 
@@ -188,8 +184,7 @@ CONTAINS
       TYPE(grid_atom_type), POINTER                      :: grid_atom
       INTEGER, INTENT(IN)                                :: nr, na, llmax, ll, quadrature
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_grid_atom', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'create_grid_atom'
 
       INTEGER                                            :: handle, ia, ir, l
       REAL(dp)                                           :: cosia, pol
@@ -293,9 +288,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nr, na
       REAL(KIND=dp), INTENT(IN)                          :: rmax
       INTEGER, INTENT(IN), OPTIONAL                      :: quadrature, iunit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'initialize_atomic_grid', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ia, ig, ir, ix, iy, iz, la, ll, my_quad, &
                                                             n1, n2, n3, nbatch, ng, no, np, ntot, &
@@ -564,9 +556,6 @@ CONTAINS
    SUBROUTINE deallocate_atom_int_grid(int_grid)
       TYPE(atom_integration_grid_type), POINTER          :: int_grid
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_atom_int_grid', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ib
 
       IF (ASSOCIATED(int_grid)) THEN
@@ -608,8 +597,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: n
       REAL(dp), DIMENSION(:), INTENT(INOUT)              :: r, r2, wr
       INTEGER, INTENT(IN)                                :: radial_quadrature
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'radial_grid', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
       REAL(dp)                                           :: cost, f, sint, sint2, t, w, x

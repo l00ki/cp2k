@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -108,8 +110,6 @@ CONTAINS
    SUBROUTINE parser_retain(parser)
       TYPE(cp_parser_type), POINTER                      :: parser
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'parser_retain', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(parser))
       CPASSERT(parser%ref_count > 0)
       parser%ref_count = parser%ref_count + 1
@@ -124,8 +124,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE parser_release(parser)
       TYPE(cp_parser_type), POINTER                      :: parser
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'parser_release', routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(parser)) THEN
          CPASSERT(parser%ref_count > 0)
@@ -179,8 +177,6 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: parse_white_lines
       CHARACTER(len=*), DIMENSION(:, :), OPTIONAL        :: initial_variables
       LOGICAL, INTENT(IN), OPTIONAL                      :: apply_preprocessing
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'parser_create', routineP = moduleN//':'//routineN
 
       CPASSERT(.NOT. ASSOCIATED(parser))
       ALLOCATE (parser)
@@ -273,8 +269,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE parser_reset(parser)
       TYPE(cp_parser_type), POINTER                      :: parser
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'parser_reset', routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(parser))
       ! Rewind units

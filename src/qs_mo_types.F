@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -106,9 +108,6 @@ CONTAINS
    SUBROUTINE reassign_allocated_mos(mo_set_new, mo_set_old)
       TYPE(mo_set_type), POINTER                         :: mo_set_new, mo_set_old
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'reassign_allocated_mos', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nmo
 
       mo_set_new%maxocc = mo_set_old%maxocc
@@ -152,9 +151,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE duplicate_mo_set(mo_set_new, mo_set_old)
       TYPE(mo_set_type), POINTER                         :: mo_set_new, mo_set_old
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'duplicate_mo_set', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nmo
 
@@ -222,9 +218,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nao, nmo, nelectron
       REAL(KIND=dp), INTENT(IN)                          :: n_el_f, maxocc, flexible_electron_count
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'allocate_mo_set', &
-         routineP = moduleN//':'//routineN
-
       IF (ASSOCIATED(mo_set)) CALL deallocate_mo_set(mo_set)
 
       ALLOCATE (mo_set)
@@ -268,8 +261,6 @@ CONTAINS
       TYPE(cp_fm_pool_type), OPTIONAL, POINTER           :: fm_pool
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_ref
       CHARACTER(LEN=*), INTENT(in)                       :: name
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'init_mo_set', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nao, nmo, nomo
 
@@ -333,8 +324,7 @@ CONTAINS
       TYPE(mo_set_p_type), DIMENSION(:), POINTER         :: mo_array
       LOGICAL, INTENT(in), OPTIONAL                      :: convert_dbcsr
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mo_set_restrict', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'mo_set_restrict'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: my_convert_dbcsr
@@ -372,9 +362,6 @@ CONTAINS
    SUBROUTINE deallocate_mo_set(mo_set)
 
       TYPE(mo_set_type), POINTER                         :: mo_set
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_mo_set', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(mo_set)) THEN
          IF (ASSOCIATED(mo_set%eigenvalues)) THEN
@@ -483,8 +470,6 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: uniform_occupation
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: kTS, mu, flexible_electron_count
       TYPE(cp_cfm_type), INTENT(IN), OPTIONAL            :: wannier_coeff
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'set_mo_set', routineP = moduleN//':'//routineN
 
       IF (PRESENT(maxocc)) mo_set%maxocc = maxocc
       IF (PRESENT(homo)) mo_set%homo = homo

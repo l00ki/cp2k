@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -77,9 +79,6 @@ CONTAINS
    SUBROUTINE create_properties_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_properties_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
 
@@ -137,9 +136,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_linres_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_linres_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
@@ -286,9 +282,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_current_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_current_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
@@ -486,9 +479,6 @@ CONTAINS
    SUBROUTINE create_nmr_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_nmr_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
 
@@ -635,9 +625,6 @@ CONTAINS
    SUBROUTINE create_spin_spin_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_spin_spin_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
 
@@ -737,9 +724,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_epr_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_epr_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection, subsubsection
@@ -871,9 +855,6 @@ CONTAINS
 
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_polarizability_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
 
@@ -937,9 +918,6 @@ CONTAINS
    SUBROUTINE create_et_coupling_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_et_coupling_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
 
@@ -995,9 +973,6 @@ CONTAINS
       ! Routine arguments
       TYPE(section_type), POINTER                        :: section
       CHARACTER(len=*), INTENT(in)                       :: section_name
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_projection', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, section_block, section_print
@@ -1145,9 +1120,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_tddfpt2_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_tddfpt2_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
@@ -1473,9 +1445,6 @@ CONTAINS
    SUBROUTINE create_stda_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_stda_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -1486,10 +1455,8 @@ CONTAINS
 
       CALL keyword_create(keyword, __LOCATION__, name="FRACTION", &
                           variants=(/"HFX_FRACTION"/), &
-                          description="The fraction of Hartree-Fock to add to the total energy. "// &
-                          "1.0 implies standard Hartree-Fock if used with XC_FUNCTIONAL NONE. "// &
-                          "NOTE: In a mixed potential calculation this should be set to 1.0, otherwise "// &
-                          "all parts are multiplied with this factor. ", &
+                          description="The fraction of TB Hartree-Fock exchange to use in the Kernel. "// &
+                          "0.0 implies no HFX part is used in the kernel. ", &
                           usage="FRACTION 0.0", default_r_val=0.0_dp)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)

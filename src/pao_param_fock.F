@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -46,8 +48,7 @@ CONTAINS
       REAL(dp), DIMENSION(:), INTENT(OUT), OPTIONAL      :: evals
       REAL(dp), DIMENSION(:, :), OPTIONAL, POINTER       :: M1, G
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_calc_U_block_fock', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_calc_U_block_fock'
 
       INTEGER                                            :: handle, i, j, m, n
       INTEGER, DIMENSION(:), POINTER                     :: blk_sizes_pao, blk_sizes_pri

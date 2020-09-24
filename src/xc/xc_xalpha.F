@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -150,8 +152,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: xa_params
       REAL(KIND=dp), INTENT(in), OPTIONAL                :: xa_parameter
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xalpha_lda_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xalpha_lda_eval'
 
       INTEGER                                            :: handle, npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo
@@ -225,8 +226,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: xa_params
       REAL(KIND=dp), INTENT(in), OPTIONAL                :: xa_parameter
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xalpha_lsd_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xalpha_lsd_eval'
       CHARACTER(len=6), DIMENSION(2), PARAMETER :: rho_spin_name = (/"(rhoa)", "(rhob)"/)
 
       INTEGER                                            :: handle, i, ispin, npoints

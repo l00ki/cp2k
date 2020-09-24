@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -46,8 +48,6 @@ CONTAINS
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: stride
       LOGICAL, INTENT(IN), OPTIONAL                      :: zero_tails, mpi_io
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_pw_to_cube', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, n
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: particles_z
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: particles_r
@@ -91,9 +91,6 @@ CONTAINS
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: stride
       TYPE(pw_type), OPTIONAL, POINTER                   :: pw2
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_pw_to_simple_volumetric', &
-         routineP = moduleN//':'//routineN
-
       IF (.NOT. PRESENT(pw2)) THEN
          CALL pw_to_simple_volumetric(pw, unit_nr, stride)
       ELSE
@@ -114,8 +111,6 @@ CONTAINS
       TYPE(pw_type), POINTER                             :: grid
       CHARACTER(len=*), INTENT(in)                       :: filename
       REAL(kind=dp), INTENT(in)                          :: scaling
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cube_to_pw', routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: parallel_read
 

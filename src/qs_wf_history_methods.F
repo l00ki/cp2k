@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -117,8 +119,6 @@ CONTAINS
    SUBROUTINE wfs_create(snapshot)
       TYPE(qs_wf_snapshot_type), POINTER                 :: snapshot
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfs_create', routineP = moduleN//':'//routineN
-
       ALLOCATE (snapshot)
       last_wfs_id = last_wfs_id + 1
       snapshot%id_nr = last_wfs_id
@@ -146,7 +146,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       REAL(KIND=dp), INTENT(in), OPTIONAL                :: dt
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfs_update', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'wfs_update'
 
       INTEGER                                            :: handle, img, ispin, nimg, nspins
       TYPE(cp_fm_pool_p_type), DIMENSION(:), POINTER     :: ao_mo_pools
@@ -312,7 +312,7 @@ CONTAINS
                                                             extrapolation_order
       LOGICAL, INTENT(IN)                                :: has_unit_metric
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_create', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'wfi_create'
 
       INTEGER                                            :: handle, i
 
@@ -394,9 +394,6 @@ CONTAINS
    SUBROUTINE wfi_create_for_kp(wf_history)
       TYPE(qs_wf_history_type), POINTER                  :: wf_history
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_create_for_kp', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(wf_history))
       IF (wf_history%store_rho_ao) THEN
          wf_history%store_rho_ao_kp = .TRUE.
@@ -426,9 +423,6 @@ CONTAINS
    FUNCTION wfi_get_method_label(method_nr) RESULT(res)
       INTEGER, INTENT(in)                                :: method_nr
       CHARACTER(len=30)                                  :: res
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_get_method_label', &
-         routineP = moduleN//':'//routineN
 
       res = "unknown"
       SELECT CASE (method_nr)
@@ -481,8 +475,7 @@ CONTAINS
       INTEGER, INTENT(OUT), OPTIONAL                     :: extrapolation_method_nr
       LOGICAL, INTENT(OUT), OPTIONAL                     :: orthogonal_wf
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_extrapolate', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'wfi_extrapolate'
 
       INTEGER                                            :: actual_extrapolation_method_nr, handle, &
                                                             i, img, io_unit, ispin, k, n, nmo, &
@@ -962,8 +955,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: nvec
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_set_history_variables', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_set_history_variables'
 
       INTEGER                                            :: handle
 
@@ -1004,8 +996,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       REAL(KIND=dp), INTENT(in)                          :: dt
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_update', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(wf_history))
       CPASSERT(wf_history%ref_count > 0)
       CPASSERT(ASSOCIATED(qs_env))
@@ -1035,8 +1025,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: v_matrix
       INTEGER, INTENT(in), OPTIONAL                      :: n_col
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'reorthogonalize_vectors', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'reorthogonalize_vectors'
 
       INTEGER                                            :: handle, my_n_col
       LOGICAL                                            :: has_unit_metric, &
@@ -1102,8 +1091,7 @@ CONTAINS
    SUBROUTINE wfi_purge_history(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_purge_history', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'wfi_purge_history'
 
       INTEGER                                            :: handle, io_unit, print_level
       TYPE(cp_logger_type), POINTER                      :: logger

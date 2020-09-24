@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -39,6 +41,7 @@ MODULE xas_tdp_utils
         cp_fm_create, cp_fm_get_diag, cp_fm_get_info, cp_fm_get_submatrix, cp_fm_p_type, &
         cp_fm_release, cp_fm_set_element, cp_fm_to_fm_submat, cp_fm_type
    USE cp_gemm_interface,               ONLY: cp_gemm
+   USE cp_log_handling,                 ONLY: cp_logger_get_default_io_unit
    USE cp_para_types,                   ONLY: cp_para_env_type
    USE dbcsr_api,                       ONLY: &
         dbcsr_add, dbcsr_copy, dbcsr_create, dbcsr_distribution_get, dbcsr_distribution_new, &
@@ -47,7 +50,8 @@ MODULE xas_tdp_utils
         dbcsr_iterator_start, dbcsr_iterator_stop, dbcsr_iterator_type, dbcsr_multiply, &
         dbcsr_p_type, dbcsr_put_block, dbcsr_release, dbcsr_reserve_all_blocks, dbcsr_set, &
         dbcsr_type, dbcsr_type_no_symmetry, dbcsr_type_symmetric
-   USE input_constants,                 ONLY: tddfpt_singlet,&
+   USE input_constants,                 ONLY: ot_precond_full_single,&
+                                              tddfpt_singlet,&
                                               tddfpt_spin_cons,&
                                               tddfpt_spin_flip,&
                                               tddfpt_triplet,&
@@ -55,10 +59,15 @@ MODULE xas_tdp_utils
    USE kinds,                           ONLY: dp
    USE mathlib,                         ONLY: get_diag
    USE physcon,                         ONLY: a_fine
+   USE preconditioner_types,            ONLY: destroy_preconditioner,&
+                                              init_preconditioner,&
+                                              preconditioner_type
    USE qs_environment_types,            ONLY: get_qs_env,&
                                               qs_environment_type
+   USE qs_mo_methods,                   ONLY: calculate_subspace_eigenvalues
    USE qs_mo_types,                     ONLY: get_mo_set,&
                                               mo_set_p_type
+   USE qs_ot_eigensolver,               ONLY: ot_eigensolver
    USE xas_tdp_kernel,                  ONLY: kernel_coulomb_xc,&
                                               kernel_exchange
    USE xas_tdp_types,                   ONLY: donor_state_type,&
@@ -157,8 +166,7 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'setup_xas_tdp_prob', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'setup_xas_tdp_prob'
 
       INTEGER                                            :: handle
       INTEGER, DIMENSION(:), POINTER                     :: submat_blk_size
@@ -449,21 +457,21 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: ex_type
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'solve_xas_tdp_prob', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'solve_xas_tdp_prob'
 
       INTEGER                                            :: first_ex, handle, i, imo, ispin, nao, &
                                                             ndo_mo, nelectron, nevals, nocc, nrow, &
-                                                            nspins
+                                                            nspins, ot_nevals
       LOGICAL                                            :: do_os, do_range, do_sf
+      REAL(dp)                                           :: ot_elb
       REAL(dp), ALLOCATABLE, DIMENSION(:)                :: scaling, tmp_evals
       REAL(dp), DIMENSION(:), POINTER                    :: lr_evals
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
-      TYPE(cp_fm_struct_type), POINTER                   :: ex_struct, fm_struct
+      TYPE(cp_fm_struct_type), POINTER                   :: ex_struct, fm_struct, ot_fm_struct
       TYPE(cp_fm_type), POINTER                          :: c_diff, c_sum, lhs_matrix, lr_coeffs, &
                                                             rhs_matrix, work
       TYPE(cp_para_env_type), POINTER                    :: para_env
-      TYPE(dbcsr_type)                                   :: tmp_mat
+      TYPE(dbcsr_type)                                   :: tmp_mat, tmp_mat2
       TYPE(dbcsr_type), POINTER                          :: matrix_tdp
 
       CALL timeset(routineN, handle)
@@ -496,44 +504,90 @@ CONTAINS
       ndo_mo = donor_state%ndo_mo
       nocc = nelectron/2; IF (do_os) nocc = nelectron
       nocc = ndo_mo*nocc
-      first_ex = nocc + 1 !where to find the first proper eigenvalue
 
       !solve by energy_range or number of states ?
       do_range = .FALSE.
       IF (xas_tdp_control%e_range > 0.0_dp) do_range = .TRUE.
 
       ! create the fm infrastructure
-      ALLOCATE (tmp_evals(nrow))
       CALL cp_fm_struct_create(fm_struct, context=blacs_env, nrow_global=nrow, &
                                para_env=para_env, ncol_global=nrow)
-      CALL cp_fm_create(c_sum, fm_struct)
       CALL cp_fm_create(rhs_matrix, fm_struct)
       CALL cp_fm_create(work, fm_struct)
 
 !     Test on TDA
       IF (xas_tdp_control%tamm_dancoff) THEN
 
-!        Get the main matrix_tdp as an fm
-         CALL copy_dbcsr_to_fm(matrix_tdp, rhs_matrix)
+         IF (xas_tdp_control%do_ot) THEN
 
-!        Get the metric as a fm
-         CALL cp_fm_create(lhs_matrix, fm_struct)
-         CALL copy_dbcsr_to_fm(donor_state%metric(1)%matrix, lhs_matrix)
+            !need to precompute the number of evals for OT
+            IF (do_range) THEN
 
-         !Diagonalisation (Cholesky decomposition). In TDA, c_sum = c^-
-         CALL cp_fm_geeig(rhs_matrix, lhs_matrix, c_sum, tmp_evals, work)
+               !in case of energy range criterion, use LUMO eigenvalues as estimate
+               ot_elb = xas_tdp_env%lumo_evals(1)%array(1)
+               IF (do_os) ot_elb = MIN(ot_elb, xas_tdp_env%lumo_evals(2)%array(1))
 
-!        TDA specific clean-up
-         CALL cp_fm_release(lhs_matrix)
+               ot_nevals = COUNT(xas_tdp_env%lumo_evals(1)%array - ot_elb .LE. xas_tdp_control%e_range)
+               IF (do_os) ot_nevals = ot_nevals + &
+                                      COUNT(xas_tdp_env%lumo_evals(2)%array - ot_elb .LE. xas_tdp_control%e_range)
+
+            ELSE
+
+               ot_nevals = nspins*nao - nocc/ndo_mo
+               IF (xas_tdp_control%n_excited > 0 .AND. xas_tdp_control%n_excited < ot_nevals) THEN
+                  ot_nevals = xas_tdp_control%n_excited
+               END IF
+            END IF
+            ot_nevals = ndo_mo*ot_nevals !as in input description, multiply by multiplicity of donor state
+
+!           Organize results data
+            first_ex = 1
+            ALLOCATE (tmp_evals(ot_nevals))
+            CALL cp_fm_struct_create(ot_fm_struct, context=blacs_env, para_env=para_env, &
+                                     nrow_global=nrow, ncol_global=ot_nevals)
+            CALL cp_fm_create(c_sum, ot_fm_struct)
+
+            CALL xas_ot_solver(matrix_tdp, donor_state%metric(1)%matrix, c_sum, tmp_evals, ot_nevals, &
+                               do_sf, donor_state, xas_tdp_env, xas_tdp_control, qs_env)
+
+            CALL cp_fm_struct_release(ot_fm_struct)
+
+         ELSE
+
+!           Organize results data
+            first_ex = nocc + 1 !where to find the first proper eigenvalue
+            ALLOCATE (tmp_evals(nrow))
+            CALL cp_fm_create(c_sum, fm_struct)
+
+!           Get the main matrix_tdp as an fm
+            CALL copy_dbcsr_to_fm(matrix_tdp, rhs_matrix)
+
+!           Get the metric as a fm
+            CALL cp_fm_create(lhs_matrix, fm_struct)
+            CALL copy_dbcsr_to_fm(donor_state%metric(1)%matrix, lhs_matrix)
+
+            !Diagonalisation (Cholesky decomposition). In TDA, c_sum = c^-
+            CALL cp_fm_geeig(rhs_matrix, lhs_matrix, c_sum, tmp_evals, work)
+
+!           TDA specific clean-up
+            CALL cp_fm_release(lhs_matrix)
+
+         END IF
 
       ELSE ! not TDA
+
+!        Organize results data
+         first_ex = nocc + 1
+         ALLOCATE (tmp_evals(nrow))
+         CALL cp_fm_create(c_sum, fm_struct)
 
 !        Need to multiply the current matrix_tdp with the auxiliary matrix
 !        tmp_mat =  (A-D+E)^0.5 * M * (A-D+E)^0.5
          CALL dbcsr_create(matrix=tmp_mat, template=matrix_tdp, matrix_type=dbcsr_type_no_symmetry)
+         CALL dbcsr_create(matrix=tmp_mat2, template=matrix_tdp, matrix_type=dbcsr_type_no_symmetry)
          CALL dbcsr_multiply('N', 'N', 1.0_dp, donor_state%matrix_aux, matrix_tdp, &
-                             0.0_dp, tmp_mat, filter_eps=xas_tdp_control%eps_filter)
-         CALL dbcsr_multiply('N', 'N', 1.0_dp, tmp_mat, donor_state%matrix_aux, &
+                             0.0_dp, tmp_mat2, filter_eps=xas_tdp_control%eps_filter)
+         CALL dbcsr_multiply('N', 'N', 1.0_dp, tmp_mat2, donor_state%matrix_aux, &
                              0.0_dp, tmp_mat, filter_eps=xas_tdp_control%eps_filter)
 
 !        Get the matrix as a fm
@@ -569,8 +623,8 @@ CONTAINS
 !        Get c_sum = (c^+ + c^-), which appears in all transition density related expressions
 !        c_sum = -1/omega G^-1 * (A-D+E) * (c^+ - c^-)
          CALL dbcsr_multiply('N', 'N', 1.0_dp, donor_state%matrix_aux, donor_state%matrix_aux, &
-                             0.0_dp, tmp_mat, filter_eps=xas_tdp_control%eps_filter)
-         CALL dbcsr_multiply('N', 'N', 1.0_dp, donor_state%metric(2)%matrix, tmp_mat, &
+                             0.0_dp, tmp_mat2, filter_eps=xas_tdp_control%eps_filter)
+         CALL dbcsr_multiply('N', 'N', 1.0_dp, donor_state%metric(2)%matrix, tmp_mat2, &
                              0.0_dp, tmp_mat, filter_eps=xas_tdp_control%eps_filter)
          CALL cp_dbcsr_sm_fm_multiply(tmp_mat, c_diff, c_sum, ncol=nrow)
          WHERE (tmp_evals .NE. 0) scaling = -1.0_dp/tmp_evals
@@ -579,6 +633,7 @@ CONTAINS
 !        Full TDDFT specific clean-up
          CALL cp_fm_release(c_diff)
          CALL dbcsr_release(tmp_mat)
+         CALL dbcsr_release(tmp_mat2)
          DEALLOCATE (scaling)
 
       END IF ! TDA
@@ -588,14 +643,15 @@ CONTAINS
       CALL cp_fm_release(work)
 
 !  Reorganize the eigenvalues, we want a lr_evals array with the proper dimension and where the
-!  first element is the first eval. Need a case study on do_range
-      IF (do_range) THEN
+!  first element is the first eval. Need a case study on do_range/ot
+      IF (xas_tdp_control%do_ot) THEN
+
+         nevals = ot_nevals
+
+      ELSE IF (do_range) THEN
 
          WHERE (tmp_evals > tmp_evals(first_ex) + xas_tdp_control%e_range) tmp_evals = 0.0_dp
          nevals = MAXLOC(tmp_evals, 1) - nocc
-
-         ALLOCATE (lr_evals(nevals))
-         lr_evals(:) = tmp_evals(first_ex:nocc + nevals)
 
       ELSE
 
@@ -606,9 +662,10 @@ CONTAINS
          END IF
          nevals = ndo_mo*nevals !as in input description, multiply by # of donor MOs
 
-         ALLOCATE (lr_evals(nevals))
-         lr_evals(:) = tmp_evals(first_ex:nocc + nevals)
       END IF
+
+      ALLOCATE (lr_evals(nevals))
+      lr_evals(:) = tmp_evals(first_ex:first_ex + nevals - 1)
 
 !  Reorganize the eigenvectors in array of cp_fm so that each ndo_mo columns corresponds to an
 !  excited state. Makes later calls to those easier and more efficient
@@ -657,6 +714,236 @@ CONTAINS
    END SUBROUTINE solve_xas_tdp_prob
 
 ! **************************************************************************************************
+!> \brief An iterative solver based on OT for the TDA generalized eigV problem lambda Sx = Hx
+!> \param matrix_tdp the RHS matrix (dbcsr)
+!> \param metric the LHS matrix (dbcsr)
+!> \param evecs the corresponding eigenvectors (fm)
+!> \param evals the corresponding eigenvalues
+!> \param neig the number of wanted eigenvalues
+!> \param do_sf whther spin-flip TDDFT is on
+!> \param donor_state ...
+!> \param xas_tdp_env ...
+!> \param xas_tdp_control ...
+!> \param qs_env ...
+! **************************************************************************************************
+   SUBROUTINE xas_ot_solver(matrix_tdp, metric, evecs, evals, neig, do_sf, donor_state, xas_tdp_env, &
+                            xas_tdp_control, qs_env)
+
+      TYPE(dbcsr_type), POINTER                          :: matrix_tdp, metric
+      TYPE(cp_fm_type), POINTER                          :: evecs
+      REAL(dp), DIMENSION(:)                             :: evals
+      INTEGER, INTENT(IN)                                :: neig
+      LOGICAL                                            :: do_sf
+      TYPE(donor_state_type), POINTER                    :: donor_state
+      TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
+      TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
+      TYPE(qs_environment_type), POINTER                 :: qs_env
+
+      CHARACTER(len=*), PARAMETER :: routineN = 'xas_ot_solver', routineP = moduleN//':'//routineN
+
+      INTEGER                                            :: handle, max_iter, ndo_mo, nelec_spin(2), &
+                                                            nocc, nrow, output_unit
+      LOGICAL                                            :: do_os
+      REAL(dp)                                           :: eps_iter
+      TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
+      TYPE(cp_fm_struct_type), POINTER                   :: ortho_struct
+      TYPE(cp_fm_type), POINTER                          :: ortho_space
+      TYPE(cp_para_env_type), POINTER                    :: para_env
+      TYPE(dbcsr_type), POINTER                          :: ot_prec
+      TYPE(preconditioner_type), POINTER                 :: precond
+
+      NULLIFY (para_env, blacs_env, ortho_struct, ortho_space, ot_prec)
+
+      CALL timeset(routineN, handle)
+
+      output_unit = cp_logger_get_default_io_unit()
+      IF (output_unit > 0) THEN
+         WRITE (output_unit, "(/,T5,A)") &
+            "Using OT eigensolver for diagonalization: "
+      END IF
+
+      do_os = xas_tdp_control%do_uks .OR. xas_tdp_control%do_roks
+      ndo_mo = donor_state%ndo_mo
+      CALL get_qs_env(qs_env, para_env=para_env, blacs_env=blacs_env, nelectron_spin=nelec_spin)
+      CALL cp_fm_get_info(evecs, nrow_global=nrow)
+      max_iter = xas_tdp_control%ot_max_iter
+      eps_iter = xas_tdp_control%ot_eps_iter
+      nocc = nelec_spin(1)/2*ndo_mo
+      IF (do_os) nocc = SUM(nelec_spin)*ndo_mo
+
+!  Initialize relevent matrices
+      ALLOCATE (ot_prec)
+      CALL dbcsr_create(ot_prec, template=matrix_tdp)
+      CALL cp_fm_struct_create(ortho_struct, context=blacs_env, para_env=para_env, &
+                               nrow_global=nrow, ncol_global=nocc)
+      CALL cp_fm_create(ortho_space, ortho_struct)
+
+      CALL prep_for_ot(evecs, ortho_space, ot_prec, neig, do_sf, donor_state, xas_tdp_env, &
+                       xas_tdp_control, qs_env)
+
+!  Prepare the preconditioner
+      ALLOCATE (precond)
+      CALL init_preconditioner(precond, para_env, blacs_env)
+      precond%in_use = ot_precond_full_single ! because applying this conditioner is only a mm
+      precond%dbcsr_matrix => ot_prec
+
+!  Actually solving the eigenvalue problem
+      CALL ot_eigensolver(matrix_h=matrix_tdp, matrix_s=metric, matrix_c_fm=evecs, &
+                          eps_gradient=eps_iter, iter_max=max_iter, silent=.FALSE., &
+                          ot_settings=xas_tdp_control%ot_settings, &
+                          matrix_orthogonal_space_fm=ortho_space, &
+                          preconditioner=precond)
+      CALL calculate_subspace_eigenvalues(evecs, matrix_tdp, evals_arg=evals)
+
+!  Clean-up
+      CALL cp_fm_struct_release(ortho_struct)
+      CALL cp_fm_release(ortho_space)
+      CALL dbcsr_release(ot_prec)
+      CALL destroy_preconditioner(precond)
+      DEALLOCATE (precond)
+
+      CALL timestop(handle)
+
+   END SUBROUTINE xas_ot_solver
+
+! **************************************************************************************************
+!> \brief Prepares all required matrices for the OT eigensolver (precond, ortho space and guesses)
+!> \param guess the guess eigenvectors absed on LUMOs, in fm format
+!> \param ortho the orthogonal space in fm format (occupied MOs)
+!> \param precond the OT preconditioner in DBCSR format
+!> \param neig ...
+!> \param do_sf ...
+!> \param donor_state ...
+!> \param xas_tdp_env ...
+!> \param xas_tdp_control ...
+!> \param qs_env ...
+!> \note Matrices are allocate before entry
+! **************************************************************************************************
+   SUBROUTINE prep_for_ot(guess, ortho, precond, neig, do_sf, donor_state, xas_tdp_env, &
+                          xas_tdp_control, qs_env)
+
+      TYPE(cp_fm_type), POINTER                          :: guess, ortho
+      TYPE(dbcsr_type)                                   :: precond
+      INTEGER                                            :: neig
+      LOGICAL                                            :: do_sf
+      TYPE(donor_state_type), POINTER                    :: donor_state
+      TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
+      TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
+      TYPE(qs_environment_type), POINTER                 :: qs_env
+
+      CHARACTER(len=*), PARAMETER :: routineN = 'prep_for_ot', routineP = moduleN//':'//routineN
+
+      INTEGER :: blk, handle, i, iblk, ido_mo, ispin, jblk, maxel, minel, nao, natom, ndo_mo, &
+         nelec_spin(2), nhomo(2), nlumo(2), nspins, start_block, start_col, start_row
+      LOGICAL                                            :: do_os, found
+      REAL(dp), DIMENSION(:, :), POINTER                 :: pblock
+      TYPE(cp_fm_type), POINTER                          :: mo_coeff
+      TYPE(dbcsr_iterator_type)                          :: iter
+      TYPE(mo_set_p_type), DIMENSION(:), POINTER         :: mos
+
+      NULLIFY (mos, mo_coeff, pblock)
+
+      !REMINDER on the organization of the xas_tdp matrix. It is DBCSR format, with a super bock
+      !structure. First block structure is spin quadrants: upper left is alpha-alpha spin and lower
+      !right is beta-beta spin. Then each quadrants is divided in a ndo_mo x ndo_mo grid (1x1 for 1s,
+      !2s, 3x3 for 2p). Each block in this grid has the normal DBCSR structure and dist, simply
+      !replicated. The resulting eigenvectors follow the same logic.
+
+      CALL timeset(routineN, handle)
+
+      do_os = xas_tdp_control%do_uks .OR. xas_tdp_control%do_roks
+      nspins = 1; IF (do_os) nspins = 2
+      ndo_mo = donor_state%ndo_mo
+      CALL cp_fm_get_info(xas_tdp_env%lumo_evecs(1)%matrix, nrow_global=nao)
+      CALL get_qs_env(qs_env, natom=natom, nelectron_spin=nelec_spin)
+
+      !Compute the number of guesses for each spins
+      IF (do_os) THEN
+         minel = MINLOC(nelec_spin, 1)
+         maxel = 3 - minel
+         nlumo(minel) = (neig/ndo_mo + nelec_spin(maxel) - nelec_spin(minel))/2
+         nlumo(maxel) = neig/ndo_mo - nlumo(minel)
+      ELSE
+         nlumo(1) = neig/ndo_mo
+      END IF
+
+      !Building the guess vectors based on the LUMOs. Copy LUMOs into approriate spin/do_mo
+      !quadrant/block. Order within a block does not matter
+      !Note: in spin-flip, the upper left quadrant is for beta-alpha transition, so guess are alpha LUMOs
+      start_row = 0
+      start_col = 0
+      DO ispin = 1, nspins
+         DO ido_mo = 1, ndo_mo
+
+            CALL cp_fm_to_fm_submat(msource=xas_tdp_env%lumo_evecs(ispin)%matrix, mtarget=guess, &
+                                    nrow=nao, ncol=nlumo(ispin), s_firstrow=1, s_firstcol=1, &
+                                    t_firstrow=start_row + 1, t_firstcol=start_col + 1)
+
+            start_row = start_row + nao
+            start_col = start_col + nlumo(ispin)
+
+         END DO
+      END DO
+
+      !Build the orthogonal space according to the same principles, but based on occupied MOs
+      !Note: in spin-flip, the upper left quadrant is for beta-alpha transition, so ortho space is beta HOMOs
+      CALL get_qs_env(qs_env, mos=mos)
+      nhomo = 0
+      DO ispin = 1, nspins
+         CALL get_mo_set(mos(ispin)%mo_set, homo=nhomo(ispin))
+      END DO
+
+      start_row = 0
+      start_col = 0
+      DO i = 1, nspins
+         ispin = i; IF (do_sf) ispin = 3 - i
+         CALL get_mo_set(mos(ispin)%mo_set, mo_coeff=mo_coeff)
+
+         DO ido_mo = 1, ndo_mo
+
+            CALL cp_fm_to_fm_submat(msource=mo_coeff, mtarget=ortho, nrow=nao, ncol=nhomo(ispin), &
+                                    s_firstrow=1, s_firstcol=1, &
+                                    t_firstrow=start_row + 1, t_firstcol=start_col + 1)
+
+            start_row = start_row + nao
+            start_col = start_col + nhomo(ispin)
+
+         END DO
+      END DO
+
+      !Build the preconditioner. Copy the "canonical" pre-computed matrix into the proper spin/do_mo
+      !quadrants/blocks. The end matrix is purely block diagonal
+      DO ispin = 1, nspins
+
+         CALL dbcsr_iterator_start(iter, xas_tdp_env%ot_prec(ispin)%matrix)
+         DO WHILE (dbcsr_iterator_blocks_left(iter))
+
+            CALL dbcsr_iterator_next_block(iter, row=iblk, column=jblk, blk=blk)
+
+            CALL dbcsr_get_block_p(xas_tdp_env%ot_prec(ispin)%matrix, iblk, jblk, pblock, found)
+
+            IF (found) THEN
+
+               start_block = (ispin - 1)*ndo_mo*natom
+               DO ido_mo = 1, ndo_mo
+                  CALL dbcsr_put_block(precond, start_block + iblk, start_block + jblk, pblock)
+
+                  start_block = start_block + natom
+
+               END DO
+            END IF
+
+         END DO !dbcsr iter
+         CALL dbcsr_iterator_stop(iter)
+      END DO
+
+      CALL dbcsr_finalize(precond)
+
+      CALL timestop(handle)
+
+   END SUBROUTINE prep_for_ot
+
+! **************************************************************************************************
 !> \brief Returns the scaling to apply to normalize the LR eigenvectors.
 !> \param scaling the scaling array to apply
 !> \param lr_coeffs the linear response coefficients as a fm
@@ -669,9 +956,6 @@ CONTAINS
       REAL(dp), ALLOCATABLE, DIMENSION(:)                :: scaling
       TYPE(cp_fm_type), POINTER                          :: lr_coeffs
       TYPE(donor_state_type), POINTER                    :: donor_state
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_normal_scaling', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nrow, nscal, nvals
       REAL(dp), ALLOCATABLE, DIMENSION(:)                :: diag
@@ -724,9 +1008,6 @@ CONTAINS
       TYPE(donor_state_type), POINTER                    :: donor_state
       LOGICAL, INTENT(IN)                                :: do_os
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_submat_dist_and_blk_size', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: group, i, nao, nblk_row, ndo_mo, nspins, &
                                                             scol_dist, srow_dist
@@ -799,8 +1080,7 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_sf
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_q_projector', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'get_q_projector'
 
       INTEGER                                            :: blk, handle, iblk, imo, ispin, jblk, &
                                                             nblk_row, ndo_mo, nspins
@@ -887,8 +1167,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_sf
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_gs_contribution', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'build_gs_contribution'
 
       INTEGER                                            :: blk, handle, iblk, imo, ispin, jblk, &
                                                             nblk_row, ndo_mo, nspins
@@ -1020,7 +1299,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_os
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_inv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_metric', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'build_metric'
 
       INTEGER                                            :: blk, handle, i, iblk, jblk, nao, &
                                                             nblk_row, ndo_mo, nspins
@@ -1155,8 +1434,7 @@ CONTAINS
       REAL(dp), INTENT(IN)                               :: eps_filter
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_aux_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'build_aux_matrix'
 
       INTEGER                                            :: handle, ndep
       REAL(dp)                                           :: evals(2)
@@ -1221,7 +1499,7 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'include_os_soc', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'include_os_soc'
 
       INTEGER                                            :: group, handle, homo, iex, isc, isf, nao, &
                                                             ndo_mo, ndo_so, nex, npcols, nprows, &
@@ -1653,8 +1931,7 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'include_rcs_soc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'include_rcs_soc'
 
       INTEGER                                            :: group, handle, iex, isg, itp, nao, &
                                                             ndo_mo, nex, npcols, nprows, nsg, &
@@ -2068,8 +2345,6 @@ CONTAINS
       REAL(dp), INTENT(IN)                               :: eps_filter
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_os_amew_op', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: dim_op, homo, i, isc, nao, ndo_mo, &
                                                             ndo_so, nex, nsc, nsf, ntot
       REAL(dp)                                           :: op
@@ -2302,9 +2577,6 @@ CONTAINS
       REAL(dp), INTENT(IN)                               :: eps_filter
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_rcs_amew_op', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: dim_op, homo, i, isg, nao, ndo_mo, nex, &
                                                             nsg, ntot, ntp
       REAL(dp)                                           :: op, sqrt2
@@ -2518,9 +2790,6 @@ CONTAINS
       LOGICAL, OPTIONAL                                  :: symmetric
       INTEGER, DIMENSION(2), OPTIONAL                    :: tracea_start, traceb_start
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'os_amew_soc_elements', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: blk, iex, jex, ndo_mo, ndo_so
       INTEGER, DIMENSION(2)                              :: tas, tbs
       LOGICAL                                            :: do_diags, found, my_symm
@@ -2608,9 +2877,6 @@ CONTAINS
       REAL(dp), OPTIONAL                                 :: pref_diags
       LOGICAL, OPTIONAL                                  :: symmetric
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'rcs_amew_soc_elements', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: blk, iex, jex
       LOGICAL                                            :: do_diags, found, my_symm
       REAL(dp)                                           :: soc_elem
@@ -2681,8 +2947,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: gs_coeffs
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_soc_dipole_fosc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_soc_dipole_fosc'
 
       COMPLEX(dp), ALLOCATABLE, DIMENSION(:, :)          :: transdip
       INTEGER                                            :: handle, i, nosc, ntot
@@ -2790,8 +3055,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: gs_coeffs
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_soc_quadrupole_fosc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_soc_quadrupole_fosc'
 
       COMPLEX(dp), ALLOCATABLE, DIMENSION(:)             :: trace
       COMPLEX(dp), ALLOCATABLE, DIMENSION(:, :)          :: transquad

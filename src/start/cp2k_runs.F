@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -73,6 +75,8 @@ MODULE cp2k_runs
                                               globenv_create,&
                                               globenv_release,&
                                               globenv_retain
+   USE grid_api,                        ONLY: grid_library_print_stats,&
+                                              grid_library_set_config
    USE input_constants,                 ONLY: &
         bsse_run, cell_opt_run, debug_run, do_atom, do_band, do_cp2k, do_embed, do_farming, &
         do_fist, do_mixed, do_opt_basis, do_optimize_input, do_qmmm, do_qs, do_sirius, do_swarm, &
@@ -173,13 +177,11 @@ CONTAINS
       CHARACTER(len=default_path_length), &
          DIMENSION(:, :), INTENT(IN)                     :: initial_variables
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp2k_run', routineP = moduleN//':'//routineN
-
-      INTEGER                                            :: f_env_handle, ierr, iter_level, &
-                                                            method_name_id, new_env_id, &
-                                                            prog_name_id, run_type_id
+      INTEGER                                            :: f_env_handle, grid_backend, ierr, &
+                                                            iter_level, method_name_id, &
+                                                            new_env_id, prog_name_id, run_type_id
       INTEGER(KIND=int_8)                                :: m_memory_max_mpi
-      LOGICAL                                            :: echo_input, I_was_ionode
+      LOGICAL                                            :: echo_input, grid_validate, I_was_ionode
       TYPE(cp_logger_type), POINTER                      :: logger, sublogger
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(dft_control_type), POINTER                    :: dft_control
@@ -192,6 +194,7 @@ CONTAINS
       CALL cp_para_env_create(para_env, group=mpi_comm, owns_group=.FALSE.)
 
       ! DBCSR sets the GPU device, make sure it is the first GPU call
+      CALL dbcsr_init_lib(mpi_comm, io_unit=output_unit)
       CALL dbcsr_init_lib(mpi_comm, io_unit=output_unit)
 
       CALL cuda_nvtx_init()
@@ -246,6 +249,11 @@ CONTAINS
          CALL dbcsr_print_config(unit_nr=output_unit)
          WRITE (UNIT=output_unit, FMT='()')
       ENDIF
+
+      ! Configure the grid library.
+      CALL section_vals_val_get(root_section, "GLOBAL%GRID%BACKEND", i_val=grid_backend)
+      CALL section_vals_val_get(root_section, "GLOBAL%GRID%VALIDATE", l_val=grid_validate)
+      CALL grid_library_set_config(backend=grid_backend, validate=grid_validate)
 
       SELECT CASE (prog_name_id)
       CASE (do_atom)
@@ -397,6 +405,8 @@ CONTAINS
 
       CALL dbcsr_print_statistics()
 
+      CALL grid_library_print_stats(mpi_comm=mpi_comm, output_unit=output_unit)
+
       m_memory_max_mpi = m_memory_max
       CALL mp_max(m_memory_max_mpi, mpi_comm)
       IF (output_unit > 0) THEN
@@ -447,8 +457,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER          :: para_env
       CHARACTER(len=default_path_length), DIMENSION(:, :), INTENT(IN) :: initial_variables
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'farming_run', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'farming_run'
       INTEGER, PARAMETER                       :: slave_status_done = -3, &
                                                   slave_status_wait = -4
 
@@ -853,8 +862,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE write_xml_file()
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_xml_file', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, ie, is, unit_number
       TYPE(section_type), POINTER                        :: root_section
 
@@ -943,8 +950,6 @@ CONTAINS
       CHARACTER(len=default_path_length), &
          DIMENSION(:, :), INTENT(IN)                     :: initial_variables
       INTEGER, INTENT(in), OPTIONAL                      :: mpi_comm
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'run_input', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: unit_nr
       TYPE(cp_para_env_type), POINTER                    :: para_env

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -78,7 +80,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER                                            :: iter_count
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'gspace_mixing', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'gspace_mixing'
 
       INTEGER                                            :: handle, i, iatom, ig, ispin, natom, ng, &
                                                             nimg, nspin
@@ -220,8 +222,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'gmix_potential_only', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'gmix_potential_only'
 
       COMPLEX(dp), DIMENSION(:), POINTER                 :: cc_new
       INTEGER                                            :: handle, iatom, ic, ig, ispin, natom, ng, &
@@ -316,7 +317,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pulay_mixing', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pulay_mixing'
 
       COMPLEX(dp), ALLOCATABLE, DIMENSION(:)             :: cc_mix
       INTEGER                                            :: handle, i, iatom, ib, ibb, ic, ig, &
@@ -570,7 +571,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'broyden_mixing', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'broyden_mixing'
 
       COMPLEX(dp)                                        :: cc_mix
       COMPLEX(dp), ALLOCATABLE, DIMENSION(:)             :: res_rho
@@ -889,8 +890,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'broyden_mixing_new', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'broyden_mixing_new'
 
       COMPLEX(dp), ALLOCATABLE, DIMENSION(:)             :: delta_res_p, res_rho, res_rho_p, tmp
       INTEGER                                            :: handle, ib, ibb, ig, info, ispin, jb, &
@@ -1199,8 +1199,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'multisecant_mixing', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'multisecant_mixing'
       COMPLEX(KIND=dp), PARAMETER                        :: cmone = (-1.0_dp, 0.0_dp), &
                                                             cone = (1.0_dp, 0.0_dp), &
                                                             czero = (0.0_dp, 0.0_dp)

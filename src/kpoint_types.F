@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -182,8 +184,6 @@ CONTAINS
    SUBROUTINE kpoint_create(kpoint)
       TYPE(kpoint_type), POINTER                         :: kpoint
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_create', routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(kpoint))
 
       ALLOCATE (kpoint)
@@ -230,8 +230,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE kpoint_release(kpoint)
       TYPE(kpoint_type), POINTER                         :: kpoint
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_release', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ik
 
@@ -346,9 +344,6 @@ CONTAINS
       TYPE(neighbor_list_set_p_type), DIMENSION(:), &
          OPTIONAL, POINTER                               :: sab_nl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_kpoint_info', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(kpoint))
 
       IF (PRESENT(kp_scheme)) kp_scheme = kpoint%kp_scheme
@@ -452,9 +447,6 @@ CONTAINS
       TYPE(neighbor_list_set_p_type), DIMENSION(:), &
          OPTIONAL, POINTER                               :: sab_nl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'set_kpoint_info', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(kpoint))
 
       IF (PRESENT(kp_scheme)) kpoint%kp_scheme = kp_scheme
@@ -506,9 +498,6 @@ CONTAINS
       TYPE(kpoint_type), POINTER                         :: kpoint
       TYPE(section_vals_type), POINTER                   :: kpoint_section
       REAL(KIND=dp), DIMENSION(3, 3), INTENT(IN)         :: a_vec
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_kpoint_section', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: ustr
       CHARACTER(LEN=default_string_length), &
@@ -613,9 +602,6 @@ CONTAINS
       TYPE(kpoint_type), POINTER                         :: kpoint
       TYPE(section_vals_type), POINTER                   :: dft_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_kpoint_info', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, punit
       TYPE(cp_logger_type), POINTER                      :: logger
 
@@ -688,9 +674,6 @@ CONTAINS
    SUBROUTINE kpoint_env_create(kp_env)
       TYPE(kpoint_env_type), POINTER                     :: kp_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_env_create', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(kp_env))
 
       ALLOCATE (kp_env)
@@ -713,9 +696,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE kpoint_env_release(kp_env)
       TYPE(kpoint_env_type), POINTER                     :: kp_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_env_release', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ic, is
 
@@ -773,8 +753,6 @@ CONTAINS
       TYPE(mo_set_p_type), DIMENSION(:, :), OPTIONAL, &
          POINTER                                         :: mos
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_kpoint_env', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(kpoint_env))
 
       IF (PRESENT(nkpoint)) nkpoint = kpoint_env%nkpoint
@@ -792,9 +770,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE kpoint_sym_create(kp_sym)
       TYPE(kpoint_sym_type), POINTER                     :: kp_sym
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_sym_create', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(.NOT. ASSOCIATED(kp_sym))
 
@@ -816,9 +791,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE kpoint_sym_release(kp_sym)
       TYPE(kpoint_sym_type), POINTER                     :: kp_sym
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kpoint_sym_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(kp_sym)) THEN
 

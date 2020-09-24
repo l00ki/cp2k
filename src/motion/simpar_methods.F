@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -61,9 +63,6 @@ CONTAINS
    SUBROUTINE read_md_section(simpar, motion_section, md_section)
       TYPE(simpar_type), POINTER                         :: simpar
       TYPE(section_vals_type), POINTER                   :: motion_section, md_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_md_section', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_path_length)                 :: filename
       INTEGER                                            :: iprint, iw
@@ -266,8 +265,6 @@ CONTAINS
    SUBROUTINE read_md_low(simpar, motion_section, md_section)
       TYPE(simpar_type), POINTER                         :: simpar
       TYPE(section_vals_type), POINTER                   :: motion_section, md_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_md_low', routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: explicit
       TYPE(section_vals_type), POINTER                   :: tmp_section

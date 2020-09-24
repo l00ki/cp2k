@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -125,7 +127,7 @@ CONTAINS
       TYPE(pao_env_type), POINTER                        :: pao
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_param_init', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pao_param_init'
 
       INTEGER                                            :: handle
 
@@ -153,8 +155,7 @@ CONTAINS
    SUBROUTINE pao_param_finalize(pao)
       TYPE(pao_env_type), POINTER                        :: pao
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_param_finalize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_param_finalize'
 
       INTEGER                                            :: handle
 
@@ -188,8 +189,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ikind
       INTEGER, INTENT(OUT)                               :: nparams
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_param_count', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pao_param_count'
 
       INTEGER                                            :: handle
 
@@ -219,8 +219,7 @@ CONTAINS
       TYPE(pao_env_type), POINTER                        :: pao
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_param_initial_guess', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_param_initial_guess'
 
       INTEGER                                            :: handle
       REAL(dp)                                           :: norm
@@ -300,8 +299,7 @@ CONTAINS
    SUBROUTINE pao_assert_unitary(pao)
       TYPE(pao_env_type), POINTER                        :: pao
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_assert_unitary', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_assert_unitary'
 
       INTEGER                                            :: acol, arow, group, handle, i, iatom, M, N
       INTEGER, DIMENSION(:), POINTER                     :: blk_sizes_pao, blk_sizes_pri

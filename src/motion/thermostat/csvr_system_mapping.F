@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -52,9 +54,6 @@ CONTAINS
    SUBROUTINE csvr_to_barostat_mapping(simpar, csvr)
       TYPE(simpar_type), POINTER                         :: simpar
       TYPE(csvr_system_type), POINTER                    :: csvr
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'csvr_to_barostat_mapping', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ndeg
       TYPE(map_info_type), POINTER                       :: map_info
@@ -115,9 +114,6 @@ CONTAINS
       TYPE(csvr_system_type), POINTER                    :: csvr
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'csvr_to_particle_mapping', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, imap, j, natoms_local, &
                                                             sum_of_thermostats
@@ -209,9 +205,6 @@ CONTAINS
       TYPE(global_constraint_type), POINTER              :: gci
       LOGICAL, INTENT(IN), OPTIONAL                      :: shell
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_csvr_thermostat', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nkind, number, region
       LOGICAL                                            :: do_shell
       TYPE(map_info_type), POINTER                       :: map_info
@@ -261,9 +254,6 @@ CONTAINS
       TYPE(csvr_system_type), POINTER                    :: csvr
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'csvr_to_shell_mapping', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, imap, j, nshell_local, &
                                                             sum_of_thermostats

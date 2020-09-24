@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -52,8 +54,7 @@ CONTAINS
       TYPE(preconditioner_type)                          :: preconditioner_env
       TYPE(cp_fm_type), POINTER                          :: matrix_in, matrix_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_preconditioner_fm', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'apply_preconditioner_fm'
 
       INTEGER                                            :: handle
 
@@ -94,8 +95,7 @@ CONTAINS
       TYPE(preconditioner_type)                          :: preconditioner_env
       TYPE(dbcsr_type)                                   :: matrix_in, matrix_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_preconditioner_dbcsr', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'apply_preconditioner_dbcsr'
 
       INTEGER                                            :: handle
 
@@ -137,8 +137,7 @@ CONTAINS
       TYPE(preconditioner_type)                          :: preconditioner_env
       TYPE(cp_fm_type), POINTER                          :: matrix_in, matrix_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_full_single', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'apply_full_single'
 
       INTEGER                                            :: handle, k, n
 
@@ -162,7 +161,7 @@ CONTAINS
       TYPE(preconditioner_type)                          :: preconditioner_env
       TYPE(dbcsr_type)                                   :: matrix_in, matrix_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_single', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'apply_single'
 
       INTEGER                                            :: handle
 
@@ -189,8 +188,7 @@ CONTAINS
       TYPE(preconditioner_type)                          :: preconditioner_env
       TYPE(cp_fm_type), POINTER                          :: matrix_in, matrix_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_full_direct', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'apply_full_direct'
 
       INTEGER                                            :: handle, k, n
       TYPE(cp_fm_type), POINTER                          :: work
@@ -221,7 +219,7 @@ CONTAINS
       TYPE(preconditioner_type)                          :: preconditioner_env
       TYPE(cp_fm_type), POINTER                          :: matrix_in, matrix_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_full_all', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'apply_full_all'
 
       INTEGER                                            :: handle, i, j, k, n, ncol_local, &
                                                             nrow_local
@@ -272,7 +270,7 @@ CONTAINS
       TYPE(preconditioner_type)                          :: preconditioner_env
       TYPE(dbcsr_type)                                   :: matrix_in, matrix_out
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_all', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'apply_all'
 
       INTEGER                                            :: col, col_offset, col_size, handle, i, j, &
                                                             row, row_offset, row_size

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -66,8 +68,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_calculation', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_calculation'
 
       INTEGER                                            :: handle, iw
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -124,9 +125,6 @@ CONTAINS
    SUBROUTINE orbital_eigenvalue_correction(qs_env)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'orbital_eigenvalue_correction', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: oe_corr, output_unit
       TYPE(cp_logger_type), POINTER                      :: logger

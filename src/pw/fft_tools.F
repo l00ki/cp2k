@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -199,8 +201,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN)                       :: wisdom_file
       INTEGER, INTENT(IN)                                :: plan_style
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_fft', routineP = moduleN//':'//routineN
-
       use_fftsg_sizes = fftsg_sizes
       alltoall_sgl = alltoall
       fft_pool_scratch_limit = pool_limit
@@ -228,8 +228,6 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       CHARACTER(LEN=*), INTENT(IN)                       :: wisdom_file
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'finalize_fft', routineP = moduleN//':'//routineN
-
 ! release the FFT scratch pool
 
       CALL release_fft_scratch_pool()
@@ -255,8 +253,6 @@ CONTAINS
       INTEGER, INTENT(OUT)                               :: radix_out
       INTEGER, INTENT(IN)                                :: operation
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fft_radix_operations', &
-         routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: fft_type_sg = 1
 
       INTEGER                                            :: i, iloc, ldata
@@ -350,7 +346,7 @@ CONTAINS
       REAL(kind=dp), INTENT(in)                          :: scale
       INTEGER, INTENT(out)                               :: stat
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fft_fw1d', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'fft_fw1d'
 
       INTEGER                                            :: handle
       TYPE(fft_plan_type)                                :: fft_plan
@@ -395,7 +391,7 @@ CONTAINS
       INTEGER, INTENT(OUT), OPTIONAL                     :: status
       LOGICAL, INTENT(IN), OPTIONAL                      :: debug
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fft3d_s', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'fft3d_s'
 
       COMPLEX(KIND=dp), DIMENSION(1, 1, 1), TARGET       :: zdum
       COMPLEX(KIND=dp), DIMENSION(:, :, :), POINTER      :: zoptr
@@ -525,7 +521,7 @@ CONTAINS
       INTEGER, INTENT(OUT), OPTIONAL                     :: status
       LOGICAL, INTENT(IN), OPTIONAL                      :: debug
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fft3d_ps', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'fft3d_ps'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: pbuf, qbuf, rbuf, sbuf
       COMPLEX(KIND=dp), DIMENSION(:, :, :), POINTER      :: tbuf
@@ -970,7 +966,7 @@ CONTAINS
       INTEGER, INTENT(OUT), OPTIONAL                     :: status
       LOGICAL, INTENT(IN), OPTIONAL                      :: debug
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fft3d_pb', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'fft3d_pb'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: abuf, bbuf
       INTEGER                                            :: handle, lg(2), lz(3), mcx2, mcy3, mcz1, &
@@ -1397,7 +1393,7 @@ CONTAINS
          INTENT(INOUT)                                   :: tb
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'x_to_yz', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'x_to_yz'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rr
       COMPLEX(KIND=sp), DIMENSION(:, :), POINTER         :: ss, tt
@@ -1505,7 +1501,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(INOUT)   :: sb
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'yz_to_x', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'yz_to_x'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rr
       COMPLEX(KIND=sp), DIMENSION(:, :), POINTER         :: ss, tt
@@ -1617,7 +1613,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(INOUT)   :: tb
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'yz_to_xz', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'yz_to_xz'
 
       COMPLEX(KIND=dp), DIMENSION(:), POINTER            :: xzbuf, yzbuf
       COMPLEX(KIND=sp), DIMENSION(:), POINTER            :: xzbuf_sgl, yzbuf_sgl
@@ -1825,7 +1821,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(INOUT)   :: tb
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xz_to_yz', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xz_to_yz'
 
       COMPLEX(KIND=dp), DIMENSION(:), POINTER            :: xzbuf, yzbuf
       COMPLEX(KIND=sp), DIMENSION(:), POINTER            :: xzbuf_sgl, yzbuf_sgl
@@ -2011,8 +2007,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(OUT)     :: sout
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_transpose_1', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cube_transpose_1'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rbuf
       INTEGER                                            :: handle, ip, ipl, ir, is, ixy, iz, mip, &
@@ -2099,8 +2094,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(OUT)     :: sout
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_transpose_2', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cube_transpose_2'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rbuf
       INTEGER                                            :: handle, ip, ipl, ir, ixy, iz, mip, mz, &
@@ -2185,8 +2179,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(OUT)     :: sout
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_transpose_3', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cube_transpose_3'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rbuf
       INTEGER                                            :: handle, ip, ipl, ir, is, ixz, iy, lb, &
@@ -2286,8 +2279,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(OUT)     :: sout
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_transpose_4', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cube_transpose_4'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rbuf
       INTEGER                                            :: handle, ip, ipl, ir, iy, izx, lb, mip, &
@@ -2385,8 +2377,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(OUT)     :: sout
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_transpose_5', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cube_transpose_5'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rbuf
       INTEGER                                            :: handle, ip, ir, is, ixz, iy, lb, mip, &
@@ -2479,8 +2470,7 @@ CONTAINS
       COMPLEX(KIND=dp), DIMENSION(:, :), INTENT(OUT)     :: sout
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cube_transpose_6', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cube_transpose_6'
 
       COMPLEX(KIND=dp), DIMENSION(:, :), POINTER         :: rbuf
       INTEGER                                            :: handle, ip, ir, iy, izx, lb, mip, my, &
@@ -2556,9 +2546,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE init_fft_scratch_pool()
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_fft_scratch_pool', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
 
       CALL release_fft_scratch_pool()
@@ -2621,9 +2608,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE deallocate_fft_scratch_type(fft_scratch)
       TYPE(fft_scratch_type), INTENT(INOUT)    :: fft_scratch
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_fft_scratch_type', &
-                                     routineP = moduleN//':'//routineN
 
 #if defined ( __PW_CUDA ) && !defined ( __PW_CUDA_NO_HOSTALLOC )
       INTEGER                   :: ierr
@@ -2804,9 +2788,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE release_fft_scratch_pool()
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'release_fft_scratch_pool', &
-         routineP = moduleN//':'//routineN
-
       TYPE(fft_scratch_pool_type), POINTER               :: fft_scratch, fft_scratch_current
 
       IF (init_fft_pool == 0) NULLIFY (fft_scratch_first)
@@ -2835,9 +2816,6 @@ CONTAINS
 !> \brief ...
 ! **************************************************************************************************
    SUBROUTINE resize_fft_scratch_pool()
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'resize_fft_scratch_pool', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: last_tick, nscratch
       TYPE(fft_scratch_pool_type), POINTER               :: fft_scratch_current, fft_scratch_old
@@ -2911,8 +2889,7 @@ CONTAINS
       TYPE(fft_scratch_sizes), INTENT(IN), &
          OPTIONAL                               :: fft_sizes
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_fft_scratch', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'get_fft_scratch'
 
       INTEGER :: coord(2), DIM(2), handle, i, ix, iz, lg, lmax, m1, m2, &
                  mcx2, mcy3, mcz1, mcz2, mg, mmax, mx1, mx2, my1, my3, mz1, mz2, mz3, &
@@ -3327,9 +3304,6 @@ CONTAINS
    SUBROUTINE release_fft_scratch(fft_scratch)
 
       TYPE(fft_scratch_type), POINTER                    :: fft_scratch
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'release_fft_scratch', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: scratch_id
       TYPE(fft_scratch_pool_type), POINTER               :: fft_scratch_current

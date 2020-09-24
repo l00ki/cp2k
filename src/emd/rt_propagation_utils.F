@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,7 +89,7 @@ CONTAINS
    SUBROUTINE calc_S_derivs(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_S_derivs', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'calc_S_derivs'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: col_atom, handle, i, j, m, maxder, n, &
@@ -222,9 +224,6 @@ CONTAINS
    SUBROUTINE get_restart_wfn(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_restart_wfn', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_path_length)                 :: file_name, project_name
       INTEGER                                            :: i, id_nr, im, ispin, ncol, nspin, re, &
                                                             unit_nr
@@ -347,8 +346,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calc_update_rho', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'calc_update_rho'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle, i, im, ncol, re
@@ -418,8 +416,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calc_update_rho_sparse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'calc_update_rho_sparse'
       REAL(KIND=dp), PARAMETER                           :: zero = 0.0_dp
 
       INTEGER                                            :: handle, ispin
@@ -468,9 +465,6 @@ CONTAINS
       TYPE(rt_prop_type), POINTER                        :: rtp
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_p_im
       LOGICAL, OPTIONAL                                  :: keep_sparsity
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_P_imaginary', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, im, ncol, re
       LOGICAL                                            :: my_keep_sparsity

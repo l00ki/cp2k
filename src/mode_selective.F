@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -108,7 +110,7 @@ CONTAINS
       INTEGER                                            :: output_unit
       TYPE(cp_logger_type), POINTER                      :: logger
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ms_vb_anal', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ms_vb_anal'
 
       CHARACTER(LEN=default_string_length)               :: description
       INTEGER                                            :: handle, i, ip1, j, natoms, ncoord
@@ -264,8 +266,7 @@ CONTAINS
       LOGICAL                                            :: calc_intens
       TYPE(cp_logger_type), POINTER                      :: logger
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'MS_initial_moves', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'MS_initial_moves'
 
       INTEGER                                            :: guess, handle, i, j, jj, k, m, &
                                                             n_rep_val, natoms, ncoord
@@ -448,8 +449,6 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER                                            :: nrep
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'bfgs_guess', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_path_length)                 :: hes_filename
       INTEGER                                            :: hesunit, i, j, jj, k, natoms, ncoord, &
                                                             output_unit, stat
@@ -558,8 +557,6 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particles
       INTEGER                                            :: nrep
       LOGICAL                                            :: calc_intens
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'rest_guess', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_path_length)                 :: ms_filename
       INTEGER                                            :: hesunit, i, j, mat, natoms, ncoord, &
@@ -670,8 +667,6 @@ CONTAINS
       REAL(Kind=dp), DIMENSION(:)                        :: mass
       INTEGER                                            :: ncoord, nrep
       TYPE(cp_logger_type), POINTER                      :: logger
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'molden_guess', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: at_name
       CHARACTER(LEN=default_path_length)                 :: ms_filename
@@ -840,9 +835,6 @@ CONTAINS
       LOGICAL                                            :: calc_intens
       INTEGER                                            :: output_unit_ms
       TYPE(cp_logger_type), POINTER                      :: logger
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'evaluate_H_update_b', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j, jj, k, natoms, ncoord
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: ind
@@ -1017,8 +1009,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :)                     :: residuum
       REAL(KIND=dp), DIMENSION(2, nrep), OPTIONAL        :: criteria
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'select_vector', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, j, jj, k
       REAL(KIND=dp)                                      :: my_val, norm
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: tmp
@@ -1147,8 +1137,6 @@ CONTAINS
       LOGICAL                                            :: calc_intens
       REAL(KIND=dp), DIMENSION(:), OPTIONAL              :: intensities
       TYPE(cp_logger_type), POINTER                      :: logger
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ms_out', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j, msunit, stat
       REAL(KIND=dp)                                      :: crit_a, crit_b

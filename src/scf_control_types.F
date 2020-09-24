@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -156,7 +158,7 @@ CONTAINS
 
       TYPE(scf_control_type), POINTER                    :: scf_control
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'scf_c_create', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'scf_c_create'
 
       INTEGER                                            :: handle
 
@@ -278,8 +280,6 @@ CONTAINS
 
       TYPE(scf_control_type), POINTER                    :: scf_control
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'scf_c_retain', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(scf_control))
 
       CPASSERT(scf_control%ref_count > 0)
@@ -299,8 +299,6 @@ CONTAINS
    SUBROUTINE scf_c_release(scf_control)
 
       TYPE(scf_control_type), POINTER                    :: scf_control
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'scf_c_release', routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(scf_control)) THEN
          CPASSERT(scf_control%ref_count > 0)
@@ -341,8 +339,7 @@ CONTAINS
       TYPE(scf_control_type), POINTER                    :: scf_control
       TYPE(section_vals_type), POINTER                   :: inp_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'scf_c_read_parameters', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'scf_c_read_parameters'
 
       INTEGER                                            :: cholesky_flag, handle, ialgo
       INTEGER, DIMENSION(:), POINTER                     :: added_mos
@@ -504,8 +501,6 @@ CONTAINS
    SUBROUTINE init_smear(smear)
       TYPE(smear_type), POINTER                          :: smear
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_smear', routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(smear))
       ALLOCATE (smear)
       smear%do_smear = .FALSE.
@@ -525,9 +520,6 @@ CONTAINS
    SUBROUTINE read_smear_section(smear, smear_section)
       TYPE(smear_type), POINTER                          :: smear
       TYPE(section_vals_type), POINTER                   :: smear_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_smear_section', &
-         routineP = moduleN//':'//routineN
 
       REAL(KIND=dp), DIMENSION(:), POINTER               :: r_vals
 
@@ -570,8 +562,7 @@ CONTAINS
       TYPE(scf_control_type), POINTER                    :: scf_control
       TYPE(section_vals_type), POINTER                   :: dft_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'scf_c_write_parameters', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'scf_c_write_parameters'
 
       INTEGER                                            :: handle, output_unit, roks_scheme
       LOGICAL                                            :: roks
@@ -756,8 +747,7 @@ CONTAINS
       TYPE(qs_ot_settings_type)                          :: settings
       TYPE(section_vals_type), POINTER                   :: scf_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ot_diag_read_input', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'ot_diag_read_input'
 
       INTEGER                                            :: handle, output_unit
       LOGICAL                                            :: explicit

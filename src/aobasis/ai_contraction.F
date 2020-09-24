@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -78,8 +80,6 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: nb, mb
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: fscale
       LOGICAL, INTENT(IN), OPTIONAL                      :: trans
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'contraction_ab', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: lda, ldb, ldq, lds, ldw, mal, mbl, nal, &
                                                             nbl
@@ -211,9 +211,6 @@ CONTAINS
          OPTIONAL                                        :: cc
       INTEGER, INTENT(IN), OPTIONAL                      :: nc, mc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'contraction_abc', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: lda, ldb, ldc, mal, mbl, mcl, nal, nbl, &
                                                             ncl
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: work1, work2, work3, work4
@@ -326,9 +323,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nb, mb
       LOGICAL, INTENT(IN), OPTIONAL                      :: trans
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'decontraction_ab', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: lda, ldb, ldq, lds, ldw
       LOGICAL                                            :: my_trans
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: work
@@ -381,8 +375,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: na, nb, m
       LOGICAL, INTENT(IN), OPTIONAL                      :: trans
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'force_trace_ab', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
       LOGICAL                                            :: my_trans
 
@@ -428,8 +420,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: qab
       INTEGER, INTENT(IN)                                :: ia, ib
       LOGICAL, INTENT(IN), OPTIONAL                      :: trans
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'block_add_ab', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ja, jb
       LOGICAL                                            :: my_trans

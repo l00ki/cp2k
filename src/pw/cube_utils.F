@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -93,9 +95,6 @@ CONTAINS
       INTEGER, INTENT(OUT)                               :: lb(3), ub(3)
       REAL(KIND=dp), INTENT(IN)                          :: rp(3)
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'return_cube_nonortho', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, j, k
       REAL(KIND=dp)                                      :: point(3), res(3)
 
@@ -145,8 +144,6 @@ CONTAINS
       INTEGER                                            :: lb_cube(3), ub_cube(3)
       INTEGER, DIMENSION(:), POINTER                     :: sphere_bounds
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'return_cube', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: imr
 
       IF (info%orthorhombic) THEN
@@ -188,9 +185,6 @@ CONTAINS
    SUBROUTINE destroy_cube_info(info)
       TYPE(cube_info_type)                               :: info
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'destroy_cube_info', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
 
       IF (info%orthorhombic) THEN
@@ -221,7 +215,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: ortho
       REAL(KIND=dp), INTENT(IN)                          :: max_radius
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'init_cube_info', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'init_cube_info'
 
       INTEGER                                            :: check_1, check_2, handle, i, igmin, imr, &
                                                             jg, jg2, jgmin, k, kg, kg2, kgmin, &

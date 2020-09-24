@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -118,8 +120,7 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       INTEGER, INTENT(in)                                :: order
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'thomas_fermi_lda_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'thomas_fermi_lda_eval'
 
       INTEGER                                            :: handle, npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo
@@ -185,8 +186,7 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       INTEGER, INTENT(in)                                :: order
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'thomas_fermi_lsd_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'thomas_fermi_lsd_eval'
       CHARACTER(len=6), DIMENSION(2), PARAMETER :: rho_spin_name = (/"(rhoa)", "(rhob)"/)
 
       INTEGER                                            :: handle, i, ispin, npoints

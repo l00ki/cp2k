@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -56,9 +58,6 @@ CONTAINS
       CHARACTER(len=default_path_length), &
          DIMENSION(:, :), POINTER                        :: initial_variables
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_inpp_type', &
-                                     routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(inpp))
       ALLOCATE (inpp)
 
@@ -89,9 +88,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE release_inpp_type(inpp)
       TYPE(inpp_type), POINTER                           :: inpp
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'release_inpp_type', &
-                                     routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(inpp))
 

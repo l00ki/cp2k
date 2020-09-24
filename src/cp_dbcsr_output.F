@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -84,9 +86,6 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: first_row, last_row, first_col, last_col
       INTEGER, INTENT(IN)                                :: output_unit
       LOGICAL, INTENT(IN), OPTIONAL                      :: omit_headers
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_fm_with_basis_info', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=60)                                  :: matrix_name
       INTEGER                                            :: col1, col2, group, ncol_global, &
@@ -174,9 +173,6 @@ CONTAINS
       REAL(dp), INTENT(IN), OPTIONAL                     :: scale
       INTEGER, INTENT(IN)                                :: output_unit
       LOGICAL, INTENT(IN), OPTIONAL                      :: omit_headers
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_write_sparse_matrix', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: matrix_name
       INTEGER                                            :: col1, col2, dim_col, dim_row, group, &
@@ -270,8 +266,7 @@ CONTAINS
       TYPE(dbcsr_type)                                   :: sparse_matrix
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: fm
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'copy_repl_dbcsr_to_repl_fm', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'copy_repl_dbcsr_to_repl_fm'
 
       INTEGER                                            :: blk, col, handle, i, j, nblkcols_total, &
                                                             nblkrows_total, nc, nr, row
@@ -353,9 +348,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: first_row, last_row, first_col, &
                                                             last_col, output_unit
       LOGICAL, INTENT(IN)                                :: omit_headers
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_matrix_sym', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: element_symbol
       CHARACTER(LEN=25)                                  :: fmtstr1
@@ -523,9 +515,6 @@ CONTAINS
                                                             last_col, output_unit
       LOGICAL, INTENT(IN)                                :: omit_headers
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_matrix_gen', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=25)                                  :: fmtstr1
       CHARACTER(LEN=35)                                  :: fmtstr2
       INTEGER                                            :: from, group, icol, irow, jcol, left, &
@@ -610,8 +599,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: output_unit
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_write_matrix_dist', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_dbcsr_write_matrix_dist'
       LOGICAL, PARAMETER                                 :: full_output = .FALSE.
 
       CHARACTER                                          :: matrix_type

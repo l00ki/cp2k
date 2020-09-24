@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -50,8 +52,6 @@ CONTAINS
       TYPE(semi_empirical_type), POINTER                 :: sepi, sepj
       INTEGER, INTENT(IN)                                :: ij, kl, li, lj, lk, ll, ic, itype
       REAL(KIND=dp)                                      :: eval, res
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ijkl_low_3', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: l1, l2, lij, lkl
       REAL(KIND=dp)                                      :: add, ccc, chrg, pij, pkl, sum
@@ -125,8 +125,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(in)                          :: add
       REAL(KIND=dp)                                      :: charg
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'charg_int_3', routineP = moduleN//':'//routineN
-
 ! Computing only residual Integral Values
 
       charg = 0.0_dp
@@ -157,8 +155,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: l1, l2
       REAL(KIND=dp), INTENT(in)                          :: add
       REAL(KIND=dp)                                      :: coeff
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'coeff_int_3', routineP = moduleN//':'//routineN
 
 ! Computing only residual Integral Values
 
@@ -193,8 +189,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: l1, l2
       REAL(KIND=dp), INTENT(in)                          :: add
       REAL(KIND=dp)                                      :: charg
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'dcharg_int_3', routineP = moduleN//':'//routineN
 
 ! Computing only residual Integral Derivatives
 

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -101,8 +103,6 @@ CONTAINS
 
       TYPE(epr_env_type)                                 :: epr_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'epr_g_print', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: title
       INTEGER                                            :: idir1, idir2, output_unit, unit_nr
@@ -226,8 +226,6 @@ CONTAINS
       TYPE(epr_env_type)                                 :: epr_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'epr_g_zke', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i1, ispin, output_unit
       REAL(KIND=dp)                                      :: epr_g_zke_temp(2)
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -286,8 +284,6 @@ CONTAINS
       TYPE(current_env_type)                             :: current_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: iB
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'epr_g_so', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: aint_precond, ia, iat, iatom, idir1, &
                                                             idir2, idir3, ikind, ir, ispin, &
@@ -556,8 +552,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: iB
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'epr_g_soo', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: aint_precond, ia, iat, iatom, idir1, &
                                                             ikind, ir, iso, ispin, max_iter, &
                                                             natom, nkind, nspins, output_unit, &
@@ -782,8 +776,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: iB
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'epr_ind_magnetic_field', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'epr_ind_magnetic_field'
 
       INTEGER                                            :: handle, idir, idir2, idir3, iiB, iiiB, &
                                                             ispin, natom, nspins

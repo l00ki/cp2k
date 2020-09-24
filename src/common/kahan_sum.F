@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -440,7 +442,7 @@ CONTAINS
       COMPLEX(KIND=dp)                                   :: c, t, y
       INTEGER                                            :: i1, i2, n1, n2
 
-      ks = dzero; t = dzero; y = dzero; c = dzero
+      ks = zzero; t = zzero; y = zzero; c = zzero
 
       n1 = SIZE(array1, 1)
       n2 = SIZE(array1, 2)

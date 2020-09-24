@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -74,7 +76,7 @@ MODULE bfgs_optimizer
 
    IMPLICIT NONE
    PRIVATE
-#include "gopt_f77_methods.h"
+#include "gopt_f77_methods.f90"
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'bfgs_optimizer'
    LOGICAL, PARAMETER                   :: debug_this_module = .TRUE.
@@ -101,7 +103,7 @@ CONTAINS
       TYPE(gopt_f_type), POINTER                         :: gopt_env
       REAL(KIND=dp), DIMENSION(:), POINTER               :: x0
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'geoopt_bfgs', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'geoopt_bfgs'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       CHARACTER(LEN=5)                                   :: wildcard
@@ -405,7 +407,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: g(ndf)
       TYPE(cp_para_env_type), OPTIONAL, POINTER          :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rat_fun_opt', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'rat_fun_opt'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp
 
       INTEGER                                            :: handle, i, indf, iref, iter, j, k, l, &
@@ -573,7 +575,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: work(ndf)
       TYPE(cp_para_env_type), OPTIONAL, POINTER          :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'bfgs', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'bfgs'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle, i, j, k, l, ncol_local, &
@@ -626,7 +628,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ndf
       REAL(KIND=dp), INTENT(INOUT)                       :: eigval(ndf), work(ndf)
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'set_hes_eig', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'set_hes_eig'
       REAL(KIND=dp), PARAMETER                           :: max_neg = -0.5_dp, max_pos = 5.0_dp, &
                                                             min_eig = 0.005_dp, one = 1.0_dp
 
@@ -747,7 +749,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: step, rad, rat, dr(ndf)
       INTEGER, INTENT(IN)                                :: output_unit
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'trust_radius', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'trust_radius'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp
 
       INTEGER                                            :: handle
@@ -793,7 +795,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: pred
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'energy_predict', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'energy_predict'
       REAL(KIND=dp), PARAMETER                           :: zero = 0.0_dp
 
       INTEGER                                            :: handle, i, j, k, l, ncol_local, &
@@ -837,8 +839,7 @@ CONTAINS
 
       REAL(KIND=dp), INTENT(INOUT)                       :: rat, rad, step, ediff
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'update_trust_rad', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'update_trust_rad'
       REAL(KIND=dp), PARAMETER                           :: max_trust = 1.0_dp, min_trust = 0.1_dp
 
       INTEGER                                            :: handle
@@ -919,8 +920,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: hess_mat
       TYPE(cp_logger_type), POINTER                      :: logger
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_bfgs_hessian', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_bfgs_hessian'
 
       INTEGER                                            :: handle, hesunit
 
@@ -948,9 +948,6 @@ CONTAINS
 
       TYPE(force_env_type), POINTER                      :: force_env
       TYPE(cp_fm_type), POINTER                          :: hess_mat
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'construct_initial_hess', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iat_col, iat_row, iglobal, iind, j, &
                                                             jat_row, jglobal, jind, k, natom, &

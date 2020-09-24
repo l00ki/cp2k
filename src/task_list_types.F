@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -11,6 +13,10 @@
 ! **************************************************************************************************
 MODULE task_list_types
 
+   USE grid_api,                        ONLY: grid_basis_set_type,&
+                                              grid_free_basis_set,&
+                                              grid_free_task_list,&
+                                              grid_task_list_type
    USE kinds,                           ONLY: dp,&
                                               int_8
 #include "./base/base_uses.f90"
@@ -67,6 +73,9 @@ MODULE task_list_types
       INTEGER                                       :: buffer_size_recv = 0
 
       REAL(KIND=dp), DIMENSION(:), POINTER          :: buffer_recv => Null()
+
+      TYPE(grid_basis_set_type), DIMENSION(:), POINTER :: grid_basis_sets => Null()
+      TYPE(grid_task_list_type)                     :: grid_task_list
    END TYPE task_list_type
 
    INTEGER, PARAMETER                               :: task_size_in_int8 = 17
@@ -85,9 +94,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE allocate_task_list(task_list)
       TYPE(task_list_type), POINTER                      :: task_list
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'allocate_task_list', &
-         routineP = moduleN//':'//routineN
 
       ALLOCATE (task_list)
 
@@ -137,8 +143,7 @@ CONTAINS
    SUBROUTINE deallocate_task_list(task_list)
       TYPE(task_list_type), POINTER                      :: task_list
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'deallocate_task_list', &
-         routineP = moduleN//':'//routineN
+      INTEGER                                            :: i
 
       IF (ASSOCIATED(task_list%tasks)) THEN
          DEALLOCATE (task_list%tasks)
@@ -178,8 +183,13 @@ CONTAINS
       IF (ASSOCIATED(task_list%rank_sizes_recv)) THEN
          DEALLOCATE (task_list%rank_sizes_recv)
       ENDIF
-      IF (ASSOCIATED(task_list%buffer_recv)) THEN
-         DEALLOCATE (task_list%buffer_recv)
+      CALL grid_free_task_list(task_list%grid_task_list)  ! also frees task_list%buffer_recv
+      NULLIFY (task_list%buffer_recv)
+      IF (ASSOCIATED(task_list%grid_basis_sets)) THEN
+         DO i = 1, SIZE(task_list%grid_basis_sets)
+            CALL grid_free_basis_set(task_list%grid_basis_sets(i))
+         ENDDO
+         DEALLOCATE (task_list%grid_basis_sets)
       ENDIF
 
       DEALLOCATE (task_list)

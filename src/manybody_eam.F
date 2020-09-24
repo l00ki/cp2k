@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -52,8 +54,7 @@ CONTAINS
       TYPE(cell_type), POINTER                           :: cell
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_nonbond', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'density_nonbond'
 
       INTEGER                                            :: atom_a, atom_b, handle, i, i_a, i_b, &
                                                             iend, igrp, ikind, ilist, ipair, &
@@ -178,8 +179,6 @@ CONTAINS
       REAL(dp), INTENT(INOUT)                            :: rho(:)
       REAL(dp), INTENT(IN)                               :: fac
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_rho_eam', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: index
       REAL(dp)                                           :: qq, rab, rhoi, rhoj
 
@@ -226,8 +225,6 @@ CONTAINS
       TYPE(eam_type), INTENT(IN)                         :: eam_data(:)
       INTEGER, INTENT(IN)                                :: atom_a, atom_b
       REAL(dp), INTENT(OUT)                              :: f_eam
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_force_eam', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: index
       REAL(KIND=dp)                                      :: denspi, denspj, fcp, qq, rab

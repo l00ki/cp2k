@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,9 +89,6 @@ CONTAINS
    SUBROUTINE pao_read_restart(pao, qs_env)
       TYPE(pao_env_type), POINTER                        :: pao
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_read_restart', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: param
       INTEGER                                            :: iatom, ikind, natoms
@@ -192,8 +191,6 @@ CONTAINS
       REAL(dp), ALLOCATABLE, DIMENSION(:, :)             :: positions
       TYPE(pao_ioblock_type), ALLOCATABLE, DIMENSION(:)  :: xblocks
       INTEGER, DIMENSION(2), INTENT(OUT), OPTIONAL       :: ml_range
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_read_raw', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: label, str_in
       INTEGER                                            :: i1, i2, iatom, ikind, ipot, natoms, &
@@ -395,7 +392,7 @@ CONTAINS
       REAL(dp)                                           :: energy
 
       CHARACTER(len=*), PARAMETER :: printkey_section = 'DFT%LS_SCF%PAO%PRINT%RESTART', &
-         routineN = 'pao_write_restart', routineP = moduleN//':'//routineN
+         routineN = 'pao_write_restart'
 
       INTEGER                                            :: handle, unit_max, unit_nr
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -496,9 +493,6 @@ CONTAINS
       REAL(dp)                                           :: energy
       INTEGER, INTENT(IN)                                :: unit_nr
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_restart_header', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_string_length)               :: kindname
       INTEGER                                            :: iatom, ikind, ipot, nparams, &
                                                             pao_basis_size, z
@@ -567,8 +561,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_write_ks_matrix_csr', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_write_ks_matrix_csr'
 
       CHARACTER(LEN=default_path_length)                 :: file_name, fileformat
       INTEGER                                            :: handle, ispin, output_unit, unit_nr
@@ -643,8 +636,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_write_s_matrix_csr', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_write_s_matrix_csr'
 
       CHARACTER(LEN=default_path_length)                 :: file_name, fileformat
       INTEGER                                            :: handle, output_unit, unit_nr

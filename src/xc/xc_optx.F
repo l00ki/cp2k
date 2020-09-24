@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -45,8 +47,6 @@ CONTAINS
       TYPE(xc_rho_cflags_type), INTENT(inout), OPTIONAL  :: needs
       INTEGER, INTENT(out), OPTIONAL                     :: max_deriv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'optx_lda_info', routineP = moduleN//':'//routineN
-
       IF (PRESENT(reference)) THEN
          reference = "OPTX, Handy NC and Cohen AJ,  JCP 116, p. 5411 (2002) (LDA)"
       END IF
@@ -73,8 +73,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(OUT), OPTIONAL            :: reference, shortform
       TYPE(xc_rho_cflags_type), INTENT(inout), OPTIONAL  :: needs
       INTEGER, INTENT(out), OPTIONAL                     :: max_deriv
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'optx_lsd_info', routineP = moduleN//':'//routineN
 
       IF (PRESENT(reference)) THEN
          reference = "OPTX, Handy NC and Cohen AJ,  JCP 116, p. 5411 (2002), (LSD) "
@@ -107,8 +105,6 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       INTEGER, INTENT(in)                                :: grad_deriv
       TYPE(section_vals_type), POINTER                   :: optx_params
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'optx_lda_eval', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo
@@ -171,8 +167,6 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       INTEGER, INTENT(in)                                :: grad_deriv
       TYPE(section_vals_type), POINTER                   :: optx_params
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'optx_lsd_eval', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ispin, npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo

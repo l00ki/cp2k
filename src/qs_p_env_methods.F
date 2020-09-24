@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -131,7 +133,7 @@ CONTAINS
       LOGICAL, INTENT(in), OPTIONAL                      :: orthogonal_orbitals
       TYPE(linres_control_type), OPTIONAL, POINTER       :: linres_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_env_create', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'p_env_create'
 
       INTEGER                                            :: handle, n_ao, n_mo, n_spins, natom, spin
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
@@ -321,8 +323,7 @@ CONTAINS
       TYPE(qs_p_env_type), POINTER                       :: p_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_env_check_i_alloc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'p_env_check_i_alloc'
 
       CHARACTER(len=25)                                  :: name
       INTEGER                                            :: handle, ispin, nspins
@@ -381,8 +382,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(inout), &
          OPTIONAL                                        :: Hrho_psi0d
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_env_psi0_changed', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'p_env_psi0_changed'
 
       INTEGER                                            :: handle, iounit, lfomo, n_spins, nmo, spin
       LOGICAL                                            :: was_present
@@ -596,8 +596,6 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(in)       :: v
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(inout)    :: res
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_op_l1', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: n_spins, spin
       TYPE(dft_control_type), POINTER                    :: dft_control
 
@@ -636,7 +634,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: spin
       TYPE(cp_fm_type), POINTER                          :: v, res
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_op_l1_spin', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'p_op_l1_spin'
 
       INTEGER                                            :: handle, ncol
       TYPE(cp_fm_type), POINTER                          :: tmp
@@ -707,7 +705,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(INOUT)    :: res
       REAL(KIND=dp), INTENT(in), OPTIONAL                :: alpha, beta
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_op_l2', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'p_op_l2'
       LOGICAL, PARAMETER                                 :: fdiff = .FALSE.
 
       INTEGER                                            :: handle, ispin, n_spins
@@ -789,7 +787,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(inout)    :: v
       INTEGER, DIMENSION(:), INTENT(in), OPTIONAL        :: n_cols
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_preortho', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'p_preortho'
 
       INTEGER                                            :: cols, handle, max_cols, maxnmo, n_spins, &
                                                             nmo2, spin, v_cols, v_rows
@@ -884,7 +882,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(inout)    :: v
       INTEGER, DIMENSION(:), INTENT(in), OPTIONAL        :: n_cols
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p_postortho', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'p_postortho'
 
       INTEGER                                            :: cols, handle, max_cols, maxnmo, n_spins, &
                                                             nmo2, spin, v_cols, v_rows

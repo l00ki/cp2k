@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -134,9 +136,6 @@ CONTAINS
       TYPE(scf_control_type), OPTIONAL, POINTER          :: scf_control
       TYPE(section_vals_type), OPTIONAL, POINTER         :: scf_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_env_initialize', &
-         routineP = moduleN//':'//routineN
-
       TYPE(dft_control_type), POINTER                    :: dft_control
       TYPE(scf_control_type), POINTER                    :: my_scf_control
       TYPE(section_vals_type), POINTER                   :: dft_section, input, my_scf_section
@@ -193,9 +192,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_env_init_basic', &
-         routineP = moduleN//':'//routineN
-
       TYPE(dft_control_type), POINTER                    :: dft_control
       TYPE(scf_control_type), POINTER                    :: scf_control
       TYPE(section_vals_type), POINTER                   :: dft_section, input, scf_section
@@ -232,9 +228,6 @@ CONTAINS
    SUBROUTINE qs_scf_ensure_scf_env(qs_env, scf_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_ensure_scf_env', &
-         routineP = moduleN//':'//routineN
 
       TYPE(pw_p_type), DIMENSION(:), POINTER             :: rho_g
       TYPE(qs_rho_type), POINTER                         :: rho
@@ -274,9 +267,6 @@ CONTAINS
       TYPE(scf_control_type), POINTER                    :: scf_control
       INTEGER, OPTIONAL                                  :: nvar
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_ensure_outer_loop_vars', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nhistory, nvariables
 
       IF (scf_control%outer_scf%have_scf) THEN
@@ -311,9 +301,6 @@ CONTAINS
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
       TYPE(dft_control_type), POINTER                    :: dft_control
       TYPE(scf_control_type), POINTER                    :: scf_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_ensure_cdft_loop_vars', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nhistory, nvariables
       LOGICAL                                            :: do_kpoints
@@ -394,9 +381,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_ensure_mixing_store', &
-         routineP = moduleN//':'//routineN
-
       TYPE(dft_control_type), POINTER                    :: dft_control
 
       NULLIFY (dft_control)
@@ -424,8 +408,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_ensure_work_matrices', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_ensure_work_matrices'
 
       INTEGER                                            :: handle, is, nao, nrow_block, nw
       LOGICAL                                            :: do_kpoints
@@ -556,8 +539,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_ensure_mos', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_scf_ensure_mos'
 
       INTEGER                                            :: handle, ic, ik, ikk, ispin, nmo, nmo_mat
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: mo_derivs_aux_fit
@@ -736,9 +718,6 @@ CONTAINS
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
       TYPE(dft_control_type), POINTER                    :: dft_control
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_ensure_mixing', &
-         routineP = moduleN//':'//routineN
-
       TYPE(section_vals_type), POINTER                   :: mixing_section
 
       SELECT CASE (scf_control%mixing_method)
@@ -801,9 +780,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(scf_control_type), POINTER                    :: scf_control
       LOGICAL                                            :: has_unit_metric
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_ensure_diagonalization', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ispin, nao, nmo
       LOGICAL                                            :: do_kpoints, need_coeff_b, not_se_or_tb
@@ -928,7 +904,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: scf_section
       TYPE(scf_control_type), POINTER                    :: scf_control
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'init_scf_run', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'init_scf_run'
 
       INTEGER                                            :: after, handle, ikind, iw, nao, ndep, &
                                                             output_unit
@@ -1112,8 +1088,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: scf_section
       TYPE(scf_control_type), POINTER                    :: scf_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'scf_env_initial_rho_setup', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'scf_env_initial_rho_setup'
 
       INTEGER                                            :: extrapolation_method_nr, handle, ispin, &
                                                             nmo, output_unit

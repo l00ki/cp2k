@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -376,9 +378,6 @@ CONTAINS
       TYPE(dbcsr_type)                          :: matrix, vec_in, vec_out
       ${type}$                                  :: alpha, beta
       TYPE(dbcsr_type)                          :: work_row, work_col
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dbcsr_matrix_colvec_multiply_low', &
-                                     routineP = moduleN//':'//routineN
 
       CHARACTER                                :: matrix_type
 

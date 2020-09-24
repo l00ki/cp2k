@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -90,8 +92,6 @@ CONTAINS
    SUBROUTINE kpp1_release(kpp1_env)
       TYPE(qs_kpp1_env_type), POINTER                    :: kpp1_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'kpp1_release', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ispin
 
       IF (ASSOCIATED(kpp1_env)) THEN
@@ -155,8 +155,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE kpp1_retain(kpp1_env)
       TYPE(qs_kpp1_env_type), POINTER                    :: kpp1_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'kpp1_retain', routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(kpp1_env))
       CPASSERT(kpp1_env%ref_count > 0)

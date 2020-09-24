@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -109,9 +111,6 @@ CONTAINS
    SUBROUTINE tddfpt_env_deallocate(t_env)
 
       TYPE(tddfpt_env_type), INTENT(inout)               :: t_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'tddfpt_env_deallocate', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, spin
 

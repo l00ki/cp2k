@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -127,8 +129,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: ks_matrix
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: oe_corr
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'add_saop_pot', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: dft_method_id, homo, i, ispin, j, k, &
                                                             nspins, orb, xc_deriv_method_id, &
@@ -505,9 +505,6 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: oe_corr
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'gapw_add_atomic_saop_pot', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ia, iat, iatom, ikind, ir, ispin, mepos, &
                                                             na, natom, nr, ns, nspins, num_pe, orb

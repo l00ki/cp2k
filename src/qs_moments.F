@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -123,8 +125,7 @@ CONTAINS
          OPTIONAL                                        :: ref_points
       CHARACTER(len=*), OPTIONAL                         :: basis_type
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_local_moment_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_local_moment_matrix'
 
       INTEGER :: handle, i, iatom, icol, ikind, inode, irow, iset, jatom, jkind, jset, last_jatom, &
          maxco, maxsgf, natom, ncoa, ncob, nkind, nm, nseta, nsetb, sgfa, sgfb
@@ -371,8 +372,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nmoments, nders
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: ref_point
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_local_moments_der_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_local_moments_der_matrix'
 
       INTEGER :: handle, i, iatom, icol, idir, ii, ikind, inode, ipgf, irow, iset, j, jatom, &
          jkind, jpgf, jset, last_jatom, M_dim, maxco, maxsgf, na, nb, ncoa, ncob, nda, ndb, nkind, &
@@ -666,8 +666,7 @@ CONTAINS
          OPTIONAL                                        :: ref_points
       CHARACTER(len=*), OPTIONAL                         :: basis_type
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_local_magmom_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_local_magmom_matrix'
 
       INTEGER :: handle, i, iatom, icol, ikind, inode, irow, iset, jatom, jkind, jset, last_jatom, &
          maxco, maxsgf, natom, ncoa, ncob, nkind, nm, nseta, nsetb, sgfa, sgfb
@@ -886,8 +885,7 @@ CONTAINS
          OPTIONAL, POINTER                               :: sab_orb_external
       CHARACTER(len=*), OPTIONAL                         :: basis_type
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_berry_moment_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_berry_moment_matrix'
 
       INTEGER :: handle, iatom, icol, ikind, inode, irow, iset, jatom, jkind, jset, ldab, ldsa, &
          ldsb, ldwork, natom, ncoa, ncob, nkind, nseta, nsetb, sgfa, sgfb
@@ -1055,8 +1053,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3), INTENT(IN)            :: kvec
       CHARACTER(len=*), OPTIONAL                         :: basis_type
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_berry_kpoint_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_berry_kpoint_matrix'
 
       INTEGER :: handle, i, iatom, ic, icol, ikind, inode, irow, iset, jatom, jkind, jset, ldab, &
          ldsa, ldsb, ldwork, natom, ncoa, ncob, nimg, nkind, nseta, nsetb, sgfa, sgfb
@@ -1268,8 +1265,7 @@ CONTAINS
       REAL(dp), DIMENSION(:), POINTER                    :: ref_point
       INTEGER, INTENT(IN)                                :: unit_number
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_moment_berry_phase', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_moment_berry_phase'
 
       CHARACTER(LEN=8), ALLOCATABLE, DIMENSION(:)        :: rlab
       CHARACTER(LEN=default_string_length)               :: description
@@ -1792,8 +1788,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: unit_number
       LOGICAL, INTENT(IN), OPTIONAL                      :: vel_reprs, com_nl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_moment_locop', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_moment_locop'
 
       CHARACTER(LEN=8), ALLOCATABLE, DIMENSION(:)        :: rlab
       CHARACTER(LEN=default_string_length)               :: description
@@ -2353,8 +2348,7 @@ CONTAINS
       REAL(dp), ALLOCATABLE, DIMENSION(:), OPTIONAL      :: nlcom_rv, nlcom_rxrv, nlcom_rrv
       REAL(dp), DIMENSION(3)                             :: ref_point
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_commutator_nl_terms', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_commutator_nl_terms'
 
       INTEGER                                            :: handle, ind, ispin
       LOGICAL                                            :: calc_rrv, calc_rv, calc_rxrv

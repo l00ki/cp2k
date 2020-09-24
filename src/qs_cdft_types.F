@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -262,9 +264,6 @@ CONTAINS
    SUBROUTINE becke_control_create(becke_control)
       TYPE(becke_constraint_type), POINTER               :: becke_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'becke_control_create', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(becke_control))
       ALLOCATE (becke_control)
 
@@ -299,9 +298,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE becke_control_release(becke_control)
       TYPE(becke_constraint_type), POINTER               :: becke_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'becke_control_release', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(becke_control))
       IF (becke_control%vector_buffer%store_vectors) THEN
@@ -342,9 +338,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cdft_control_create(cdft_control)
       TYPE(cdft_control_type), POINTER                   :: cdft_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cdft_control_create', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(.NOT. ASSOCIATED(cdft_control))
       ALLOCATE (cdft_control)
@@ -425,9 +418,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cdft_control_release(cdft_control)
       TYPE(cdft_control_type), POINTER                   :: cdft_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cdft_control_release', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -511,9 +501,6 @@ CONTAINS
    SUBROUTINE cdft_control_retain(cdft_control)
       TYPE(cdft_control_type), POINTER                   :: cdft_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cdft_control_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(cdft_control))
       cdft_control%ref_count = cdft_control%ref_count + 1
    END SUBROUTINE cdft_control_retain
@@ -526,9 +513,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE hirshfeld_control_create(hirshfeld_control)
       TYPE(hirshfeld_constraint_type), POINTER           :: hirshfeld_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'hirshfeld_control_create', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(.NOT. ASSOCIATED(hirshfeld_control))
       ALLOCATE (hirshfeld_control)
@@ -550,9 +534,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE hirshfeld_control_release(hirshfeld_control)
       TYPE(hirshfeld_constraint_type), POINTER           :: hirshfeld_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'hirshfeld_control_release', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(hirshfeld_control))
 

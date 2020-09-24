@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,9 +89,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_qmmm_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -280,9 +279,6 @@ CONTAINS
    SUBROUTINE create_qmmm_mm_kinds(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_mm_kinds', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       NULLIFY (keyword)
@@ -319,9 +315,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_qmmm_force_mixing_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_force_mixing_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: link_subsection, print_key, &
@@ -557,9 +550,6 @@ CONTAINS
    SUBROUTINE create_qmmm_qm_kinds(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_qm_kinds', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       NULLIFY (keyword)
@@ -590,9 +580,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_qmmm_walls_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_walls_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 
@@ -642,9 +629,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_qmmm_image_charge_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_image_charge_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -738,9 +722,6 @@ CONTAINS
    SUBROUTINE create_qmmm_periodic_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_periodic_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
 
@@ -801,9 +782,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_multipole_qmmm_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_multipole_qmmm_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -882,9 +860,6 @@ CONTAINS
    SUBROUTINE create_qmmm_forcefield_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_forcefield_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
 
@@ -920,9 +895,6 @@ CONTAINS
    SUBROUTINE create_qmmm_ff_nb_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_ff_nb_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(section_type), POINTER                        :: subsection
 
       NULLIFY (subsection)
@@ -956,9 +928,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_qmmm_link_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_link_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -1156,9 +1125,6 @@ CONTAINS
    SUBROUTINE create_qmmm_interp_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_qmmm_interp_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key
 
@@ -1254,9 +1220,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_print_qmmm_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_print_qmmm_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key

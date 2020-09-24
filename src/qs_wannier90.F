@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -106,8 +108,7 @@ CONTAINS
       TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wannier90_interface', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'wannier90_interface'
 
       INTEGER                                            :: handle, iw
       LOGICAL                                            :: explicit
@@ -153,8 +154,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: input
       INTEGER, INTENT(IN)                                :: iw
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wannier90_files', &
-         routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: num_nnmax = 12
 
       CHARACTER(len=2)                                   :: asym

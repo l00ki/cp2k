@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -126,8 +128,6 @@ CONTAINS
    SUBROUTINE langevin(md_env)
 
       TYPE(md_environment_type), POINTER                 :: md_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'langevin', routineP = moduleN//':'//routineN
 
       INTEGER :: iparticle, iparticle_kind, iparticle_local, iparticle_reg, ireg, nparticle, &
          nparticle_kind, nparticle_local, nshell
@@ -386,8 +386,6 @@ CONTAINS
       TYPE(md_environment_type), POINTER                 :: md_env
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nve', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i_iter, n_iter, nparticle, &
                                                             nparticle_kind, nshell
       INTEGER, POINTER                                   :: itimes
@@ -599,8 +597,6 @@ CONTAINS
 
       TYPE(md_environment_type), POINTER                 :: md_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'isokin', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nparticle, nparticle_kind, nshell
       INTEGER, POINTER                                   :: itimes
       LOGICAL                                            :: shell_adiabatic, shell_present
@@ -717,8 +713,6 @@ CONTAINS
 
       TYPE(md_environment_type), POINTER                 :: md_env
       TYPE(global_environment_type), POINTER             :: globenv
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'nvt_adiabatic', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ivar, nparticle, nparticle_kind, nshell
       INTEGER, POINTER                                   :: itimes
@@ -927,8 +921,6 @@ CONTAINS
 
       TYPE(md_environment_type), POINTER                 :: md_env
       TYPE(global_environment_type), POINTER             :: globenv
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'nvt', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ivar, nparticle, nparticle_kind, nshell
       INTEGER, POINTER                                   :: itimes
@@ -1170,7 +1162,6 @@ CONTAINS
       TYPE(md_environment_type), POINTER                 :: md_env
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'npt_i', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: e2 = 1.0_dp/6.0_dp, e4 = e2/20.0_dp, &
                                                             e6 = e4/42.0_dp, e8 = e6/72.0_dp
 
@@ -1496,8 +1487,6 @@ CONTAINS
    SUBROUTINE reftraj(md_env)
       TYPE(md_environment_type), POINTER                 :: md_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'reftraj', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=10)                                  :: AA
       INTEGER                                            :: cell_itimes, I, nparticle, Nread, &
                                                             trj_itimes
@@ -1639,7 +1628,6 @@ CONTAINS
 
       TYPE(md_environment_type), POINTER                 :: md_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nph_uniaxial', routineP = moduleN//':'//routineN
       REAL(dp), PARAMETER                                :: e2 = 1._dp/6._dp, e4 = e2/20._dp, &
                                                             e6 = e4/42._dp, e8 = e6/72._dp
 
@@ -1883,8 +1871,6 @@ CONTAINS
 
       TYPE(md_environment_type), POINTER                 :: md_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'nph_uniaxial_damped', &
-         routineP = moduleN//':'//routineN
       REAL(dp), PARAMETER                                :: e2 = 1._dp/6._dp, e4 = e2/20._dp, &
                                                             e6 = e4/42._dp, e8 = e6/72._dp
 
@@ -2138,7 +2124,6 @@ CONTAINS
       TYPE(md_environment_type), POINTER                 :: md_env
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'npt_f', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: e2 = 1.0_dp/6.0_dp, e4 = e2/20.0_dp, &
                                                             e6 = e4/42.0_dp, e8 = e6/72.0_dp
 
@@ -2442,8 +2427,6 @@ CONTAINS
    SUBROUTINE nve_respa(md_env)
 
       TYPE(md_environment_type), POINTER                 :: md_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'nve_respa', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i_step, iparticle, iparticle_kind, &
                                                             iparticle_local, n_time_steps, &

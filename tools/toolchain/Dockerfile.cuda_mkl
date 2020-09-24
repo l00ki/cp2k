@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.1-devel-ubuntu18.04
+FROM nvidia/cuda:11.0-devel-ubuntu20.04
 ARG GPU_VERSION
 ARG LIBINT_LMAX=5
 
@@ -10,6 +10,8 @@ ARG LIBINT_LMAX=5
 # install Ubuntu packages.
 COPY ./install_requirements_ubuntu.sh .
 RUN ./install_requirements_ubuntu.sh
+
+ENV LANG en_US.UTF-8
 
 # Install some more Ubuntu packages.
 RUN apt-get update -qq && apt-get install -qq --no-install-recommends \

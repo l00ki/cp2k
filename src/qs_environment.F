@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -253,8 +255,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: force_env_section, subsys_section
       LOGICAL, INTENT(IN)                                :: use_motion_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_init', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ikind, method_id, nelectron_total, nkind
       LOGICAL                                            :: do_admm_rpa, do_et, do_exx, do_hfx, &
                                                             do_kpoints, is_semi, mp2_present, &
@@ -381,10 +381,11 @@ CONTAINS
          CALL lri_env_basis("RI", qs_env, lri_env, qs_kind_set)
       END IF
 
-      IF (my_qmmm .AND. PRESENT(qmmm_env_qm) .AND. .NOT. dft_control%qs_control%commensurate_mgrids .AND. &
-          (qmmm_env_qm%qmmm_coupl_type == do_qmmm_gauss .OR. qmmm_env_qm%qmmm_coupl_type == do_qmmm_swave)) THEN
-         CALL cp_abort(__LOCATION__, "QM/MM with coupling GAUSS or S-WAVE requires "// &
-                       "keyword FORCE_EVAL/DFT/MGRID/COMMENSURATE to be enabled.")
+      IF (my_qmmm .AND. PRESENT(qmmm_env_qm) .AND. .NOT. dft_control%qs_control%commensurate_mgrids) THEN
+         IF (qmmm_env_qm%qmmm_coupl_type == do_qmmm_gauss .OR. qmmm_env_qm%qmmm_coupl_type == do_qmmm_swave) THEN
+            CALL cp_abort(__LOCATION__, "QM/MM with coupling GAUSS or S-WAVE requires "// &
+                          "keyword FORCE_EVAL/DFT/MGRID/COMMENSURATE to be enabled.")
+         ENDIF
       ENDIF
 
       ! more kpoint stuff
@@ -507,7 +508,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: subsys_section
       LOGICAL, INTENT(in), OPTIONAL                      :: silent
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_init_subsys', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_init_subsys'
 
       CHARACTER(len=2)                                   :: element_symbol
       INTEGER :: handle, ikind, ispin, iw, lmax_sphere, maxl, maxlgto, maxlgto_lri, maxlppl, &
@@ -1618,9 +1619,6 @@ CONTAINS
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(section_vals_type), POINTER                   :: force_env_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_total_numbers', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: maxlgto, maxlppl, maxlppnl, natom, ncgf, &
                                                             nkind, npgf, nset, nsgf, nshell, &

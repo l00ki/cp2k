@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -131,9 +133,6 @@ CONTAINS
       TYPE(cp_fm_struct_type), POINTER                   :: matrix_struct
       CHARACTER(len=*), INTENT(in), OPTIONAL             :: name
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_create', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ncol_local, npcol, nprow, nrow_local
       TYPE(cp_blacs_env_type), POINTER                   :: context
 
@@ -176,8 +175,6 @@ CONTAINS
    SUBROUTINE cp_cfm_retain(matrix)
       TYPE(cp_cfm_type), POINTER                         :: matrix
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_retain', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(matrix))
       CPASSERT(matrix%ref_count > 0)
       matrix%ref_count = matrix%ref_count + 1
@@ -189,8 +186,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cp_cfm_release(matrix)
       TYPE(cp_cfm_type), POINTER                         :: matrix
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_release', routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(matrix)) THEN
          CPASSERT(matrix%ref_count > 0)
@@ -221,8 +216,6 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: matrix
       COMPLEX(kind=dp), INTENT(in)                       :: alpha
       COMPLEX(kind=dp), INTENT(in), OPTIONAL             :: beta
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_set_all', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: irow_local, nrow_local
 #if defined(__SCALAPACK)
@@ -277,9 +270,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: irow_global, icol_global
       COMPLEX(kind=dp), INTENT(out)                      :: alpha
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_get_element', &
-                                     routineP = moduleN//':'//routineN
-
 #if defined(__SCALAPACK)
       INTEGER                                            :: icol_local, ipcol, iprow, irow_local, &
                                                             mypcol, myprow, npcol, nprow
@@ -326,9 +316,6 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: matrix
       INTEGER, INTENT(in)                                :: irow_global, icol_global
       COMPLEX(kind=dp), INTENT(in)                       :: alpha
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_set_element', &
-                                     routineP = moduleN//':'//routineN
 
 #if defined(__SCALAPACK)
       INTEGER                                            :: icol_local, ipcol, iprow, irow_local, &
@@ -526,8 +513,7 @@ CONTAINS
       COMPLEX(kind=dp), INTENT(in), OPTIONAL             :: alpha, beta
       LOGICAL, INTENT(in), OPTIONAL                      :: transpose
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_set_submatrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_set_submatrix'
 
       COMPLEX(kind=dp)                                   :: al, be
       COMPLEX(kind=dp), DIMENSION(:, :), POINTER         :: local_data
@@ -672,8 +658,6 @@ CONTAINS
       TYPE(cp_fm_struct_type), POINTER, OPTIONAL :: matrix_struct
       COMPLEX(kind=dp), DIMENSION(:, :), POINTER, OPTIONAL :: local_data
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_get_info', &
-                                     routineP = moduleN//':'//routineN
       INTEGER i, nprow, npcol, myprow, mypcol
       TYPE(cp_blacs_env_type), POINTER :: ctxt
 #if defined(__SCALAPACK)
@@ -756,9 +740,6 @@ CONTAINS
    SUBROUTINE cp_cfm_to_cfm_matrix(source, destination)
       TYPE(cp_cfm_type), POINTER                         :: source, destination
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_to_cfm_matrix', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: npcol, nprow
 
       nprow = source%matrix_struct%context%num_pe(1)
@@ -802,8 +783,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ncol
       INTEGER, INTENT(IN), OPTIONAL                      :: source_start, target_start
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_to_cfm_columns', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_to_cfm_columns'
 
       COMPLEX(kind=dp), DIMENSION(:, :), POINTER         :: a, b
       INTEGER                                            :: handle, n, ss, ts
@@ -849,8 +829,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: msource, mtarget
       CHARACTER(len=*), INTENT(IN)                       :: uplo
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_to_cfm_triangular', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_to_cfm_triangular'
 
       COMPLEX(kind=dp), DIMENSION(:, :), POINTER         :: aa, bb
       INTEGER                                            :: handle, ncol, nrow
@@ -891,7 +870,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: msource
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: mtargetr, mtargeti
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_to_fm', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_cfm_to_fm'
 
       COMPLEX(kind=dp), DIMENSION(:, :), POINTER         :: zmat
       INTEGER                                            :: handle
@@ -942,7 +921,7 @@ CONTAINS
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: msourcer, msourcei
       TYPE(cp_cfm_type), POINTER                         :: mtarget
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_fm_to_cfm', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_fm_to_cfm'
 
       COMPLEX(kind=dp), DIMENSION(:, :), POINTER         :: zmat
       INTEGER                                            :: handle, mode
@@ -1005,8 +984,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(copy_cfm_info_type), INTENT(out)              :: info
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_start_copy_general', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_start_copy_general'
 
       INTEGER :: dest_p_i, dest_q_j, global_comm, global_rank, global_size, handle, i, j, k, &
          mpi_rank, ncol_block_dest, ncol_block_src, ncol_local_recv, ncol_local_send, ncols, &
@@ -1318,8 +1296,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: destination
       TYPE(copy_cfm_info_type), INTENT(inout)            :: info
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_finish_copy_general', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_finish_copy_general'
 
       INTEGER                                            :: handle, i, j, k, mpi_rank, ni, nj, &
                                                             src_q_j
@@ -1389,8 +1366,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: source
       TYPE(copy_cfm_info_type), INTENT(inout)            :: info
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_cleanup_copy_general', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_cleanup_copy_general'
 
       INTEGER                                            :: handle
 

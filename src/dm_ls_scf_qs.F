@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -100,8 +102,7 @@ CONTAINS
       TYPE(dbcsr_type)                                   :: matrix_ls, matrix_qs
       TYPE(ls_mstruct_type), INTENT(IN)                  :: ls_mstruct
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'matrix_ls_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'matrix_ls_create'
 
       CHARACTER(len=default_string_length)               :: name
       INTEGER                                            :: handle, iatom, imol, jatom, &
@@ -427,7 +428,7 @@ CONTAINS
    SUBROUTINE ls_scf_init_qs(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_init_qs', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ls_scf_init_qs'
 
       INTEGER                                            :: handle, ispin, nspin, unit_nr
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -485,8 +486,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       REAL(KIND=dp)                                      :: energy
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_qs_atomic_guess', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_qs_atomic_guess'
 
       INTEGER                                            :: handle, nspin, unit_nr
       INTEGER, DIMENSION(2)                              :: nelectron_spin
@@ -570,8 +570,7 @@ CONTAINS
       REAL(KIND=dp)                                      :: energy_new
       INTEGER, INTENT(IN)                                :: iscf
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_dm_to_ks', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ls_scf_dm_to_ks'
 
       INTEGER                                            :: handle, ispin, nspin, unit_nr
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -652,8 +651,7 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN)                       :: title
       INTEGER, DIMENSION(:), POINTER                     :: stride
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_matrix_to_cube', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'write_matrix_to_cube'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: tot_rho
@@ -728,8 +726,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'rho_mixing_ls_init', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'rho_mixing_ls_init'
 
       INTEGER                                            :: handle
       TYPE(dft_control_type), POINTER                    :: dft_control

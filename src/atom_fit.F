@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -77,9 +79,6 @@ CONTAINS
       TYPE(section_vals_type), OPTIONAL, POINTER         :: powell_section
       REAL(KIND=dp), DIMENSION(:), OPTIONAL              :: results
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'atom_fit_density', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: n10
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: co
       REAL(KIND=dp), DIMENSION(2)                        :: x
@@ -140,6 +139,7 @@ CONTAINS
 
       ostate%state = 8
       CALL powell_optimize(ostate%nvar, x, ostate)
+      CALL density_fit(density, atom, num_gto, x(1), x(2), co, ostate%f)
 
       CALL release_opgrid(density)
 
@@ -177,8 +177,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: pptype
       INTEGER, INTENT(IN)                                :: iunit
       TYPE(section_vals_type), POINTER                   :: powell_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'atom_fit_basis', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j, k, l, ll, m, n, n10, nl, nr, zval
       INTEGER, ALLOCATABLE, DIMENSION(:, :)              :: xtob
@@ -492,8 +490,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: iunit
       TYPE(section_vals_type), POINTER                   :: powell_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'atom_fit_pseudo', &
-         routineP = moduleN//':'//routineN
       LOGICAL, PARAMETER                                 :: debug = .FALSE.
 
       CHARACTER(len=2)                                   :: pc1, pc2, pct
@@ -1175,8 +1171,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: iunit
       LOGICAL, INTENT(in)                                :: preopt_nlcc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'opt_nlcc_param', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, im, j, k, method
       REAL(KIND=dp)                                      :: rcov, zcore, zrc, zrch
       TYPE(atom_type), POINTER                           :: aref, atom
@@ -1308,8 +1302,6 @@ CONTAINS
       REAL(dp), DIMENSION(:), INTENT(INOUT)              :: co
       REAL(dp), INTENT(OUT)                              :: aerr
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'density_fit', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, info, ip, iq, k, nr
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: ipiv
       REAL(dp)                                           :: a, rk, zval
@@ -1386,8 +1378,6 @@ CONTAINS
       REAL(dp), INTENT(OUT)                              :: afun
       INTEGER, INTENT(IN)                                :: iw
       LOGICAL, INTENT(IN)                                :: penalty
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'basis_fit', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: do_eric, do_erie, i, im, in, l, nm, nn, &
                                                             reltyp, zval
@@ -1491,8 +1481,6 @@ CONTAINS
       REAL(dp), DIMENSION(:, :, :, :, :), INTENT(INOUT)  :: dener
       REAL(dp), INTENT(IN)                               :: wen, ten
       LOGICAL, INTENT(IN)                                :: init
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pseudo_fit', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, i1, i2, j, j1, j2, k, l, n, node
       LOGICAL                                            :: converged, noguess, shift
@@ -1705,9 +1693,6 @@ CONTAINS
       TYPE(atom_gthpot_type), INTENT(in)                 :: gthpot
       LOGICAL, INTENT(in)                                :: noopt_nlcc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_pseudo_param', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, ival, j, l, n
 
       IF (gthpot%lsdpot) THEN
@@ -1782,9 +1767,6 @@ CONTAINS
       TYPE(atom_gthpot_type), INTENT(inout)              :: gthpot
       LOGICAL, INTENT(in)                                :: noopt_nlcc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'put_pseudo_param', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, ival, j, l, n
 
       IF (gthpot%lsdpot) THEN
@@ -1858,8 +1840,6 @@ CONTAINS
       REAL(dp), INTENT(IN)                               :: xval
       REAL(dp)                                           :: yval
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'rcpro', routineP = moduleN//':'//routineN
-
       REAL(dp)                                           :: x1, x2
 
       IF (id == 1) THEN
@@ -1889,7 +1869,6 @@ CONTAINS
       TYPE(section_vals_type), OPTIONAL, POINTER         :: powell_section
       REAL(KIND=dp), DIMENSION(:), OPTIONAL              :: results
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'atom_fit_kgpot', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: t23 = 2._dp/3._dp
 
       INTEGER                                            :: i, ig, ip, iw, j, n10
@@ -2009,8 +1988,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ng, np
       REAL(dp), DIMENSION(:, :), INTENT(INOUT)           :: cval
       REAL(dp), INTENT(OUT)                              :: aerr
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'kgpot_fit', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ig, ip, n
       REAL(KIND=dp)                                      :: pc, rc

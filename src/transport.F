@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -16,6 +18,7 @@
 ! **************************************************************************************************
 MODULE transport
    USE ISO_C_BINDING,                   ONLY: C_ASSOCIATED,&
+                                              C_BOOL,&
                                               C_DOUBLE,&
                                               C_F_PROCPOINTER,&
                                               C_INT,&
@@ -128,8 +131,7 @@ CONTAINS
    SUBROUTINE transport_env_create(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'transport_env_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'transport_env_create'
 
       INTEGER                                            :: handle
       TYPE(dft_control_type), POINTER                    :: dft_control
@@ -167,8 +169,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: input
       TYPE(transport_env_type), INTENT(INOUT)            :: transport_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'transport_init_read_input', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'transport_init_read_input'
 
       INTEGER                                            :: contact_bandwidth, contact_injsign, &
                                                             contact_natoms, contact_start, handle, &
@@ -297,8 +298,7 @@ CONTAINS
       TYPE(transport_env_type), INTENT(INOUT)            :: transport_env
       TYPE(dbcsr_type), INTENT(IN)                       :: template_matrix
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'transport_initialize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'transport_initialize'
 
       INTEGER                                            :: handle, mp_group, mynode, numnodes, &
                                                             unit_nr
@@ -384,8 +384,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: iscf
       LOGICAL, INTENT(IN)                                :: extra_scf
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'external_scf_method', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'external_scf_method'
 
       TYPE(cp2k_csr_interop_type)                        :: imagp_mat, ks_mat, p_mat, s_mat
 
@@ -408,7 +407,7 @@ CONTAINS
       transport_env%params%boltzmann = boltzmann
       transport_env%params%h_bar = h_bar
       transport_env%params%iscf = iscf
-      transport_env%params%extra_scf = extra_scf
+      transport_env%params%extra_scf = LOGICAL(extra_scf, C_BOOL) ! C_BOOL and Fortran logical don't have the same size
 
       CALL csr_interop_nullify(s_mat)
       CALL csr_interop_nullify(ks_mat)
@@ -452,8 +451,7 @@ CONTAINS
       TYPE(dbcsr_csr_type), INTENT(INOUT)            :: csr_mat
       TYPE(cp2k_csr_interop_type), INTENT(INOUT)      :: csr_interop_mat
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'convert_dbcsr_to_csr_interop', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'convert_dbcsr_to_csr_interop'
 
       INTEGER                                  :: handle, mepos, num_pe, mp_group
       INTEGER, ALLOCATABLE, DIMENSION(:)       :: nrows_local_all, first_row_all
@@ -555,8 +553,7 @@ CONTAINS
       TYPE(dbcsr_csr_type), INTENT(INOUT)                      :: csr_mat
       TYPE(dbcsr_type), INTENT(INOUT)                    :: dbcsr_mat
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'convert_csr_interop_to_dbcsr', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'convert_csr_interop_to_dbcsr'
 
       INTEGER                                            :: data_type, handle, ncols_total, &
                                                             nrows_local, nrows_total, nze_local, &
@@ -603,9 +600,6 @@ CONTAINS
    SUBROUTINE transport_set_contact_params(qs_env, transport_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(transport_env_type), INTENT(INOUT)            :: transport_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'transport_set_contact_params', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iat, ikind, natom, nkind
       INTEGER, DIMENSION(:), POINTER                     :: atom_list
@@ -656,8 +650,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: input
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'transport_current', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'transport_current'
 
       CHARACTER(len=14)                                  :: ext
       CHARACTER(len=2)                                   :: sdir
@@ -767,8 +760,7 @@ CONTAINS
    SUBROUTINE qs_scf_post_transport(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_post_transport', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_post_transport'
 
       INTEGER                                            :: handle
       TYPE(section_vals_type), POINTER                   :: input
@@ -787,4 +779,3 @@ CONTAINS
    END SUBROUTINE qs_scf_post_transport
 
 END MODULE transport
-

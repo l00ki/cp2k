@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -40,7 +42,7 @@ MODULE cp_lbfgs_optimizer_gopt
 
    IMPLICIT NONE
    PRIVATE
-#include "gopt_f77_methods.h"
+#include "gopt_f77_methods.f90"
 
    LOGICAL, PRIVATE, PARAMETER :: debug_this_module = .TRUE.
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'cp_lbfgs_optimizer_gopt'
@@ -208,8 +210,7 @@ CONTAINS
       INTEGER, INTENT(in), OPTIONAL                      :: master, max_f_per_iter
       REAL(kind=dp), INTENT(in), OPTIONAL                :: trust_radius
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_create'
 
       INTEGER                                            :: handle, lenwa, n
 
@@ -301,9 +302,6 @@ CONTAINS
    SUBROUTINE cp_opt_gopt_retain(optimizer)
       TYPE(cp_lbfgs_opt_gopt_type), POINTER              :: optimizer
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(optimizer))
       CPASSERT(optimizer%ref_count > 0)
       optimizer%ref_count = optimizer%ref_count + 1
@@ -320,8 +318,7 @@ CONTAINS
    SUBROUTINE cp_opt_gopt_release(optimizer)
       TYPE(cp_lbfgs_opt_gopt_type), POINTER              :: optimizer
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_release', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_release'
 
       INTEGER                                            :: handle
 
@@ -419,9 +416,6 @@ CONTAINS
       LOGICAL, INTENT(out), OPTIONAL                     :: at_end, is_master
       REAL(kind=dp), INTENT(out), OPTIONAL               :: last_f, f
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_get', &
-         routineP = moduleN//':'//routineN
-
 !  call timeset(routineN,handle)
 
       CPASSERT(ASSOCIATED(optimizer))
@@ -499,8 +493,7 @@ CONTAINS
       TYPE(force_env_type), POINTER                      :: force_env
       TYPE(gopt_param_type), POINTER                     :: gopt_param
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_step', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_opt_gopt_step'
 
       CHARACTER(LEN=5)                                   :: wildcard
       INTEGER                                            :: dataunit, handle, its
@@ -725,9 +718,6 @@ CONTAINS
       INTEGER, INTENT(out), OPTIONAL                     :: n_iter
       REAL(kind=dp), INTENT(inout), OPTIONAL             :: f, last_f, projected_gradient
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_bcast_res', &
-         routineP = moduleN//':'//routineN
-
       REAL(kind=dp), DIMENSION(4)                        :: results
 
 !  call timeset(routineN,handle)
@@ -782,9 +772,6 @@ CONTAINS
       TYPE(gopt_param_type), POINTER                     :: gopt_param
       LOGICAL                                            :: res
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_next', &
-         routineP = moduleN//':'//routineN
-
 !call timeset(routineN,handle)
 
       CPASSERT(ASSOCIATED(optimizer))
@@ -809,9 +796,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cp_opt_gopt_stop(optimizer)
       TYPE(cp_lbfgs_opt_gopt_type), POINTER              :: optimizer
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_opt_gopt_stop', &
-         routineP = moduleN//':'//routineN
 
 !  call timeset(routineN,handle)
 
@@ -838,7 +822,7 @@ CONTAINS
    ! files are almost the same (multi-line use change it a bit)
    ! [template(type1,nametype1,USE,type1_retain,type1_release,type1_eval_at)]
 ! ARGS:
-!  INTERFACE = "#include "gopt_f77_methods.h""
+!  INTERFACE = "#include "gopt_f77_methods.f90""
 !  USE = "USE gopt_f_types, ONLY: gopt_f_type, gopt_f_release,gopt_f_retain"
 !  nametype1 = "gopt"
 !  type1 = "type(gopt_f_type)"

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -27,18 +29,13 @@ MODULE qs_tensors
                                               dbcsr_finalize,&
                                               dbcsr_get_block_p,&
                                               dbcsr_has_symmetry,&
-                                              dbcsr_type,&
-                                              dbcsr_type_real_8
+                                              dbcsr_type
    USE dbcsr_tensor_api,                ONLY: &
-        dbcsr_t_blk_sizes, dbcsr_t_clear, dbcsr_t_copy, dbcsr_t_create, dbcsr_t_default_distvec, &
-        dbcsr_t_destroy, dbcsr_t_distribution_destroy, dbcsr_t_distribution_new, &
-        dbcsr_t_distribution_type, dbcsr_t_filter, dbcsr_t_get_block, dbcsr_t_get_info, &
-        dbcsr_t_get_mapping_info, dbcsr_t_get_num_blocks, dbcsr_t_get_nze_total, &
+        dbcsr_t_blk_sizes, dbcsr_t_clear, dbcsr_t_copy, dbcsr_t_create, dbcsr_t_destroy, &
+        dbcsr_t_filter, dbcsr_t_get_block, dbcsr_t_get_info, dbcsr_t_get_nze_total, &
         dbcsr_t_get_stored_coordinates, dbcsr_t_iterator_blocks_left, dbcsr_t_iterator_next_block, &
-        dbcsr_t_iterator_start, dbcsr_t_iterator_stop, dbcsr_t_iterator_type, &
-        dbcsr_t_mp_environ_pgrid, dbcsr_t_nblks_total, dbcsr_t_ndims, dbcsr_t_ndims_matrix_column, &
-        dbcsr_t_ndims_matrix_row, dbcsr_t_pgrid_type, dbcsr_t_put_block, dbcsr_t_reserve_blocks, &
-        dbcsr_t_reserved_block_indices, dbcsr_t_type, dbcsr_t_write_split_info
+        dbcsr_t_iterator_start, dbcsr_t_iterator_stop, dbcsr_t_iterator_type, dbcsr_t_ndims, &
+        dbcsr_t_put_block, dbcsr_t_reserve_blocks, dbcsr_t_type
    USE distribution_1d_types,           ONLY: distribution_1d_type
    USE distribution_2d_types,           ONLY: distribution_2d_type
    USE gamma,                           ONLY: init_md_ftable
@@ -60,8 +57,7 @@ MODULE qs_tensors
                                               do_potential_short,&
                                               do_potential_truncated
    USE input_section_types,             ONLY: section_vals_val_get
-   USE kinds,                           ONLY: default_string_length,&
-                                              dp,&
+   USE kinds,                           ONLY: dp,&
                                               int_8
    USE kpoint_types,                    ONLY: get_kpoint_info,&
                                               kpoint_type
@@ -108,7 +104,7 @@ MODULE qs_tensors
    PUBLIC :: build_3c_neighbor_lists, &
              neighbor_list_3c_destroy, neighbor_list_3c_iterate, neighbor_list_3c_iterator_create, &
              neighbor_list_3c_iterator_destroy, get_3c_iterator_info, build_3c_integrals, &
-             build_2c_neighbor_lists, build_2c_integrals, cutoff_screen_factor, tensor_change_pgrid, &
+             build_2c_neighbor_lists, build_2c_integrals, cutoff_screen_factor, &
              get_tensor_occupancy, compress_tensor, decompress_tensor
 
    TYPE one_dim_int_array
@@ -145,9 +141,6 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: sym_ij, molecular
       TYPE(distribution_2d_type), OPTIONAL, POINTER      :: dist_2d
       INTEGER, INTENT(IN), OPTIONAL                      :: pot_to_rad
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_2c_neighbor_lists', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ikind, nkind, pot_to_rad_prv
       LOGICAL, ALLOCATABLE, DIMENSION(:)                 :: i_present, j_present
@@ -287,8 +280,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: op_pos
       LOGICAL, INTENT(IN), OPTIONAL                      :: own_dist
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_3c_neighbor_lists', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'build_3c_neighbor_lists'
 
       INTEGER                                            :: handle, op_pos_prv, sym_level
       TYPE(libint_potential_type)                        :: pot_par_1, pot_par_2
@@ -399,8 +391,7 @@ CONTAINS
       TYPE(neighbor_list_3c_iterator_type), INTENT(OUT)  :: iterator
       TYPE(neighbor_list_3c_type), INTENT(IN)            :: ijk_nl
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'neighbor_list_3c_iterator_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'neighbor_list_3c_iterator_create'
 
       INTEGER                                            :: handle
 
@@ -443,8 +434,7 @@ CONTAINS
       TYPE(neighbor_list_3c_iterator_type), &
          INTENT(INOUT)                                   :: iterator
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'neighbor_list_3c_iterator_destroy', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'neighbor_list_3c_iterator_destroy'
 
       INTEGER                                            :: handle
 
@@ -466,9 +456,6 @@ CONTAINS
       TYPE(neighbor_list_3c_iterator_type), &
          INTENT(INOUT)                                   :: iterator
       INTEGER                                            :: iter_stat
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'neighbor_list_3c_iterate', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iatom, iter_level, jatom, jatom_1, &
                                                             jatom_2, katom
@@ -570,9 +557,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3), INTENT(OUT), OPTIONAL :: rij, rjk, rik
       INTEGER, DIMENSION(3), INTENT(OUT), OPTIONAL       :: cell_j, cell_k
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_3c_iterator_info', &
-         routineP = moduleN//':'//routineN
-
       INTEGER, DIMENSION(2)                              :: atoms_1, atoms_2, kinds_1, kinds_2
       INTEGER, DIMENSION(3)                              :: cell_1, cell_2
       REAL(KIND=dp), DIMENSION(3)                        :: r_1, r_2
@@ -628,7 +612,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: op_pos
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_kpoints
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'alloc_block_3c', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'alloc_block_3c'
 
       INTEGER :: blk_cnt, handle, i, i_img, iatom, iblk, ikind, iproc, j_img, jatom, jcell, jkind, &
          katom, kcell, kkind, natom, nimg, op_ij, op_jk, op_pos_prv
@@ -874,8 +858,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_kpoints, desymmetrize
       INTEGER, DIMENSION(2), INTENT(IN), OPTIONAL        :: bounds_i, bounds_j, bounds_k
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_3c_integrals', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_3c_integrals'
 
       INTEGER :: block_end_i, block_end_j, block_end_k, block_start_i, block_start_j, &
          block_start_k, egfi, handle, handle2, i, iatom, ibasis, ikind, ilist, imax, iset, jatom, &
@@ -1350,8 +1333,7 @@ CONTAINS
       TYPE(libint_potential_type), INTENT(IN)            :: potential_parameter
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_kpoints
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_2c_integrals', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'build_2c_integrals'
 
       INTEGER :: handle, iatom, ibasis, icol, ikind, imax, img, irow, iset, jatom, jkind, jset, &
          m_max, maxli, maxlj, n1, n2, natom, ncoi, ncoj, nimg, nseti, nsetj, offi, offj, op_prv, &
@@ -1574,167 +1556,6 @@ CONTAINS
 
       CALL timestop(handle)
 
-   END SUBROUTINE
-
-! **************************************************************************************************
-!> \brief Change process grid of tensor, a load balanced default distribution adapted to the new grid
-!>        is chosen automatically.
-!> \param t_3c ...
-!> \param pgrid ...
-!> \param nodata ...
-!> \param starts_array_mc_block_1 ...
-!> \param ends_array_mc_block_1 ...
-!> \param starts_array_mc_block_2 ...
-!> \param ends_array_mc_block_2 ...
-!> \param starts_array_mc_block_3 ...
-!> \param ends_array_mc_block_3 ...
-!> \param blk_indices ...
-!> \param compressed ...
-!> \param eps ...
-!> \param unit_nr ...
-! **************************************************************************************************
-   SUBROUTINE tensor_change_pgrid(t_3c, pgrid, nodata, &
-                                  starts_array_mc_block_1, ends_array_mc_block_1, &
-                                  starts_array_mc_block_2, ends_array_mc_block_2, &
-                                  starts_array_mc_block_3, ends_array_mc_block_3, &
-                                  blk_indices, compressed, eps, &
-                                  unit_nr)
-      TYPE(dbcsr_t_type), INTENT(INOUT)                  :: t_3c
-      TYPE(dbcsr_t_pgrid_type), INTENT(IN)               :: pgrid
-      LOGICAL, INTENT(IN), OPTIONAL                      :: nodata
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: starts_array_mc_block_1, &
-         ends_array_mc_block_1, starts_array_mc_block_2, ends_array_mc_block_2, &
-         starts_array_mc_block_3, ends_array_mc_block_3
-      INTEGER, ALLOCATABLE, DIMENSION(:, :), &
-         INTENT(INOUT), OPTIONAL                         :: blk_indices
-      TYPE(hfx_compression_type), INTENT(INOUT), &
-         OPTIONAL                                        :: compressed
-      REAL(dp), INTENT(IN), OPTIONAL                     :: eps
-      INTEGER, INTENT(IN), OPTIONAL                      :: unit_nr
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tensor_change_pgrid', &
-         routineP = moduleN//':'//routineN
-
-      CHARACTER(default_string_length)                   :: name
-      INTEGER                                            :: handle, imem, memcut_1, memcut_2, &
-                                                            memcut_3, size_cut
-      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: bs1, bs2, bs3, dist1, dist2, dist3
-      INTEGER, DIMENSION(3)                              :: pcoord, pcoord_ref, pdims, pdims_ref, &
-                                                            tdims
-      TYPE(dbcsr_t_type)                                 :: t_tmp
-      TYPE(dbcsr_t_distribution_type)                    :: dist
-      LOGICAL                                            :: mem_aware_1, mem_aware_2, mem_aware_3
-      INTEGER, DIMENSION(dbcsr_t_ndims_matrix_row(t_3c)) :: map1
-      INTEGER, &
-         DIMENSION(dbcsr_t_ndims_matrix_column(t_3c))    :: map2
-
-      CALL dbcsr_t_mp_environ_pgrid(pgrid, pdims, pcoord)
-      CALL dbcsr_t_mp_environ_pgrid(t_3c%pgrid, pdims_ref, pcoord_ref)
-
-      IF (ALL(pdims == pdims_ref)) THEN
-         IF (ALLOCATED(pgrid%tas_split_info) .AND. ALLOCATED(t_3c%pgrid%tas_split_info)) THEN
-            IF (pgrid%tas_split_info%ngroup == t_3c%pgrid%tas_split_info%ngroup) RETURN
-         ENDIF
-      ENDIF
-
-      CALL timeset(routineN, handle)
-
-      IF (PRESENT(compressed)) THEN
-         CPASSERT(PRESENT(blk_indices))
-         CPASSERT(PRESENT(eps))
-         IF (PRESENT(nodata)) THEN
-            CPASSERT(.NOT. nodata)
-         ENDIF
-      ENDIF
-
-      mem_aware_1 = PRESENT(starts_array_mc_block_1) .AND. PRESENT(ends_array_mc_block_1)
-      mem_aware_2 = PRESENT(starts_array_mc_block_2) .AND. PRESENT(ends_array_mc_block_2)
-      mem_aware_3 = PRESENT(starts_array_mc_block_3) .AND. PRESENT(ends_array_mc_block_3)
-
-      IF (mem_aware_1) memcut_1 = SIZE(starts_array_mc_block_1)
-      IF (mem_aware_2) memcut_2 = SIZE(starts_array_mc_block_2)
-      IF (mem_aware_3) memcut_3 = SIZE(starts_array_mc_block_3)
-
-      ALLOCATE (bs1(dbcsr_t_nblks_total(t_3c, 1)))
-      ALLOCATE (bs2(dbcsr_t_nblks_total(t_3c, 2)))
-      ALLOCATE (bs3(dbcsr_t_nblks_total(t_3c, 3)))
-      CALL dbcsr_t_get_info(t_3c, nblks_total=tdims, blk_size_1=bs1, blk_size_2=bs2, blk_size_3=bs3, &
-                            name=name)
-
-      ALLOCATE (dist1(tdims(1)))
-      ALLOCATE (dist2(tdims(2)))
-      ALLOCATE (dist3(tdims(3)))
-
-      IF (mem_aware_1) THEN
-         DO imem = 1, memcut_1
-            size_cut = ends_array_mc_block_1(imem) - starts_array_mc_block_1(imem) + 1
-            CALL dbcsr_t_default_distvec( &
-               size_cut, pdims(1), &
-               bs1(starts_array_mc_block_1(imem):ends_array_mc_block_1(imem)), &
-               dist1(starts_array_mc_block_1(imem):ends_array_mc_block_1(imem)))
-         ENDDO
-      ELSE
-         CALL dbcsr_t_default_distvec(tdims(1), pdims(1), bs1, dist1)
-      ENDIF
-
-      IF (mem_aware_2) THEN
-         DO imem = 1, memcut_2
-            size_cut = ends_array_mc_block_2(imem) - starts_array_mc_block_2(imem) + 1
-            CALL dbcsr_t_default_distvec( &
-               size_cut, pdims(2), &
-               bs2(starts_array_mc_block_2(imem):ends_array_mc_block_2(imem)), &
-               dist2(starts_array_mc_block_2(imem):ends_array_mc_block_2(imem)))
-         ENDDO
-      ELSE
-         CALL dbcsr_t_default_distvec(tdims(2), pdims(2), bs2, dist2)
-      ENDIF
-
-      IF (mem_aware_3) THEN
-         DO imem = 1, memcut_3
-            size_cut = ends_array_mc_block_3(imem) - starts_array_mc_block_3(imem) + 1
-            CALL dbcsr_t_default_distvec( &
-               size_cut, pdims(3), &
-               bs3(starts_array_mc_block_3(imem):ends_array_mc_block_3(imem)), &
-               dist3(starts_array_mc_block_3(imem):ends_array_mc_block_3(imem)))
-         ENDDO
-      ELSE
-         CALL dbcsr_t_default_distvec(tdims(3), pdims(3), bs3, dist3)
-      ENDIF
-
-      CALL dbcsr_t_get_mapping_info(t_3c%nd_index_blk, map1_2d=map1, map2_2d=map2)
-      CALL dbcsr_t_distribution_new(dist, pgrid, dist1, dist2, dist3)
-      CALL dbcsr_t_create(t_tmp, name, dist, map1, map2, dbcsr_type_real_8, bs1, bs2, bs3)
-      CALL dbcsr_t_distribution_destroy(dist)
-
-      IF (PRESENT(compressed)) THEN
-         CALL decompress_tensor(t_3c, blk_indices, compressed, eps)
-      ENDIF
-
-      IF (PRESENT(nodata)) THEN
-         IF (.NOT. nodata) CALL dbcsr_t_copy(t_3c, t_tmp, move_data=.TRUE.)
-      ELSE
-         CALL dbcsr_t_copy(t_3c, t_tmp, move_data=.TRUE.)
-      ENDIF
-
-      CALL dbcsr_t_destroy(t_3c)
-      t_3c = t_tmp
-
-      IF (PRESENT(compressed)) THEN
-         IF (ALLOCATED(blk_indices)) DEALLOCATE (blk_indices)
-         ALLOCATE (blk_indices(dbcsr_t_get_num_blocks(t_3c), 3))
-         CALL dbcsr_t_reserved_block_indices(t_3c, blk_indices)
-         CALL compress_tensor(t_3c, compressed, eps)
-      ENDIF
-
-      IF (PRESENT(unit_nr)) THEN
-         IF (unit_nr > 0) THEN
-            WRITE (unit_nr, "(T2,A,1X,A)") "OPTIMIZED PGRID INFO FOR", TRIM(t_3c%name)
-            WRITE (unit_nr, "(T4,A,1X,3I6)") "process grid dimensions:", pdims
-            CALL dbcsr_t_write_split_info(pgrid, unit_nr)
-         ENDIF
-      ENDIF
-
-      CALL timestop(handle)
    END SUBROUTINE
 
 ! **************************************************************************************************

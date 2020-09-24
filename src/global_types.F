@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -94,8 +96,6 @@ CONTAINS
    SUBROUTINE globenv_create(globenv)
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'globenv_create', routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(globenv))
       ALLOCATE (globenv)
       globenv%ref_count = 1
@@ -120,8 +120,6 @@ CONTAINS
    SUBROUTINE globenv_retain(globenv)
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'globenv_retain', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(globenv))
       CPASSERT(globenv%ref_count > 0)
       globenv%ref_count = globenv%ref_count + 1
@@ -134,9 +132,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE globenv_release(globenv)
       TYPE(global_environment_type), POINTER             :: globenv
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'globenv_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(globenv)) THEN
          CPASSERT(globenv%ref_count > 0)

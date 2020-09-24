@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -73,7 +75,7 @@ CONTAINS
    SUBROUTINE eip_bazant(eip_env)
       TYPE(eip_environment_type), POINTER                :: eip_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_bazant', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'eip_bazant'
 
       INTEGER                                            :: handle, i, iparticle, iparticle_kind, &
                                                             iparticle_local, iw, natom, &
@@ -239,7 +241,7 @@ CONTAINS
    SUBROUTINE eip_lenosky(eip_env)
       TYPE(eip_environment_type), POINTER                :: eip_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_lenosky', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'eip_lenosky'
 
       INTEGER                                            :: handle, i, iparticle, iparticle_kind, &
                                                             iparticle_local, iw, natom, &
@@ -405,9 +407,6 @@ CONTAINS
       TYPE(eip_environment_type), POINTER                :: eip_env
       INTEGER, INTENT(IN)                                :: output_unit
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_print_energies', &
-         routineP = moduleN//':'//routineN
-
 !   ------------------------------------------------------------------------
 
       IF (output_unit > 0) THEN
@@ -430,9 +429,6 @@ CONTAINS
    SUBROUTINE eip_print_energy_var(eip_env, output_unit)
       TYPE(eip_environment_type), POINTER                :: eip_env
       INTEGER, INTENT(IN)                                :: output_unit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_print_energy_var', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: unit_nr
 
@@ -462,9 +458,6 @@ CONTAINS
    SUBROUTINE eip_print_forces(eip_env, output_unit)
       TYPE(eip_environment_type), POINTER                :: eip_env
       INTEGER, INTENT(IN)                                :: output_unit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_print_forces', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iatom, natom, unit_nr
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
@@ -505,9 +498,6 @@ CONTAINS
       TYPE(eip_environment_type), POINTER                :: eip_env
       INTEGER, INTENT(IN)                                :: output_unit
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_print_coord_avg', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: unit_nr
 
 !   ------------------------------------------------------------------------
@@ -537,9 +527,6 @@ CONTAINS
       TYPE(eip_environment_type), POINTER                :: eip_env
       INTEGER, INTENT(IN)                                :: output_unit
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_print_coord_var', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: unit_nr
 
 !   ------------------------------------------------------------------------
@@ -568,9 +555,6 @@ CONTAINS
    SUBROUTINE eip_print_count(eip_env, output_unit)
       TYPE(eip_environment_type), POINTER                :: eip_env
       INTEGER, INTENT(IN)                                :: output_unit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_print_count', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: unit_nr
 

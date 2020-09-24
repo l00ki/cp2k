@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -80,8 +82,7 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: nchains
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_mc_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'write_mc_restart'
 
       CHARACTER(LEN=20)                                  :: ensemble
       CHARACTER(LEN=default_path_length)                 :: restart_file_name
@@ -173,8 +174,7 @@ CONTAINS
       INTEGER, INTENT(INOUT)                             :: mc_nunits_tot
       TYPE(rng_stream_type), INTENT(INOUT)               :: rng_stream
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_mc_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'read_mc_restart'
 
       CHARACTER(5), ALLOCATABLE, DIMENSION(:)            :: atom_symbols
       CHARACTER(default_string_length), &
@@ -351,9 +351,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN)                       :: input_file_name
       TYPE(global_environment_type), OPTIONAL, POINTER   :: globenv_new
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mc_create_force_env', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: f_env_id, ierr, output_unit
       TYPE(f_env_type), POINTER                          :: f_env
 
@@ -406,9 +403,6 @@ CONTAINS
       TYPE(section_type), POINTER                        :: input_declaration
       TYPE(mc_input_file_type), POINTER                  :: mc_input_file
       LOGICAL, INTENT(IN)                                :: ionode
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mc_create_bias_force_env', &
-         routineP = moduleN//':'//routineN
 
       IF (ionode) &
          CALL mc_make_dat_file_new(r(:, :), atom_symbols, nunits_tot, &

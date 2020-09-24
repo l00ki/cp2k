@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -104,7 +106,7 @@ CONTAINS
    SUBROUTINE ls_scf(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ls_scf'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: pao_is_done
@@ -141,8 +143,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_init_scf', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ls_scf_init_scf'
 
       INTEGER                                            :: handle, ispin, nspin, unit_nr
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -238,8 +239,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_initial_guess', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_initial_guess'
       INTEGER, PARAMETER                                 :: aspc_guess = 2, atomic_guess = 1, &
                                                             restart_guess = 3
 
@@ -367,8 +367,7 @@ CONTAINS
    SUBROUTINE ls_scf_store_result(ls_scf_env)
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_store_result', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_store_result'
 
       CHARACTER(LEN=default_path_length)                 :: file_name, project_name
       INTEGER                                            :: handle, ispin, istore, unit_nr
@@ -448,7 +447,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_main', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ls_scf_main'
 
       INTEGER                                            :: handle, iscf, ispin, &
                                                             nelectron_spin_real, nmixing, nspin, &
@@ -759,7 +758,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_post', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ls_scf_post'
 
       INTEGER                                            :: handle, ispin, unit_nr
       REAL(KIND=dp)                                      :: occ
@@ -871,14 +870,13 @@ CONTAINS
    SUBROUTINE post_scf_homo_lumo(ls_scf_env)
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'post_scf_homo_lumo', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'post_scf_homo_lumo'
 
       INTEGER                                            :: handle, ispin, nspin, unit_nr
       LOGICAL                                            :: converged
       REAL(KIND=dp)                                      :: eps_max, eps_min, homo, lumo
       TYPE(cp_logger_type), POINTER                      :: logger
-      TYPE(dbcsr_type)                                   :: matrix_k, matrix_p
+      TYPE(dbcsr_type)                                   :: matrix_k, matrix_p, matrix_tmp
 
       CALL timeset(routineN, handle)
 
@@ -902,11 +900,13 @@ CONTAINS
 
       CALL dbcsr_create(matrix_k, template=ls_scf_env%matrix_p(1), matrix_type=dbcsr_type_no_symmetry)
 
+      CALL dbcsr_create(matrix_tmp, template=ls_scf_env%matrix_p(1), matrix_type=dbcsr_type_no_symmetry)
+
       DO ispin = 1, nspin
          ! ortho basis ks
          CALL dbcsr_multiply("N", "N", 1.0_dp, ls_scf_env%matrix_s_sqrt_inv, ls_scf_env%matrix_ks(ispin), &
-                             0.0_dp, matrix_k, filter_eps=ls_scf_env%eps_filter)
-         CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_k, ls_scf_env%matrix_s_sqrt_inv, &
+                             0.0_dp, matrix_tmp, filter_eps=ls_scf_env%eps_filter)
+         CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_tmp, ls_scf_env%matrix_s_sqrt_inv, &
                              0.0_dp, matrix_k, filter_eps=ls_scf_env%eps_filter)
 
          ! extremal eigenvalues ks
@@ -915,8 +915,8 @@ CONTAINS
 
          ! ortho basis p
          CALL dbcsr_multiply("N", "N", 1.0_dp, ls_scf_env%matrix_s_sqrt, ls_scf_env%matrix_p(ispin), &
-                             0.0_dp, matrix_p, filter_eps=ls_scf_env%eps_filter)
-         CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_p, ls_scf_env%matrix_s_sqrt, &
+                             0.0_dp, matrix_tmp, filter_eps=ls_scf_env%eps_filter)
+         CALL dbcsr_multiply("N", "N", 1.0_dp, matrix_tmp, ls_scf_env%matrix_s_sqrt, &
                              0.0_dp, matrix_p, filter_eps=ls_scf_env%eps_filter)
          IF (nspin == 1) CALL dbcsr_scale(matrix_p, 0.5_dp)
 
@@ -928,6 +928,7 @@ CONTAINS
 
       CALL dbcsr_release(matrix_p)
       CALL dbcsr_release(matrix_k)
+      CALL dbcsr_release(matrix_tmp)
 
       CALL timestop(handle)
 
@@ -943,8 +944,7 @@ CONTAINS
    SUBROUTINE post_scf_mu_scan(ls_scf_env)
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'post_scf_mu_scan', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'post_scf_mu_scan'
 
       INTEGER                                            :: handle, imu, ispin, nelectron_spin_real, &
                                                             nmu, nspin, unit_nr
@@ -1010,8 +1010,7 @@ CONTAINS
    SUBROUTINE post_scf_sparsities(ls_scf_env)
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'post_scf_sparsities', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'post_scf_sparsities'
 
       CHARACTER(LEN=default_string_length)               :: title
       INTEGER                                            :: handle, ispin, nspin, unit_nr
@@ -1128,8 +1127,7 @@ CONTAINS
       CHARACTER(LEN=*)                                   :: title
       REAL(KIND=dp)                                      :: eps
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'report_matrix_sparsity', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'report_matrix_sparsity'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: eps_local, occ
@@ -1170,8 +1168,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_w
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_w_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_w_matrix'
 
       INTEGER                                            :: handle, ispin
       REAL(KIND=dp)                                      :: scaling
@@ -1221,8 +1218,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE post_scf_experiment()
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'post_scf_experiment', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'post_scf_experiment'
 
       INTEGER                                            :: handle, unit_nr
       TYPE(cp_logger_type), POINTER                      :: logger

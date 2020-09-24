@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -131,8 +133,7 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: blk_size_1, blk_size_2, blk_size_3
       LOGICAL, INTENT(IN), OPTIONAL                      :: only_bc_same_center
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_pqX_tensor', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'create_pqX_tensor'
 
       INTEGER                                            :: group, handle, i, iatom, ikind, jatom, &
                                                             katom, kkind, nblk, nblk_3, nkind
@@ -275,8 +276,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: only_bc_same_center
       REAL(dp), INTENT(IN), OPTIONAL                     :: eps_screen
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fill_pqX_tensor', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'fill_pqX_tensor'
 
       INTEGER :: egfa, egfb, egfc, handle, i, iatom, ibasis, ikind, ilist, imax, iset, jatom, &
          jkind, jset, katom, kkind, kset, m_max, max_ncob, max_ncoc, max_nset, max_nsgfa, &
@@ -661,9 +661,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL        :: excited_atoms
       TYPE(distribution_2d_type), OPTIONAL, POINTER      :: ext_dist2d
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_xas_tdp_ovlp_nl', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ikind, nkind
       LOGICAL                                            :: my_restrictb
       LOGICAL, ALLOCATABLE, DIMENSION(:)                 :: a_present, b_present
@@ -765,9 +762,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL        :: excited_atoms
       REAL(dp), INTENT(IN), OPTIONAL                     :: x_range
       TYPE(distribution_2d_type), OPTIONAL, POINTER      :: ext_dist2d
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_xas_tdp_3c_nl', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ikind, nkind
       LOGICAL                                            :: sort_atoms
@@ -897,8 +891,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(IN), OPTIONAL                      :: only_bc_same_center
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_opt_3c_dist2d', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'get_opt_3c_dist2d'
 
       INTEGER                                            :: handle, i, iatom, ikind, ip, jatom, &
                                                             jkind, kkind, mypcol, myprow, n, &
@@ -1060,8 +1053,7 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_ri_3c_exchange', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_ri_3c_exchange'
 
       INTEGER                                            :: handle, natom, nkind
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: blk_size_orb, blk_size_ri
@@ -1146,8 +1138,7 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_ri_3c_coulomb', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_ri_3c_coulomb'
 
       INTEGER                                            :: handle, natom, nkind
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: blk_size_orb, blk_size_ri
@@ -1243,9 +1234,6 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_ri_exchange2_int', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: egfp, egfq, maxl, ncop, ncoq, nset, &
                                                             nsgf, pset, qset, sgfp, sgfq, unit_id
@@ -1406,9 +1394,6 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_ri_coulomb2_int', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nsgf
       TYPE(gto_basis_set_type), POINTER                  :: ri_basis
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
@@ -1452,9 +1437,6 @@ CONTAINS
       REAL(dp), DIMENSION(:, :), INTENT(INOUT)           :: ri_coul2
       TYPE(gto_basis_set_type), POINTER                  :: ri_basis
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'periodic_ri_coulomb2', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: maxco, ncop, ncoq, nset, op, oq, ppgf, &
                                                             pset, qpgf, qset, sgfp, sgfq

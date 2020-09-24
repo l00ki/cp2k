@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -101,9 +103,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(in), OPTIONAL        :: n_el
       INTEGER, INTENT(in), OPTIONAL                      :: n_lists
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_1d_create', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ilist, my_n_lists, stat
 
       my_n_lists = 1
@@ -156,9 +155,6 @@ CONTAINS
    SUBROUTINE distribution_1d_retain(distribution_1d)
       TYPE(distribution_1d_type), POINTER                :: distribution_1d
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_1d_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(distribution_1d))
       CPASSERT(distribution_1d%ref_count > 0)
       distribution_1d%ref_count = distribution_1d%ref_count + 1
@@ -173,9 +169,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE distribution_1d_release(distribution_1d)
       TYPE(distribution_1d_type), POINTER                :: distribution_1d
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_1d_release', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ilist, iparticle_kind, iparticle_local, &
                                                             nparticle_kind, nparticle_local

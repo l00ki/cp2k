@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -147,8 +149,6 @@ CONTAINS
          POINTER                                         :: interaction_cutoffs
       REAL(KIND=dp), DIMENSION(3, 3), OPTIONAL           :: cell_hmat
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ewald_env_get', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(ewald_env))
 
       IF (PRESENT(id_nr)) id_nr = ewald_env%id_nr
@@ -210,8 +210,6 @@ CONTAINS
          POINTER                                         :: interaction_cutoffs
       REAL(KIND=dp), DIMENSION(3, 3), OPTIONAL           :: cell_hmat
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ewald_env_set', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(ewald_env))
 
       IF (PRESENT(id_nr)) ewald_env%id_nr = id_nr
@@ -246,9 +244,6 @@ CONTAINS
       TYPE(ewald_environment_type), POINTER              :: ewald_env
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ewald_env_create', &
-         routineP = moduleN//':'//routineN
-
       ALLOCATE (ewald_env)
       ewald_env%ref_count = 1
       last_ewald_env_id_nr = last_ewald_env_id_nr + 1
@@ -269,9 +264,6 @@ CONTAINS
    SUBROUTINE ewald_env_retain(ewald_env)
       TYPE(ewald_environment_type), POINTER              :: ewald_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ewald_env_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(ewald_env))
       CPASSERT(ewald_env%ref_count > 0)
       ewald_env%ref_count = ewald_env%ref_count + 1
@@ -286,9 +278,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE ewald_env_release(ewald_env)
       TYPE(ewald_environment_type), POINTER              :: ewald_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ewald_env_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(ewald_env)) THEN
          CPASSERT(ewald_env%ref_count > 0)
@@ -314,9 +303,6 @@ CONTAINS
    SUBROUTINE read_ewald_section(ewald_env, ewald_section)
       TYPE(ewald_environment_type), POINTER              :: ewald_env
       TYPE(section_vals_type), POINTER                   :: ewald_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_ewald_section', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iw
       INTEGER, DIMENSION(:), POINTER                     :: gmax_read
@@ -450,9 +436,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: ewald_section
       REAL(KIND=dp), DIMENSION(3, 3), INTENT(IN)         :: hmat
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_ewald_section_tb', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, iw, n(3)
       INTEGER, DIMENSION(:), POINTER                     :: gmax_read
       LOGICAL                                            :: explicit
@@ -548,9 +531,6 @@ CONTAINS
 ! **************************************************************************************************
    FUNCTION find_ewald_optimal_value(precs) RESULT(value)
       REAL(KIND=dp)                                      :: precs, value
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'find_ewald_optimal_value', &
-         routineP = moduleN//':'//routineN
 
       REAL(KIND=dp)                                      :: func, func1, func2, s, s1, s2
 

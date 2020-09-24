@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 MODULE qs_rho0_ggrid
@@ -94,8 +96,7 @@ CONTAINS
       TYPE(rho0_mpole_type), POINTER                     :: rho0
       REAL(dp), INTENT(OUT)                              :: tot_rs_int
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'put_rho0_on_grid', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'put_rho0_on_grid'
 
       INTEGER                                            :: auxbas_grid, handle, iat, iatom, igrid, &
                                                             ikind, ithread, j, l0_ikind, lmax0, &
@@ -279,8 +280,7 @@ CONTAINS
       TYPE(pw_env_type), POINTER                         :: pw_env
       TYPE(rho0_mpole_type), POINTER                     :: rho0_mpole
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'rho0_s_grid_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'rho0_s_grid_create'
 
       INTEGER                                            :: handle
       TYPE(pw_p_type), POINTER                           :: rho_gs, rho_rs
@@ -344,8 +344,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: calculate_forces
       TYPE(local_rho_type), OPTIONAL, POINTER            :: local_rho_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'integrate_vhg0_rspace', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'integrate_vhg0_rspace'
 
       INTEGER :: auxbas_grid, bo(2), handle, i, iat, iatom, ic, icg, ico, ig1, ig2, igrid, ii, &
          ikind, ipgf1, ipgf2, is, iset1, iset2, iso, iso1, iso2, ispin, j, l0_ikind, llmax, lmax0, &

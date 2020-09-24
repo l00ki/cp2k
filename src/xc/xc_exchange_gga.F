@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -72,8 +74,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(OUT), OPTIONAL            :: reference, shortform
       TYPE(xc_rho_cflags_type), INTENT(inout), OPTIONAL  :: needs
       INTEGER, INTENT(out), OPTIONAL                     :: max_deriv
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xgga_info', routineP = moduleN//':'//routineN
 
       IF (PRESENT(reference)) THEN
          SELECT CASE (functional)
@@ -157,7 +157,7 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       INTEGER, INTENT(in)                                :: order
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xgga_eval', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xgga_eval'
 
       CHARACTER(len=12), DIMENSION(2)                    :: norm_drho_spin_name
       CHARACTER(len=6), DIMENSION(2)                     :: rho_spin_name
@@ -551,8 +551,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: fs
       INTEGER, INTENT(IN)                                :: m
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_b88', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ip
       REAL(KIND=dp) :: as, asp, beta, bs, f0, p, q, sas, sbs, sbs3, t1, t10, t13, t15, t16, t19, &
          t2, t22, t24, t25, t32, t34, t36, t39, t4, t40, t41, t44, t48, t49, t5, t6, t65, t8, t87, &
@@ -651,8 +649,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: fs
       INTEGER, INTENT(IN)                                :: m
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_pw86', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ip
       REAL(KIND=dp)                                      :: f15, p0, p1, p15, s2, s4, s6, t1, t10, &
                                                             t12, t13, t14, t19, t2, t25, t3, t8, t9
@@ -723,8 +719,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: s
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: fs
       INTEGER, INTENT(IN)                                :: m
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_ev93', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ip
       REAL(KIND=dp)                                      :: a1, a2, a3, b1, b2, b3, d0, d1, d2, d3, &
@@ -811,7 +805,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: fs
       INTEGER, INTENT(IN)                                :: m
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_optx', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: a1 = 1.05151_dp, a2 = 1.43169_dp, &
                                                             gamma_bo = 0.006_dp
 
@@ -1055,7 +1048,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: fs
       INTEGER, INTENT(IN)                                :: m, pset
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_pbex', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: kappa1 = 0.804_dp, kappa2 = 1.245_dp, &
                                                             mu = 0.2195149727645171_dp
 

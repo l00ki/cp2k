@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -101,8 +103,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(section_vals_type), POINTER                   :: subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_coordinate_pdb', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'read_coordinate_pdb'
       INTEGER, PARAMETER                                 :: nblock = 1000
 
       CHARACTER(LEN=default_path_length)                 :: line
@@ -282,8 +283,7 @@ CONTAINS
       TYPE(topology_parameters_type)                     :: topology
       TYPE(section_vals_type), POINTER                   :: subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_coordinate_pdb', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'write_coordinate_pdb'
 
       CHARACTER(LEN=120)                                 :: line
       CHARACTER(LEN=default_string_length)               :: my_tag1, my_tag2, my_tag3, my_tag4, &

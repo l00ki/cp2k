@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -38,10 +40,10 @@ MODULE hfx_types
    USE cp_para_types,                   ONLY: cp_para_env_type
    USE cp_units,                        ONLY: cp_unit_from_cp2k
    USE dbcsr_tensor_api,                ONLY: &
-        dbcsr_t_batched_contract_finalize, dbcsr_t_create, dbcsr_t_default_distvec, &
-        dbcsr_t_destroy, dbcsr_t_distribution_destroy, dbcsr_t_distribution_new, &
-        dbcsr_t_distribution_type, dbcsr_t_mp_dims_create, dbcsr_t_pgrid_create, &
-        dbcsr_t_pgrid_destroy, dbcsr_t_pgrid_type, dbcsr_t_type
+        dbcsr_t_batched_contract_finalize, dbcsr_t_default_distvec, dbcsr_t_destroy, &
+        dbcsr_t_distribution_destroy, dbcsr_t_distribution_new, dbcsr_t_distribution_type, &
+        dbcsr_t_mp_dims_create, dbcsr_t_pgrid_create, dbcsr_t_pgrid_destroy, dbcsr_t_pgrid_type, &
+        dbcsr_t_type
    USE hfx_helpers,                     ONLY: count_cells_perd,&
                                               next_image_cell_perd
    USE input_constants,                 ONLY: &
@@ -588,7 +590,7 @@ CONTAINS
       LOGICAL, OPTIONAL                                  :: do_exx, do_ot
       INTEGER, OPTIONAL                                  :: nelectron_total
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_create', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'hfx_create'
 
       CHARACTER(LEN=512)                                 :: error_msg
       CHARACTER(LEN=default_path_length)                 :: char_val
@@ -1014,8 +1016,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_ot
       INTEGER, INTENT(IN)                                :: nelectron_total
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_ri_init_read_input_from_hfx', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_ri_init_read_input_from_hfx'
 
       CHARACTER(LEN=512)                                 :: error_msg
       CHARACTER(LEN=default_path_length)                 :: char_val, t_c_filename
@@ -1106,8 +1107,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: unit_nr, unit_nr_dbcsr, nelectron_total
       CHARACTER(len=*), INTENT(IN), OPTIONAL             :: t_c_filename
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_ri_init_read_input', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_ri_init_read_input'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: explicit
@@ -1195,7 +1195,7 @@ CONTAINS
       TYPE(cp_para_env_type)                             :: para_env
       INTEGER, INTENT(IN)                                :: basis_cntrl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_ri_init', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'hfx_ri_init'
 
       INTEGER                                            :: handle, i_mem, ikind, iproc, j_mem, &
                                                             MO_dim, mp_comm_3d, natom, nkind, nproc
@@ -1211,6 +1211,9 @@ CONTAINS
       TYPE(qs_kind_type), POINTER                        :: qs_kind
 
       CALL timeset(routineN, handle)
+
+      ! initialize libint
+      CALL cp_libint_static_init()
 
       NULLIFY (ri_aux_basis_set, qs_kind)
 
@@ -1311,22 +1314,11 @@ CONTAINS
                                     ri_data%starts_array_RI_mem, ri_data%ends_array_RI_mem, &
                                     ri_data%starts_array_RI_mem_block, ri_data%ends_array_RI_mem_block)
 
-         ALLOCATE (ri_data%t_3c_int_ctr_1(ri_data%n_mem, ri_data%n_mem))
+         ALLOCATE (ri_data%t_3c_int_ctr_1(1, 1))
          CALL create_3c_tensor(ri_data%t_3c_int_ctr_1(1, 1), ri_data%dist1_ao_1, ri_data%dist1_ri, ri_data%dist1_ao_2, &
                                ri_data%pgrid, ri_data%bsizes_AO_split, ri_data%bsizes_RI_split, ri_data%bsizes_AO_split, &
                                [1, 2], [3], &
-                               starts_array_block_1=ri_data%starts_array_mem_block, &
-                               ends_array_block_1=ri_data%ends_array_mem_block, &
-                               starts_array_block_2=ri_data%starts_array_RI_mem_block, &
-                               ends_array_block_2=ri_data%ends_array_RI_mem_block, &
                                name="(AO RI | AO)")
-
-         DO i_mem = 1, ri_data%n_mem
-            DO j_mem = 1, ri_data%n_mem
-               IF (.NOT. (i_mem == 1 .AND. j_mem == 1)) &
-                  CALL dbcsr_t_create(ri_data%t_3c_int_ctr_1(1, 1), ri_data%t_3c_int_ctr_1(i_mem, j_mem))
-            ENDDO
-         ENDDO
 
          ALLOCATE (ri_data%blk_indices(ri_data%n_mem, ri_data%n_mem))
          ALLOCATE (ri_data%store_3c(ri_data%n_mem, ri_data%n_mem))
@@ -1340,20 +1332,12 @@ CONTAINS
          CALL create_3c_tensor(ri_data%t_3c_int_ctr_2(1, 1), ri_data%dist1_ao_1, ri_data%dist1_ri, ri_data%dist1_ao_2, &
                                ri_data%pgrid, ri_data%bsizes_AO_split, ri_data%bsizes_RI_split, ri_data%bsizes_AO_split, &
                                [1, 2], [3], &
-                               starts_array_block_2=ri_data%starts_array_RI_mem_block, &
-                               ends_array_block_2=ri_data%ends_array_RI_mem_block, &
-                               starts_array_block_3=ri_data%starts_array_mem_block, &
-                               ends_array_block_3=ri_data%ends_array_mem_block, &
                                name="(AO RI | AO)")
 
          ALLOCATE (ri_data%t_3c_int_ctr_3(1, 1))
          CALL create_3c_tensor(ri_data%t_3c_int_ctr_3(1, 1), ri_data%dist3_RI, ri_data%dist3_AO_1, ri_data%dist3_AO_2, &
                                ri_data%pgrid, ri_data%bsizes_RI_split, ri_data%bsizes_AO_split, ri_data%bsizes_AO_split, &
                                [1], [2, 3], &
-                               starts_array_block_1=ri_data%starts_array_RI_mem_block, &
-                               ends_array_block_1=ri_data%ends_array_RI_mem_block, &
-                               starts_array_block_2=ri_data%starts_array_mem_block, &
-                               ends_array_block_2=ri_data%ends_array_mem_block, &
                                name="(RI | AO AO)")
 
          ALLOCATE (ri_data%t_2c_int(1, 1))
@@ -1443,11 +1427,14 @@ CONTAINS
    SUBROUTINE hfx_ri_release(ri_data)
       TYPE(hfx_ri_type), INTENT(INOUT)                   :: ri_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_ri_release', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'hfx_ri_release'
 
       INTEGER                                            :: handle, i_mem, ispin, j_mem, unused
 
       CALL timeset(routineN, handle)
+
+      ! cleanup libint
+      CALL cp_libint_static_cleanup()
 
       CALL hfx_ri_write_stats(ri_data)
 
@@ -1486,9 +1473,9 @@ CONTAINS
          DO i_mem = 1, ri_data%n_mem
          DO j_mem = 1, ri_data%n_mem
             CALL dealloc_containers(ri_data%store_3c(i_mem, j_mem), unused)
-            CALL dbcsr_t_destroy(ri_data%t_3c_int_ctr_1(i_mem, j_mem))
          ENDDO
          ENDDO
+         CALL dbcsr_t_destroy(ri_data%t_3c_int_ctr_1(1, 1))
          DEALLOCATE (ri_data%t_3c_int_ctr_1)
          CALL dbcsr_t_destroy(ri_data%t_3c_int_ctr_2(1, 1))
          DEALLOCATE (ri_data%t_3c_int_ctr_2)
@@ -1512,12 +1499,14 @@ CONTAINS
          DEALLOCATE (ri_data%t_3c_int_ctr_2)
 
          DO ispin = 1, SIZE(ri_data%t_3c_int_mo, 1)
+            CALL dbcsr_t_batched_contract_finalize(ri_data%t_2c_int(ispin, 1))
+            CALL dbcsr_t_batched_contract_finalize(ri_data%t_3c_int_mo(ispin, 1, 1))
+            CALL dbcsr_t_batched_contract_finalize(ri_data%t_3c_ctr_RI(ispin, 1, 1))
+            CALL dbcsr_t_destroy(ri_data%t_2c_int(ispin, 1))
             CALL dbcsr_t_destroy(ri_data%t_3c_int_mo(ispin, 1, 1))
             CALL dbcsr_t_destroy(ri_data%t_3c_ctr_RI(ispin, 1, 1))
             CALL dbcsr_t_destroy(ri_data%t_3c_ctr_KS(ispin, 1, 1))
             CALL dbcsr_t_destroy(ri_data%t_3c_ctr_KS_copy(ispin, 1, 1))
-            CALL dbcsr_t_batched_contract_finalize(ri_data%t_2c_int(ispin, 1))
-            CALL dbcsr_t_destroy(ri_data%t_2c_int(ispin, 1))
          ENDDO
          DEALLOCATE (ri_data%t_2c_int)
          DEALLOCATE (ri_data%t_3c_int_mo)
@@ -1544,8 +1533,7 @@ CONTAINS
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
       LOGICAL, INTENT(IN)                                :: do_admm
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_create_basis_types', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_create_basis_types'
 
       INTEGER :: co_counter, handle, i, ikind, ipgf, iset, j, k, la, max_am_kind, max_coeff, &
          max_nsgfl, max_pgf, max_pgf_kind, max_set, nkind, nl_count, nset, nseta, offset_a, &
@@ -1677,8 +1665,7 @@ CONTAINS
    SUBROUTINE hfx_release_basis_types(basis_parameter)
       TYPE(hfx_basis_type), DIMENSION(:), POINTER        :: basis_parameter
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_release_basis_types', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_release_basis_types'
 
       INTEGER                                            :: handle, i
 
@@ -1715,9 +1702,6 @@ CONTAINS
       TYPE(cp_para_env_type), OPTIONAL                   :: para_env
       INTEGER, INTENT(IN), OPTIONAL                      :: irep
       LOGICAL, INTENT(IN)                                :: skip_disk, skip_in_core_forces
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'parse_memory_section', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=512)                                 :: error_msg
       CHARACTER(LEN=default_path_length)                 :: char_val, filename, orig_wd
@@ -1804,8 +1788,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE hfx_release(x_data)
       TYPE(hfx_type), DIMENSION(:, :), POINTER           :: x_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_release', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, i_thread, irep, n_rep_hf, n_threads
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -1953,9 +1935,6 @@ CONTAINS
       INTEGER, INTENT(INOUT)                             :: pbc_shells
       TYPE(cell_type), POINTER                           :: cell
       INTEGER, INTENT(IN)                                :: i_thread
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_create_neighbor_cells', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=512)                                 :: error_msg
       CHARACTER(LEN=64)                                  :: char_nshells
@@ -2412,9 +2391,6 @@ CONTAINS
       INTEGER                                            :: memory_usage
       LOGICAL                                            :: do_disk_storage
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_init_container', &
-         routineP = moduleN//':'//routineN
-
       TYPE(hfx_container_node), POINTER                  :: current, next
 
 !! DEALLOCATE memory
@@ -2459,9 +2435,6 @@ CONTAINS
       TYPE(hfx_distribution), DIMENSION(:), POINTER      :: ptr_to_distr
       TYPE(hfx_type), POINTER                            :: x_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_set_distr_energy', &
-         routineP = moduleN//':'//routineN
-
       DEALLOCATE (x_data%distribution_energy)
 
       ALLOCATE (x_data%distribution_energy(SIZE(ptr_to_distr)))
@@ -2481,9 +2454,6 @@ CONTAINS
    SUBROUTINE hfx_set_distr_forces(ptr_to_distr, x_data)
       TYPE(hfx_distribution), DIMENSION(:), POINTER      :: ptr_to_distr
       TYPE(hfx_type), POINTER                            :: x_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_set_distr_forces', &
-         routineP = moduleN//':'//routineN
 
       DEALLOCATE (x_data%distribution_forces)
 
@@ -2783,9 +2753,6 @@ CONTAINS
       TYPE(hfx_compression_type)                         :: data
       INTEGER                                            :: memory_usage
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dealloc_containers', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: bin, i
 
       DO bin = 1, SIZE(data%maxval_container)
@@ -2817,9 +2784,6 @@ CONTAINS
    SUBROUTINE alloc_containers(DATA, bin_size)
       TYPE(hfx_compression_type)                         :: data
       INTEGER, INTENT(IN)                                :: bin_size
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'alloc_containers', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: bin, i
 

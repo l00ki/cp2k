@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -93,9 +95,6 @@ CONTAINS
                                                   isSymbolicFactorize, &
                                                   ordering, rowOrdering, npSymbFact, &
                                                   verbosity
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_pexsi_set_options', &
-                                     routineP = moduleN//':'//routineN
 
 #ifdef __LIBPEXSI
       IF (PRESENT(temperature)) pexsi_options%options%temperature = temperature
@@ -194,9 +193,6 @@ CONTAINS
                                                   ordering, rowOrdering, npSymbFact, &
                                                   verbosity
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_pexsi_get_options', &
-                                     routineP = moduleN//':'//routineN
-
 #ifdef __LIBPEXSI
       IF (PRESENT(temperature)) temperature = pexsi_options%options%temperature
       IF (PRESENT(gap)) gap = pexsi_options%options%gap
@@ -255,9 +251,6 @@ CONTAINS
    SUBROUTINE cp_pexsi_set_default_options(pexsi_options)
       TYPE(cp_pexsi_options), INTENT(OUT)      :: pexsi_options
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_pexsi_set_default_options', &
-                                     routineP = moduleN//':'//routineN
-
 #ifdef  __LIBPEXSI
       CALL f_ppexsi_set_default_options(pexsi_options%options)
 #else
@@ -278,11 +271,10 @@ CONTAINS
                                                   outputFileIndex
       INTEGER(KIND=int_8)                      :: cp_pexsi_plan_initialize
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_pexsi_plan_initialize', &
-                                     routineP = moduleN//':'//routineN
-
 #ifdef  __LIBPEXSI
+      CHARACTER(LEN=*), PARAMETER              :: routineN = 'cp_pexsi_plan_initialize'
       INTEGER                                  :: info, handle
+
       CALL timeset(routineN, handle)
       cp_pexsi_plan_initialize = f_ppexsi_plan_initialize(comm, numProcRow, &
                                                           numProcCol, outputFileIndex, info)
@@ -326,11 +318,8 @@ CONTAINS
       INTEGER, INTENT(IN)                      :: isSIdentity
       REAL(KIND=real_8), INTENT(IN)            :: SnzvalLocal(*)
 
-      CHARACTER(LEN=*), PARAMETER :: &
-         routineN = 'cp_pexsi_load_real_symmetric_hs_matrix', &
-         routineP = moduleN//':'//routineN
-
 #ifdef  __LIBPEXSI
+      CHARACTER(LEN=*), PARAMETER              :: routineN = 'cp_pexsi_load_real_symmetric_hs_matrix'
       INTEGER                                  :: handle, info
 
       CALL timeset(routineN, handle)
@@ -380,10 +369,8 @@ CONTAINS
       INTEGER, INTENT(out)                     :: numTotalInertiaIter, &
                                                   numTotalPEXSIIter
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_pexsi_dft_driver', &
-                                     routineP = moduleN//':'//routineN
-
 #ifdef  __LIBPEXSI
+      CHARACTER(LEN=*), PARAMETER              :: routineN = 'cp_pexsi_dft_driver'
       INTEGER                                  :: handle, info
 #if defined (__HAS_IEEE_EXCEPTIONS)
       LOGICAL, DIMENSION(5)                    :: halt
@@ -441,11 +428,8 @@ CONTAINS
       REAL(KIND=real_8), INTENT(out) :: DMnzvalLocal(*), EDMnzvalLocal(*), &
                                         FDMnzvalLocal(*), totalEnergyH, totalEnergyS, totalFreeEnergy
 
-      CHARACTER(LEN=*), PARAMETER :: &
-         routineN = 'cp_pexsi_retrieve_real_symmetric_dft_matrix', &
-         routineP = moduleN//':'//routineN
-
 #ifdef  __LIBPEXSI
+      CHARACTER(LEN=*), PARAMETER              :: routineN = 'cp_pexsi_retrieve_real_symmetric_dft_matrix'
       INTEGER                                  :: handle, info
 
       CALL timeset(routineN, handle)
@@ -476,11 +460,10 @@ CONTAINS
    SUBROUTINE cp_pexsi_plan_finalize(plan)
       INTEGER(KIND=int_8), INTENT(IN)          :: plan
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_pexsi_plan_finalize', &
-                                     routineP = moduleN//':'//routineN
-
 #ifdef  __LIBPEXSI
+      CHARACTER(LEN=*), PARAMETER              :: routineN = 'cp_pexsi_plan_finalize'
       INTEGER                                  :: info, handle
+
       CALL timeset(routineN, handle)
       CALL f_ppexsi_plan_finalize(plan, info)
       IF (info .NE. 0) &

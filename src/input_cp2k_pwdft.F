@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 !
 ! **************************************************************************************************
@@ -62,9 +64,6 @@ CONTAINS
    SUBROUTINE create_pwdft_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_pwdft_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(section_type), POINTER                        :: subsection
 
 !     ------------------------------------------------------------------------
@@ -112,9 +111,6 @@ CONTAINS
       TYPE(section_type), POINTER                        :: section
       CHARACTER(len=*), INTENT(in)                       :: section_name
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_sirius_section', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: length
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -139,17 +135,14 @@ CONTAINS
       TYPE(section_type), POINTER                        :: section
       CHARACTER(len=*), INTENT(in)                       :: section_name
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fill_in_section', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(len=128)                                 :: name, name1, possible_values(1:16)
       CHARACTER(len=512)                                 :: default_string_val, description, usage
       INTEGER                                            :: ctype, dummy_i, enum_i_val(1:16), i, j, &
                                                             length, num_possible_values, vec_length
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: ivec
       LOGICAL                                            :: lvecl(1:16)
-      LOGICAL(1)                                         :: dummy_l
-      LOGICAL(1), ALLOCATABLE, DIMENSION(:)              :: lvec
+      LOGICAL(4)                                         :: dummy_l
+      LOGICAL(4), ALLOCATABLE, DIMENSION(:)              :: lvec
       REAL(kind=dp)                                      :: dummy_r
       REAL(kind=dp), ALLOCATABLE, DIMENSION(:)           :: rvec
       TYPE(keyword_type), POINTER                        :: keyword
@@ -288,9 +281,6 @@ CONTAINS
    SUBROUTINE create_print_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_print_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(section_type), POINTER                        :: print_key
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -312,9 +302,6 @@ CONTAINS
    SUBROUTINE create_dos_section(print_key)
 
       TYPE(section_type), POINTER                        :: print_key
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_dos_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 

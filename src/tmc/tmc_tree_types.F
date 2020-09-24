@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -179,8 +181,6 @@ CONTAINS
       TYPE(elem_list_type), POINTER                      :: list
       INTEGER, OPTIONAL                                  :: temp_ind, nr
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'add_to_list', routineP = moduleN//':'//routineN
-
       TYPE(elem_list_type), POINTER                      :: last, list_elem_tmp
 
       NULLIFY (list_elem_tmp, last)
@@ -222,8 +222,6 @@ CONTAINS
    SUBROUTINE clean_list(list)
       TYPE(elem_list_type), POINTER                      :: list
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'clean_list', routineP = moduleN//':'//routineN
-
       TYPE(elem_list_type), POINTER                      :: list_elem_tmp
 
       NULLIFY (list_elem_tmp)
@@ -245,9 +243,6 @@ CONTAINS
    SUBROUTINE write_subtree_elem_unformated(elem, io_unit)
       TYPE(tree_type), POINTER                           :: elem
       INTEGER                                            :: io_unit
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_subtree_elem_unformated', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(elem))
       CPASSERT(io_unit .GT. 0)
@@ -279,9 +274,6 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: elem
       INTEGER                                            :: io_unit
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_subtree_elem_unformated', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(elem))
       CPASSERT(io_unit .GT. 0)
 
@@ -311,9 +303,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: array
       INTEGER                                            :: io_unit
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_subtree_elem_darray', &
-         routineP = moduleN//':'//routineN
-
       WRITE (io_unit) ASSOCIATED(array)
       IF (ASSOCIATED(array)) THEN
          WRITE (io_unit) SIZE(array)
@@ -329,9 +318,6 @@ CONTAINS
    SUBROUTINE read_subtree_elem_darray(array, io_unit)
       REAL(KIND=dp), DIMENSION(:), POINTER               :: array
       INTEGER                                            :: io_unit
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_subtree_elem_darray', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i_tmp
       LOGICAL                                            :: l_tmp

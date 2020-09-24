@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -101,7 +103,7 @@ CONTAINS
    SUBROUTINE ec_env_release(ec_env)
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_env_release', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ec_env_release'
 
       INTEGER                                            :: handle, iab
 

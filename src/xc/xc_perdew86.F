@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -119,7 +121,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: order
       TYPE(section_vals_type), POINTER                   :: p86_params
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'p86_lda_eval', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'p86_lda_eval'
 
       INTEGER                                            :: handle, m, npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo

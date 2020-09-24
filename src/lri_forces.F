@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -83,8 +85,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: pmatrix
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_lri_forces', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_lri_forces'
 
       INTEGER                                            :: handle, iatom, ikind, ispin, natom, &
                                                             nkind, nspin
@@ -166,8 +167,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: use_virial
       TYPE(virial_type), POINTER                         :: virial
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_v_dadr_sr', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_v_dadr_sr'
 
       INTEGER :: atom_a, atom_b, handle, i, iac, iatom, ic, ikind, ilist, ispin, jatom, jkind, &
          jneighbor, k, mepos, natom, nba, nbb, nfa, nfb, nkind, nlist, nn, nspin, nthread
@@ -435,8 +435,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: use_virial
       TYPE(virial_type), POINTER                         :: virial
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_v_dadr_ff', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_v_dadr_ff'
 
       INTEGER :: atom_a, atom_b, handle, i, iac, iatom, ic, ikind, ilist, ispin, jatom, jkind, &
          jneighbor, k, mepos, natom, nba, nbb, nfa, nfb, nkind, nlist, nn, nspin, nthread
@@ -684,8 +683,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: pmatrix
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_ri_forces', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_ri_forces'
 
       INTEGER                                            :: handle, iatom, ikind, ispin, natom, &
                                                             nkind, nspin
@@ -753,8 +751,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: use_virial
       TYPE(virial_type), POINTER                         :: virial
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_v_dadr_ri', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_v_dadr_ri'
 
       INTEGER                                            :: atom_a, atom_b, atom_c, handle, i, i1, &
                                                             i2, iatom, ikind, ispin, jatom, jkind, &

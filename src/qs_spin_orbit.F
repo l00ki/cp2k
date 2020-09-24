@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -74,8 +76,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_so
       REAL(dp), DIMENSION(3), INTENT(IN)                 :: rc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_pso_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'build_pso_matrix'
 
       INTEGER :: after, handle, i, iatom, icol, ikind, inode, irow, iset, iw, jatom, jkind, jset, &
          last_jatom, ldai, maxco, maxlgto, maxsgf, natom, ncoa, ncob, neighbor_list_id, nkind, &

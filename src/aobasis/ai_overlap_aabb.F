@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -97,7 +99,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: lds
       REAL(KIND=dp), DIMENSION(lds, lds), INTENT(INOUT)  :: s
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'overlap_aabb', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'overlap_aabb'
 
       INTEGER :: ax, ay, az, bx, by, bz, coa, coamx, coamy, coamz, coapx, coapy, coapz, cob, &
          cobm2x, cobm2y, cobm2z, cobmx, cobmy, cobmz, handle, i, ia, ib, ipgf, j, ja, jb, jpgf, &

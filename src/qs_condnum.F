@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -65,8 +67,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: norml1, norml2, use_arnoldi
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'overlap_condnum', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'overlap_condnum'
 
       INTEGER                                            :: handle, ic, maxiter, nbas, ndep
       LOGICAL                                            :: converged
@@ -286,9 +287,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE smat_precon_diag(pmat)
       TYPE(dbcsr_type)                                   :: pmat
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'smat_precon_diag', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iatom, info, jatom, n
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: sblock

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -23,18 +25,21 @@ MODULE xas_tdp_methods
    USE cp_blacs_env,                    ONLY: cp_blacs_env_type
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm,&
+                                              copy_fm_to_dbcsr,&
                                               cp_dbcsr_sm_fm_multiply
    USE cp_files,                        ONLY: close_file,&
                                               open_file
-   USE cp_fm_diag,                      ONLY: cp_fm_power,&
+   USE cp_fm_basic_linalg,              ONLY: cp_fm_column_scale
+   USE cp_fm_diag,                      ONLY: cp_fm_geeig,&
+                                              cp_fm_power,&
                                               cp_fm_syevd
    USE cp_fm_struct,                    ONLY: cp_fm_struct_create,&
                                               cp_fm_struct_release,&
                                               cp_fm_struct_type
    USE cp_fm_types,                     ONLY: &
-        cp_fm_create, cp_fm_get_diag, cp_fm_get_info, cp_fm_get_submatrix, cp_fm_p_type, &
-        cp_fm_read_unformatted, cp_fm_release, cp_fm_set_all, cp_fm_to_fm, cp_fm_to_fm_submat, &
-        cp_fm_type, cp_fm_write_unformatted
+        cp_fm_copy_general, cp_fm_create, cp_fm_get_diag, cp_fm_get_info, cp_fm_get_submatrix, &
+        cp_fm_p_type, cp_fm_read_unformatted, cp_fm_release, cp_fm_set_all, cp_fm_to_fm, &
+        cp_fm_to_fm_submat, cp_fm_type, cp_fm_write_unformatted
    USE cp_gemm_interface,               ONLY: cp_gemm
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_get_default_io_unit,&
@@ -56,10 +61,13 @@ MODULE xas_tdp_methods
         tddfpt_spin_flip, tddfpt_triplet, xas_1s_type, xas_2p_type, xas_2s_type, xas_dip_len, &
         xas_dip_vel, xas_not_excited, xas_tdp_by_index, xas_tdp_by_kind
    USE input_cp2k_dft,                  ONLY: create_localize_section
-   USE input_section_types,             ONLY: &
-        section_release, section_type, section_vals_create, section_vals_duplicate, &
-        section_vals_get, section_vals_get_subs_vals, section_vals_get_subs_vals2, &
-        section_vals_release, section_vals_type, section_vals_val_get, section_vals_val_set
+   USE input_section_types,             ONLY: section_release,&
+                                              section_type,&
+                                              section_vals_create,&
+                                              section_vals_get_subs_vals,&
+                                              section_vals_type,&
+                                              section_vals_val_get,&
+                                              section_vals_val_set
    USE kinds,                           ONLY: default_path_length,&
                                               default_string_length,&
                                               dp
@@ -123,8 +131,7 @@ MODULE xas_tdp_methods
                                               include_rcs_soc,&
                                               setup_xas_tdp_prob,&
                                               solve_xas_tdp_prob
-   USE xc_derivatives,                  ONLY: xc_functional_get_info
-   USE xc_libxc,                        ONLY: libxc_version_info
+   USE xc_write_output,                 ONLY: xc_write
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
@@ -146,7 +153,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_tdp', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xas_tdp'
 
       CHARACTER(default_string_length)                   :: rst_filename
       INTEGER                                            :: handle, n_rep, output_unit
@@ -213,8 +220,6 @@ CONTAINS
 
       TYPE(section_vals_type), POINTER                   :: xas_tdp_section
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_tdp_core', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: kind_name
       INTEGER                                            :: current_state_index, iat, iatom, ikind, &
@@ -502,8 +507,6 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_tdp_init', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: kind_name
       INTEGER                                            :: at_ind, i, ispin, j, k, kind_ind, &
@@ -813,6 +816,11 @@ CONTAINS
 !  Initialize libint for the 3-center integrals
       CALL cp_libint_static_init()
 
+!  Compute LUMOs as guess for OT solver
+      IF (xas_tdp_control%do_ot) THEN
+         CALL make_lumo_guess(xas_tdp_env, xas_tdp_control, qs_env)
+      END IF
+
    END SUBROUTINE xas_tdp_init
 
 ! **************************************************************************************************
@@ -822,8 +830,6 @@ CONTAINS
    SUBROUTINE safety_check(xas_tdp_control)
 
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'safety_check', routineP = moduleN//':'//routineN
 
       !PB only available without exact exchange
       IF (xas_tdp_control%is_periodic .AND. xas_tdp_control%do_hfx &
@@ -876,6 +882,10 @@ CONTAINS
             CPABORT("Spin-flip kernel only implemented for Tamm-Dancoff approximation")
          END IF
 
+         IF (xas_tdp_control%do_ot) THEN
+            CPABORT("OT diagonalization only available within the Tamm-Dancoff approximation")
+         END IF
+
       END IF
 
    END SUBROUTINE safety_check
@@ -894,14 +904,11 @@ CONTAINS
 
       CHARACTER(len=*), PARAMETER :: routineN = 'print_info', routineP = moduleN//':'//routineN
 
-      CHARACTER(LEN=2*default_string_length)             :: shortform
-      CHARACTER(LEN=20)                                  :: tmpStr
-      CHARACTER(LEN=20*default_string_length)            :: reference
-      INTEGER                                            :: i, il, irep, nrep
+      INTEGER                                            :: i
       TYPE(dft_control_type), POINTER                    :: dft_control
-      TYPE(section_vals_type), POINTER                   :: input, libxc_fun, xc_fun, xc_functionals
+      TYPE(section_vals_type), POINTER                   :: input, kernel_section
 
-      NULLIFY (input, xc_functionals, libxc_fun, xc_fun, dft_control)
+      NULLIFY (input, kernel_section, dft_control)
 
       IF (ou .LE. 0) RETURN
 
@@ -979,24 +986,11 @@ CONTAINS
          WRITE (UNIT=ou, FMT="(/,T3,A,F5.2,A)") &
             "XAS_TDP| RI Region's Radius: ", xas_tdp_control%ri_radius*angstrom, " Ang"
 
-         CALL libxc_version_info(tmpStr)
-         WRITE (UNIT=ou, FMT="(T3,A,A,/,T3,A,/)") &
-            "XAS_TDP| XC Kernel Functional(s) from LIBXC Vers. ", TRIM(tmpStr(1:5)), &
-            "         (Marques, Oliveira, Burnus, CPC 183, 2272 (2012)):"
-         xc_functionals => section_vals_get_subs_vals(input, "DFT%XAS_TDP%KERNEL%XC_FUNCTIONAL")
-         xc_fun => section_vals_get_subs_vals2(xc_functionals, i_section=1)
-         CALL section_vals_get(xc_fun, n_repetition=nrep)
-         DO irep = 1, nrep
-            NULLIFY (libxc_fun)
-            CALL section_vals_duplicate(xc_fun, libxc_fun, i_rep_start=irep, i_rep_end=irep)
-            IF (.NOT. ASSOCIATED(libxc_fun)) EXIT
-            CALL xc_functional_get_info(libxc_fun, lsd=.TRUE., reference=reference, shortform=shortform)
-            CALL section_vals_release(libxc_fun)
-            WRITE (ou, FMT="('  FUNCTIONAL| ',A,':')") TRIM(shortform)
-            DO il = 1, LEN_TRIM(reference), 67
-               WRITE (ou, FMT="('  FUNCTIONAL| ',a67)") reference(il:)
-            END DO
-         END DO
+         WRITE (UNIT=ou, FMT="(T3,A,/)") &
+            "XAS_TDP| XC Kernel Functional(s) used for the kernel:"
+
+         kernel_section => section_vals_get_subs_vals(input, "DFT%XAS_TDP%KERNEL")
+         CALL xc_write(ou, kernel_section, lsd=.TRUE.)
       END IF
 
       !HFX kernel
@@ -1072,9 +1066,6 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'assign_mos_to_ex_atoms', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: at_index, iat, iat_memo, imo, ispin, &
                                                             n_atoms, n_search, nex_atoms, nspins
@@ -1153,9 +1144,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: do_uks
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'reinit_qs_loc_env', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, nspins
       TYPE(localized_wfn_control_type), POINTER          :: loc_wfn_control
 
@@ -1205,9 +1193,6 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'diagonalize_assigned_mo_subset', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iat, ilmo, ispin, nao, nlmo, nspins
       REAL(dp), ALLOCATABLE, DIMENSION(:)                :: evals
@@ -1307,9 +1292,6 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'assign_mos_to_donor_state', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: at_index, i, iat, imo, ispin, l, my_mo, &
                                                             n_search, n_states, nao, ndo_so, nj, &
@@ -1639,9 +1621,6 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'find_mo_centers', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: dim_op, i, ispin, j, n_centers, nao, &
                                                             nspins
       REAL(dp), DIMENSION(6)                             :: weights
@@ -1746,8 +1725,6 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_checks', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_string_length)               :: kind_name
       INTEGER                                            :: current_state_index, iat, iatom, ikind, &
                                                             istate, output_unit, tmp_index
@@ -1834,9 +1811,6 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_lenrep_multipole', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, order
       REAL(dp), DIMENSION(3)                             :: rc
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: work
@@ -1888,8 +1862,7 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_dipole_fosc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_dipole_fosc'
 
       INTEGER                                            :: handle, iosc, j, nao, ndo_mo, ndo_so, &
                                                             ngs, nosc, nspins
@@ -2003,8 +1976,7 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_quadrupole_fosc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_quadrupole_fosc'
 
       INTEGER                                            :: handle, iosc, j, nao, ndo_mo, ndo_so, &
                                                             ngs, nosc, nspins
@@ -2124,9 +2096,6 @@ CONTAINS
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_mos_to_ex_atoms_association', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_string_length)               :: kind_name
       INTEGER                                            :: at_index, imo, ispin, nmo, nspins, &
                                                             output_unit, tmp_index
@@ -2211,9 +2180,6 @@ CONTAINS
    SUBROUTINE perform_mulliken_on_donor_state(donor_state, qs_env)
       TYPE(donor_state_type), POINTER                    :: donor_state
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'perform_mulliken_on_donor_state', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: at_index, i, ispin, nao, natom, ndo_mo, &
                                                             ndo_so, nsgf, nspins, output_unit
@@ -2311,7 +2277,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: xas_tdp_section
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_tdp_post', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xas_tdp_post'
 
       CHARACTER(len=default_string_length)               :: domo, domon, excite, pos, xas_mittle
       INTEGER                                            :: handle, ic, ido_mo, imo, irep, ispin, &
@@ -2535,6 +2501,186 @@ CONTAINS
    END SUBROUTINE xas_tdp_post
 
 ! **************************************************************************************************
+!> \brief Computed the LUMOs for the OT eigensolver guesses
+!> \param xas_tdp_env ...
+!> \param xas_tdp_control ...
+!> \param qs_env ...
+!> \note Uses stendard diagonalization. Do not use the stendard make_lumo subroutine as it uses
+!>       the OT eigensolver and there is no guarantee that it will converge fast
+! **************************************************************************************************
+   SUBROUTINE make_lumo_guess(xas_tdp_env, xas_tdp_control, qs_env)
+
+      TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
+      TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
+      TYPE(qs_environment_type), POINTER                 :: qs_env
+
+      CHARACTER(len=*), PARAMETER :: routineN = 'make_lumo_guess', &
+         routineP = moduleN//':'//routineN
+
+      INTEGER                                            :: handle, ispin, nao, nelec_spin(2), &
+                                                            nlumo(2), nocc(2), nspins
+      LOGICAL                                            :: do_os
+      REAL(dp), ALLOCATABLE, DIMENSION(:)                :: evals
+      TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
+      TYPE(cp_fm_struct_type), POINTER                   :: fm_struct, lumo_struct
+      TYPE(cp_fm_type), POINTER                          :: amatrix, bmatrix, evecs, work_fm
+      TYPE(cp_para_env_type), POINTER                    :: para_env
+      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_ks, matrix_s
+
+      NULLIFY (matrix_ks, matrix_s, para_env, blacs_env)
+      NULLIFY (lumo_struct, amatrix, bmatrix, work_fm, fm_struct, evecs)
+
+      CALL timeset(routineN, handle)
+
+      do_os = xas_tdp_control%do_uks .OR. xas_tdp_control%do_roks
+      nspins = 1; IF (do_os) nspins = 2
+      ALLOCATE (xas_tdp_env%lumo_evecs(nspins))
+      ALLOCATE (xas_tdp_env%lumo_evals(nspins))
+      CALL get_qs_env(qs_env, matrix_ks=matrix_ks, matrix_s=matrix_s, nelectron_spin=nelec_spin, &
+                      para_env=para_env, blacs_env=blacs_env)
+      CALL dbcsr_get_info(matrix_s(1)%matrix, nfullrows_total=nao)
+
+      IF (do_os) THEN
+         nlumo = nao - nelec_spin
+         nocc = nelec_spin
+      ELSE
+         nlumo = nao - nelec_spin(1)/2
+         nocc = nelec_spin(1)/2
+      END IF
+
+      ALLOCATE (xas_tdp_env%ot_prec(nspins))
+
+      DO ispin = 1, nspins
+
+         !Going through fm to diagonalize
+         CALL cp_fm_struct_create(fm_struct, para_env=para_env, context=blacs_env, &
+                                  nrow_global=nao, ncol_global=nao)
+         CALL cp_fm_create(amatrix, fm_struct)
+         CALL cp_fm_create(bmatrix, fm_struct)
+         CALL cp_fm_create(evecs, fm_struct)
+         CALL cp_fm_create(work_fm, fm_struct)
+         ALLOCATE (evals(nao))
+         ALLOCATE (xas_tdp_env%lumo_evals(ispin)%array(nlumo(ispin)))
+
+         CALL copy_dbcsr_to_fm(matrix_ks(ispin)%matrix, amatrix)
+         CALL copy_dbcsr_to_fm(matrix_s(1)%matrix, bmatrix)
+
+         !The actual diagonalization through Cholesky decomposition
+         CALL cp_fm_geeig(amatrix, bmatrix, evecs, evals, work_fm)
+
+         !Storing results
+         CALL cp_fm_struct_create(lumo_struct, para_env=para_env, context=blacs_env, &
+                                  nrow_global=nao, ncol_global=nlumo(ispin))
+         CALL cp_fm_create(xas_tdp_env%lumo_evecs(ispin)%matrix, lumo_struct)
+
+         CALL cp_fm_to_fm_submat(evecs, xas_tdp_env%lumo_evecs(ispin)%matrix, nrow=nao, &
+                                 ncol=nlumo(ispin), s_firstrow=1, s_firstcol=nocc(ispin) + 1, &
+                                 t_firstrow=1, t_firstcol=1)
+
+         xas_tdp_env%lumo_evals(ispin)%array(1:nlumo(ispin)) = evals(nocc(ispin) + 1:nao)
+
+         CALL build_ot_spin_prec(evecs, evals, ispin, xas_tdp_env, xas_tdp_control, qs_env)
+
+         !clean-up
+         CALL cp_fm_release(amatrix)
+         CALL cp_fm_release(bmatrix)
+         CALL cp_fm_release(evecs)
+         CALL cp_fm_release(work_fm)
+         CALL cp_fm_struct_release(fm_struct)
+         CALL cp_fm_struct_release(lumo_struct)
+         DEALLOCATE (evals)
+      END DO
+
+      CALL timestop(handle)
+
+   END SUBROUTINE make_lumo_guess
+
+! **************************************************************************************************
+!> \brief Builds a preconditioner for the OT eigensolver, based on some heurstics that prioritize
+!>        LUMOs with lower eigenvalues
+!> \param evecs all the ground state eigenvectors
+!> \param evals all the ground state eigenvalues
+!> \param ispin ...
+!> \param xas_tdp_env ...
+!> \param xas_tdp_control ...
+!> \param qs_env ...
+!> \note assumes that the preconditioner matrix array is allocated
+! **************************************************************************************************
+   SUBROUTINE build_ot_spin_prec(evecs, evals, ispin, xas_tdp_env, xas_tdp_control, qs_env)
+
+      TYPE(cp_fm_type), POINTER                          :: evecs
+      REAL(dp), DIMENSION(:)                             :: evals
+      INTEGER                                            :: ispin
+      TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
+      TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
+      TYPE(qs_environment_type), POINTER                 :: qs_env
+
+      CHARACTER(len=*), PARAMETER :: routineN = 'build_ot_spin_prec', &
+         routineP = moduleN//':'//routineN
+
+      INTEGER                                            :: handle, nao, nelec_spin(2), nguess, &
+                                                            nocc, nspins
+      LOGICAL                                            :: do_os
+      REAL(dp)                                           :: shift
+      REAL(dp), ALLOCATABLE, DIMENSION(:)                :: scaling
+      TYPE(cp_fm_struct_type), POINTER                   :: fm_struct
+      TYPE(cp_fm_type), POINTER                          :: fm_prec, work_fm
+      TYPE(cp_para_env_type), POINTER                    :: para_env
+      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
+
+      NULLIFY (work_fm, fm_struct, para_env, matrix_s, fm_prec)
+
+      CALL timeset(routineN, handle)
+
+      do_os = xas_tdp_control%do_uks .OR. xas_tdp_control%do_roks
+      CALL get_qs_env(qs_env, para_env=para_env, nelectron_spin=nelec_spin, matrix_s=matrix_s)
+      CALL cp_fm_get_info(evecs, nrow_global=nao, matrix_struct=fm_struct)
+      CALL cp_fm_create(fm_prec, fm_struct)
+      ALLOCATE (scaling(nao))
+      nocc = nelec_spin(1)/2
+      nspins = 1
+      IF (do_os) THEN
+         nocc = nelec_spin(ispin)
+         nspins = 2
+      END IF
+
+      !rough estimate of the number of required evals
+      nguess = nao - nocc
+      IF (xas_tdp_control%n_excited > 0 .AND. xas_tdp_control%n_excited < nguess) THEN
+         nguess = xas_tdp_control%n_excited/nspins
+      ELSE IF (xas_tdp_control%e_range > 0.0_dp) THEN
+         nguess = COUNT(evals(nocc + 1:nao) - evals(nocc + 1) .LE. xas_tdp_control%e_range)
+      END IF
+
+      !Give max weight to the first LUMOs
+      scaling(nocc + 1:nocc + nguess) = 100.0_dp
+      !Then gradually decrease weight
+      shift = evals(nocc + 1) - 0.01_dp
+      scaling(nocc + nguess:nao) = 1.0_dp/(evals(nocc + nguess:nao) - shift)
+      !HOMOs do not matter, but need well behaved matrix
+      scaling(1:nocc) = 1.0_dp
+
+      !Building the precond as an fm
+      CALL cp_fm_create(work_fm, fm_struct)
+
+      CALL cp_fm_copy_general(evecs, work_fm, para_env)
+      CALL cp_fm_column_scale(work_fm, scaling)
+
+      CALL cp_gemm('N', 'T', nao, nao, nao, 1.0_dp, work_fm, evecs, 0.0_dp, fm_prec)
+
+      !Copy into dbcsr format
+      ALLOCATE (xas_tdp_env%ot_prec(ispin)%matrix)
+      CALL dbcsr_create(xas_tdp_env%ot_prec(ispin)%matrix, template=matrix_s(1)%matrix, name="OT_PREC")
+      CALL copy_fm_to_dbcsr(fm_prec, xas_tdp_env%ot_prec(ispin)%matrix)
+
+      CALL cp_fm_release(work_fm)
+      CALL cp_fm_release(fm_prec)
+
+      CALL timestop(handle)
+
+   END SUBROUTINE build_ot_spin_prec
+
+! **************************************************************************************************
 !> \brief Prints the excitation energies and the oscillator strengths for a given donor_state in a file
 !> \param donor_state the donor_state to print
 !> \param xas_tdp_env ...
@@ -2547,9 +2693,6 @@ CONTAINS
       TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
       TYPE(section_vals_type), POINTER                   :: xas_tdp_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_xas_tdp_to_file', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, output_unit, xas_tdp_unit
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -2783,8 +2926,7 @@ CONTAINS
       TYPE(donor_state_type), POINTER                    :: donor_state
       TYPE(section_vals_type), POINTER                   :: xas_tdp_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_donor_state_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'write_donor_state_restart'
 
       CHARACTER(len=default_path_length)                 :: filename
       CHARACTER(len=default_string_length)               :: domo, excite, my_middle
@@ -2895,8 +3037,7 @@ CONTAINS
       CHARACTER(len=*), INTENT(IN)                       :: filename
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_donor_state_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'read_donor_state_restart'
 
       INTEGER                                            :: group, handle, nao, nex, nspins, &
                                                             output_unit, read_params(7), rst_unit, &
@@ -2998,9 +3139,6 @@ CONTAINS
       CHARACTER(len=*), INTENT(IN)                       :: rst_filename
       TYPE(section_vals_type), POINTER                   :: xas_tdp_section
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'restart_calculation', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ex_type
       TYPE(donor_state_type), POINTER                    :: donor_state

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -104,7 +106,7 @@ CONTAINS
       TYPE(qs_p_env_type), POINTER                       :: p_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'issc_response', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'issc_response'
 
       INTEGER                                            :: handle, idir, ijdir, ispin, jdir, nao, &
                                                             nmo, nspins, output_unit
@@ -451,7 +453,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: iatom
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'issc_issc', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'issc_issc'
 
       INTEGER                                            :: handle, ispin, ixyz, jatom, jxyz, natom, &
                                                             nmo, nspins
@@ -656,8 +658,6 @@ CONTAINS
       TYPE(issc_env_type)                                :: issc_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'issc_print', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=2)                                   :: element_symbol_i, element_symbol_j
       CHARACTER(LEN=default_string_length)               :: name_i, name_j, title
       INTEGER                                            :: iatom, jatom, natom, output_unit, &
@@ -782,7 +782,7 @@ CONTAINS
       TYPE(issc_env_type)                                :: issc_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'issc_env_init', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'issc_env_init'
 
       INTEGER                                            :: handle, iatom, idir, ini, ir, ispin, &
                                                             istat, m, n, n_rep, nao, natom, &
@@ -1041,9 +1041,6 @@ CONTAINS
    SUBROUTINE issc_env_cleanup(issc_env)
 
       TYPE(issc_env_type)                                :: issc_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'issc_env_cleanup', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: idir, ispin
 

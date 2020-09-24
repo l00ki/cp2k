@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -103,8 +105,6 @@ CONTAINS
       TYPE(xc_rho_cflags_type), INTENT(inout), OPTIONAL  :: needs
       INTEGER, INTENT(out), OPTIONAL                     :: max_deriv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'pade_info', routineP = moduleN//':'//routineN
-
       IF (PRESENT(reference)) THEN
          reference = "S. Goedecker, M. Teter and J. Hutter," &
                      //" Phys. Rev. B 54, 1703 (1996)"
@@ -138,9 +138,6 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       TYPE(xc_rho_set_type), POINTER                     :: rho_set
       INTEGER, INTENT(IN), OPTIONAL                      :: order
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'pade_lda_pw_eval', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: n
       LOGICAL                                            :: calc(0:4)
@@ -725,8 +722,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: rhoa, rhob, rs
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: fx
       REAL(KIND=dp), INTENT(INOUT)                       :: potaaa, potaab, potabb, potbbb
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'pade_lsd_3', routineP = moduleN//':'//routineN
 
       REAL(KIND=dp) :: d2p, d2q, d2xp, d2xq, d3p, d3q, dpv, dq, dr, drr, drrr, dx, dxp, dxq, dxr, &
          dxrr, dxx, dxxr, dxxx, fa0, fa1, fa2, fa3, fb1, fb2, fb3, fb4, or, p, q, rhoab, xp, xq, &

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -100,8 +102,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: homo_beta, dimen_ia_beta
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: Eigenval_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_minimax_grid', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'get_minimax_grid'
       INTEGER, PARAMETER                                 :: num_points_per_magnitude = 200
 
       INTEGER                                            :: handle, ierr, jquad
@@ -179,9 +180,11 @@ CONTAINS
          DEALLOCATE (x_tw)
 
          IF (unit_nr > 0 .AND. do_print) THEN
+            WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
+               "MINIMAX_INFO| Number of integration points:", num_integ_points
             WRITE (UNIT=unit_nr, FMT="(T3,A,T66,F15.4)") &
-               "INTEG_INFO| Range for the minimax approximation:", E_Range
-            WRITE (UNIT=unit_nr, FMT="(T3,A,T54,A,T72,A)") "INTEG_INFO| Minimax parameters:", "Weights", "Abscissas"
+               "MINIMAX_INFO| Range for the minimax approximation:", E_Range
+            WRITE (UNIT=unit_nr, FMT="(T3,A,T54,A,T72,A)") "MINIMAX_INFO| Minimax parameters:", "Weights", "Abscissas"
             DO jquad = 1, num_integ_points
                WRITE (UNIT=unit_nr, FMT="(T41,F20.10,F20.10)") wj(jquad), tj(jquad)
             END DO
@@ -229,12 +232,12 @@ CONTAINS
 
          IF (unit_nr > 0 .AND. do_print) THEN
             WRITE (UNIT=unit_nr, FMT="(T3,A,T66,F15.4)") &
-               "INTEG_INFO| Range for the minimax approximation:", E_Range
+               "MINIMAX_INFO| Range for the minimax approximation:", E_Range
             ! For testing the gap
             WRITE (UNIT=unit_nr, FMT="(T3,A,T66,F15.4)") &
-               "INTEG_INFO| Gap:", Emin
+               "MINIMAX_INFO| Gap:", Emin
             WRITE (UNIT=unit_nr, FMT="(T3,A,T54,A,T72,A)") &
-               "INTEG_INFO| Minimax parameters of the time grid:", "Weights", "Abscissas"
+               "MINIMAX_INFO| Minimax parameters of the time grid:", "Weights", "Abscissas"
             DO jquad = 1, num_integ_points
                WRITE (UNIT=unit_nr, FMT="(T41,F20.10,F20.10)") tau_wj(jquad), tau_tj(jquad)
             END DO
@@ -270,7 +273,7 @@ CONTAINS
 
                IF (unit_nr > 0) THEN
                   WRITE (UNIT=unit_nr, FMT="(T3,A,T66,ES15.2)") &
-                     "INTEG_INFO| Maximum deviation of the imag. time fit:", max_error_min
+                     "MINIMAX_INFO| Maximum deviation of the imag. time fit:", max_error_min
                END IF
             END IF
 
@@ -325,8 +328,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: Eigenval_beta
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_mat_S_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_clenshaw_grid', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'get_clenshaw_grid'
 
       INTEGER                                            :: handle, jquad
       LOGICAL                                            :: my_open_shell
@@ -414,8 +416,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: Eigenval_beta
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_mat_S_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_scaling_factor', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_scaling_factor'
 
       INTEGER                                            :: handle, icycle, jquad, nrow_local, &
                                                             nrow_local_beta
@@ -559,8 +560,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: fm_mat_S
       TYPE(cp_para_env_type), POINTER                    :: para_env_row
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_ia_ia_integrals', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_ia_ia_integrals'
 
       INTEGER                                            :: avirt, color_col, color_row, comm_col, &
                                                             comm_row, handle, i_global, iiB, iocc, &
@@ -779,8 +779,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: max_error
       INTEGER, INTENT(IN)                                :: num_points_per_magnitude
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_l_sq_wghts_cos_tf_t_to_w', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_l_sq_wghts_cos_tf_t_to_w'
 
       INTEGER                                            :: handle, iii, info, jjj, jquad, lwork, &
                                                             num_x_nodes
@@ -912,8 +911,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: max_error
       INTEGER, INTENT(IN)                                :: num_points_per_magnitude
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_l_sq_wghts_sin_tf_t_to_w', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_l_sq_wghts_sin_tf_t_to_w'
 
       INTEGER                                            :: handle, iii, info, jjj, jquad, lwork, &
                                                             num_x_nodes
@@ -1044,9 +1042,6 @@ CONTAINS
          INTENT(IN)                                      :: tau_tj, tau_wj_work, x_values, y_values
       INTEGER, INTENT(IN)                                :: num_integ_points, num_x_nodes
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_max_error_fit_tau_grid_with_cosine', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: kkk
       REAL(KIND=dp)                                      :: func_val, func_val_temp, max_error_tmp
 
@@ -1091,9 +1086,6 @@ CONTAINS
          INTENT(IN)                                      :: tau_tj, tau_wj_work
       REAL(KIND=dp), INTENT(IN)                          :: omega
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'eval_fit_func_tau_grid_cosine', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: iii
 
       func_val = 0.0_dp
@@ -1124,9 +1116,6 @@ CONTAINS
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(IN)                                      :: tau_tj, tau_wj_work
       REAL(KIND=dp), INTENT(IN)                          :: omega
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'eval_fit_func_tau_grid_sine', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iii
 
@@ -1159,9 +1148,6 @@ CONTAINS
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:), &
          INTENT(IN)                                      :: tau_tj, tau_wj_work, x_values, y_values
       INTEGER, INTENT(IN)                                :: num_integ_points, num_x_nodes
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_max_error_fit_tau_grid_with_sine', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: kkk
       REAL(KIND=dp)                                      :: func_val, func_val_temp, max_error_tmp
@@ -1283,8 +1269,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: max_error
       INTEGER, INTENT(IN)                                :: num_points_per_magnitude
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_l_sq_wghts_cos_tf_w_to_t', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_l_sq_wghts_cos_tf_w_to_t'
 
       INTEGER                                            :: handle, iii, info, jjj, jquad, lwork, &
                                                             num_x_nodes
@@ -1419,8 +1404,7 @@ CONTAINS
                                                             y_values
       INTEGER, INTENT(IN)                                :: num_integ_points, num_x_nodes
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_max_error_fit_omega_grid_with_cosine', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_max_error_fit_omega_grid_with_cosine'
 
       INTEGER                                            :: handle, kkk
       REAL(KIND=dp)                                      :: func_val, func_val_temp, max_error_tmp
@@ -1469,9 +1453,6 @@ CONTAINS
          INTENT(IN)                                      :: omega_tj, omega_wj_work
       REAL(KIND=dp), INTENT(IN)                          :: tau
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'eval_fit_func_omega_grid_cosine', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: iii
       REAL(KIND=dp)                                      :: omega
 
@@ -1501,8 +1482,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       REAL(KIND=dp), INTENT(OUT)                         :: gap, max_eig_diff, e_fermi
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'gap_and_max_eig_diff_kpoints', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'gap_and_max_eig_diff_kpoints'
 
       INTEGER                                            :: handle, homo, ikpgr, ispin, kplocal, &
                                                             nmo, nspin

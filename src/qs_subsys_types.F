@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -75,9 +77,6 @@ CONTAINS
    SUBROUTINE qs_subsys_retain(subsys)
       TYPE(qs_subsys_type), POINTER                      :: subsys
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_subsys_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(subsys))
       CPASSERT(subsys%ref_count > 0)
       subsys%ref_count = subsys%ref_count + 1
@@ -90,9 +89,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE qs_subsys_release(subsys)
       TYPE(qs_subsys_type), POINTER                      :: subsys
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_subsys_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(subsys)) THEN
          CPASSERT(subsys%ref_count > 0)
@@ -192,8 +188,6 @@ CONTAINS
       INTEGER, OPTIONAL                                  :: nelectron_total
       INTEGER, DIMENSION(2), OPTIONAL                    :: nelectron_spin
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_subsys_get', routineP = moduleN//':'//routineN
-
       CALL cp_subsys_get(subsys%cp_subsys, &
                          atomic_kinds=atomic_kinds, &
                          atomic_kind_set=atomic_kind_set, &
@@ -262,8 +256,6 @@ CONTAINS
          POINTER                                         :: qs_kind_set
       INTEGER, OPTIONAL                                  :: nelectron_total
       INTEGER, DIMENSION(2), OPTIONAL                    :: nelectron_spin
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_subsys_set', routineP = moduleN//':'//routineN
 
       IF (PRESENT(cp_subsys)) THEN
          CALL cp_subsys_retain(cp_subsys)

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -89,8 +91,6 @@ CONTAINS
       REAL(dp), DIMENSION(0:2), INTENT(in), OPTIONAL     :: poly_shift
       REAL(dp), INTENT(in), OPTIONAL                     :: scale
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'collocGauss', routineP = moduleN//':'//routineN
-
       CALL colloc_int_body(h, h_inv, grid, poly, alphai, posi, max_r2, &
                            periodic, gdim, local_bounds, local_shift, &
                            poly_shift, scale, integrate=.FALSE.)
@@ -130,9 +130,6 @@ CONTAINS
       INTEGER, DIMENSION(0:2), INTENT(in), OPTIONAL      :: local_shift
       REAL(dp), DIMENSION(0:2), INTENT(in), OPTIONAL     :: poly_shift
       REAL(dp), INTENT(in), OPTIONAL                     :: scale
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'integrateGaussFull', &
-                                     routineP = moduleN//':'//routineN
 
       CALL colloc_int_body(h, h_inv, grid, poly, alphai, posi, max_r2, &
                            periodic, gdim, local_bounds, local_shift, &
@@ -178,9 +175,6 @@ CONTAINS
          OPTIONAL                               :: poly_shift
       REAL(dp), INTENT(in), OPTIONAL           :: scale
       LOGICAL                                  :: integrate
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'colloc_int_body', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER, DIMENSION(0:2), PARAMETER       :: permut = (/2, 1, 0/)
       INTEGER :: grad, i, i0, ii, iiShift, iiShift2, iistart, iistart2, ij, &

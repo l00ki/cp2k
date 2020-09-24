@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -83,9 +85,6 @@ CONTAINS
    SUBROUTINE destroy_gaussian_gridlevel(gridlevel_info, para_env)
       TYPE(gridlevel_info_type)                          :: gridlevel_info
       TYPE(cp_para_env_type), OPTIONAL, POINTER          :: para_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'destroy_gaussian_gridlevel', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: group, i, output_unit
       TYPE(cp_logger_type), POINTER                      :: logger

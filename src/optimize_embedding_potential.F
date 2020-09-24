@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE optimize_embedding_potential
@@ -1144,8 +1146,7 @@ CONTAINS
       TYPE(pw_p_type), POINTER                           :: diff_rho_r, diff_rho_spin
       TYPE(opt_embed_pot_type)                           :: opt_embed
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_embed_pot_grad', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_embed_pot_grad'
 
       INTEGER                                            :: handle
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
@@ -1286,8 +1287,7 @@ CONTAINS
       LOGICAL                                            :: open_shell_embed
       TYPE(lri_kind_type), DIMENSION(:), POINTER         :: lri
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_embed_pot_grad_inner', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_embed_pot_grad_inner'
 
       INTEGER                                            :: handle, iatom, ikind, l_global, LLL, &
                                                             nrow_local, nsgf, start_pos
@@ -1392,8 +1392,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_fm_type), POINTER                          :: kinetic_mat
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_kinetic_mat', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_kinetic_mat'
 
       INTEGER                                            :: handle
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_t
@@ -1564,7 +1563,7 @@ CONTAINS
       TYPE(pw_p_type), DIMENSION(:), POINTER             :: rho_r_ref
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'opt_embed_step', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'opt_embed_step'
       REAL(KIND=dp), PARAMETER                           :: thresh = 0.000001_dp
 
       INTEGER                                            :: handle, l_global, LLL, nrow_local
@@ -1754,8 +1753,7 @@ CONTAINS
       TYPE(opt_embed_pot_type)                           :: opt_embed
       TYPE(pw_p_type), POINTER                           :: embed_pot, spin_embed_pot
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'grid_based_step', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'grid_based_step'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: my_reg_term
@@ -1800,8 +1798,7 @@ CONTAINS
       LOGICAL                                            :: add_const_pot, open_shell_embed
       TYPE(pw_p_type), OPTIONAL, POINTER                 :: const_pot
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'update_embed_pot', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'update_embed_pot'
 
       INTEGER                                            :: handle, l_global, LLL, nrow_local
       INTEGER, DIMENSION(:), POINTER                     :: row_indices
@@ -2272,7 +2269,7 @@ CONTAINS
    SUBROUTINE step_control(opt_embed)
       TYPE(opt_embed_pot_type)                           :: opt_embed
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'step_control', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'step_control'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: actual_ener_change, ener_ratio, &
@@ -2347,7 +2344,7 @@ CONTAINS
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: eigenval
       TYPE(cp_fm_type), POINTER                          :: diag_step
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'level_shift', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'level_shift'
       INTEGER, PARAMETER                                 :: max_iter = 25
       REAL(KIND=dp), PARAMETER                           :: thresh = 0.00001_dp
 
@@ -2575,8 +2572,7 @@ CONTAINS
       LOGICAL                                            :: open_shell_embed
       REAL(KIND=dp)                                      :: step_len
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'Leeuwen_Baerends_potential_update', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'Leeuwen_Baerends_potential_update'
 
       INTEGER                                            :: handle, i, i_spin, j, k, nspins
       INTEGER, DIMENSION(3)                              :: lb, ub
@@ -2767,7 +2763,7 @@ CONTAINS
       LOGICAL                                            :: open_shell_embed
       REAL(KIND=dp)                                      :: vw_cutoff, vw_smooth_cutoff_range
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'FAB_update', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'FAB_update'
 
       INTEGER                                            :: handle, i_spin, nspins
       TYPE(pw_env_type), POINTER                         :: pw_env

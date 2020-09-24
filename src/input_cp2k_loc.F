@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 MODULE input_cp2k_loc
    USE bibliography,                    ONLY: Hunt2003
@@ -49,9 +51,6 @@ CONTAINS
    SUBROUTINE create_localize_section(section)
 
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_localize_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, print_section, subsection
@@ -297,8 +296,6 @@ CONTAINS
    SUBROUTINE print_wanniers(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_wanniers', routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key
 
@@ -382,9 +379,6 @@ CONTAINS
    SUBROUTINE create_molecular_states_section(print_key)
       TYPE(section_type), POINTER                        :: print_key
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_molecular_states_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key2
 
@@ -434,9 +428,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_wannier_states_section(print_key)
       TYPE(section_type), POINTER                        :: print_key
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_wannier_states_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key2

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -52,9 +54,6 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: n_orig(3)
       INTEGER, DIMENSION(3)                              :: n
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_grid_init_setup', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: my_icommensurate
 
       IF (ncommensurate > 0) THEN
@@ -98,8 +97,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ncommensurate
       INTEGER, INTENT(IN), OPTIONAL                      :: n_orig(3)
       INTEGER, DIMENSION(3)                              :: n
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_grid_find_n', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: idir, my_icommensurate, &
                                                             my_ncommensurate, nsubgrid, &
@@ -191,9 +188,6 @@ CONTAINS
       LOGICAL, INTENT(in), OPTIONAL                      :: odd
       INTEGER, DIMENSION(3)                              :: nout
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_grid_n_for_fft', &
-         routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: my_odd
 
       my_odd = .FALSE.
@@ -233,9 +227,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: cutoff
       INTEGER, DIMENSION(3)                              :: n
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_grid_n_from_cutoff', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
       REAL(KIND=dp)                                      :: alat(3)
 
@@ -256,9 +247,6 @@ CONTAINS
    FUNCTION pw_grid_bounds_from_n(npts) RESULT(bounds)
       INTEGER, DIMENSION(3), INTENT(in)                  :: npts
       INTEGER, DIMENSION(2, 3)                           :: bounds
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_grid_bounds_from_n', &
-         routineP = moduleN//':'//routineN
 
       bounds(1, :) = -npts/2
       bounds(2, :) = bounds(1, :) + npts - 1
@@ -285,8 +273,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: npts
       REAL(KIND=dp), DIMENSION(3, 3), INTENT(IN)         :: h_inv
       REAL(KIND=dp)                                      :: cutoff
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pw_find_cutoff', routineP = moduleN//':'//routineN
 
       REAL(KIND=dp)                                      :: gcut, gdum(3), length
 

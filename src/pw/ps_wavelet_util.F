@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -334,8 +336,7 @@ CONTAINS
                                                             nd1, nd2, nd3
       INTEGER, INTENT(in)                                :: nproc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'S_FFT_dimensions', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'S_FFT_dimensions'
 
       INTEGER                                            :: handle, l1, l2, l3
 
@@ -519,8 +520,7 @@ CONTAINS
          INTENT(inout)                                   :: zf, rhopot
       REAL(KIND=dp), INTENT(in)                          :: factor
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'scale_and_distribute', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'scale_and_distribute'
 
       INTEGER                                            :: handle, j1, j3, jp2
 

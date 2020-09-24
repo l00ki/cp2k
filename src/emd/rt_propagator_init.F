@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -77,9 +79,6 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_propagators', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, imat, unit_nr
       REAL(KIND=dp)                                      :: dt, prefac
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: mos_new, mos_next, mos_old
@@ -141,7 +140,7 @@ CONTAINS
       ! For ETRS this bit could be avoided but it drastically simplifies the workflow afterwards.
       ! If we compute the half propagated mos/exponential already here, we ensure everything is done
       ! with the correct S matrix and all information as during RTP/EMD are computed.
-      ! Therefore we might accept to compute an unnesscesary expoenential but understand the code afterwards
+      ! Therefore we might accept to compute an unnesscesary exponential but understand the code afterwards
       IF (rtp_control%propagator == do_etrs) THEN
          IF (rtp_control%mat_exp == do_arnoldi) THEN
             rtp%iter = 0
@@ -188,8 +187,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: s_mat, matrix_ks
       TYPE(rtp_control_type), POINTER                    :: rtp_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_maxabs_eigval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'get_maxabs_eigval'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle, ispin, method, ndim
@@ -307,8 +305,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: s_mat, matrix_ks
       TYPE(rtp_control_type), POINTER                    :: rtp_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_maxabs_eigval_sparse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'get_maxabs_eigval_sparse'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle, ispin, method
@@ -376,8 +373,7 @@ CONTAINS
       REAL(dp), DIMENSION(:), INTENT(in)                 :: Eval
       TYPE(cp_fm_type), POINTER                          :: eigenvec, matrix
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'backtransform_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'backtransform_matrix'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle, i, j, l, ncol_local, ndim, &
@@ -420,9 +416,6 @@ CONTAINS
 
       TYPE(rt_prop_type), POINTER                        :: rtp
       TYPE(mo_set_p_type), DIMENSION(:), POINTER         :: mos
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'rt_initialize_rho_from_mos', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ispin, ncol, re
       REAL(KIND=dp)                                      :: alpha

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -129,8 +131,7 @@ CONTAINS
       TYPE(simpar_type), POINTER               :: simpar
       INTEGER, INTENT(IN)                      :: itimes
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'metadyn_initialise_plumed', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'metadyn_initialise_plumed'
 
       INTEGER                                  :: handle
 
@@ -197,8 +198,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE metadyn_finalise_plumed()
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'metadyn_finalise_plumed', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'metadyn_finalise_plumed'
 
       INTEGER                                            :: handle
 
@@ -231,8 +231,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), OPTIONAL, &
          POINTER                                :: rand
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_integrator', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_integrator'
 
       INTEGER                                  :: handle, plumed_itimes
 #if defined (__PLUMED2)
@@ -371,7 +370,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT), &
          OPTIONAL                                        :: vel
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_forces', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'metadyn_forces'
 
       INTEGER                                            :: handle, i, i_c, icolvar, ii, iwall
       LOGICAL                                            :: explicit
@@ -633,8 +632,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT), &
          OPTIONAL                                        :: rand
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_velocities_colvar', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_velocities_colvar'
 
       INTEGER                                            :: handle, i_c
       REAL(kind=dp)                                      :: diff_ss, dt, fft, sigma
@@ -689,8 +687,7 @@ CONTAINS
    SUBROUTINE metadyn_position_colvar(force_env)
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_position_colvar', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_position_colvar'
 
       INTEGER                                            :: handle, i_c
       REAL(kind=dp)                                      :: dt
@@ -732,8 +729,7 @@ CONTAINS
    SUBROUTINE metadyn_write_colvar(force_env)
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_write_colvar', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'metadyn_write_colvar'
 
       INTEGER                                            :: handle, i, i_c, iw
       REAL(KIND=dp)                                      :: diff_ss, temp
@@ -831,7 +827,7 @@ CONTAINS
    SUBROUTINE hills(meta_env)
       TYPE(meta_env_type), POINTER                       :: meta_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'hills', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'hills'
 
       INTEGER                                            :: handle, i, i_hills, ih, intermeta_steps, &
                                                             iter_nr, iw, n_colvar, n_hills_start, &

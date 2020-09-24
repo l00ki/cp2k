@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE qs_tddfpt2_fhxc
@@ -72,7 +74,7 @@ CONTAINS
       TYPE(tddfpt_subgroup_env_type), INTENT(in)         :: sub_env
       TYPE(tddfpt_work_matrices), INTENT(inout)          :: work_matrices
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'fhxc_kernel', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'fhxc_kernel'
 
       INTEGER                                            :: handle, ispin, ivect, nao, nspins, nvects
       INTEGER, DIMENSION(maxspins)                       :: nactive
@@ -244,7 +246,7 @@ CONTAINS
       TYPE(tddfpt_subgroup_env_type)                     :: sub_env
       TYPE(tddfpt_work_matrices), INTENT(inout)          :: work_matrices
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'stda_kernel', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'stda_kernel'
 
       INTEGER                                            :: handle, ivect, nvects
 

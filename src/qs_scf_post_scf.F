@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -41,9 +43,6 @@ CONTAINS
    SUBROUTINE qs_scf_compute_properties(qs_env, wf_type)
       TYPE(qs_environment_type), POINTER                 :: qs_env
       CHARACTER(6), OPTIONAL                             :: wf_type
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_scf_compute_properties', &
-         routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: explicit
       TYPE(dft_control_type), POINTER                    :: dft_control

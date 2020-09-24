@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -109,8 +111,6 @@ CONTAINS
 
       TYPE(epr_env_type)                                 :: epr_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'epr_nablavks', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: ext, filename
       COMPLEX(KIND=dp)                                   :: gtemp

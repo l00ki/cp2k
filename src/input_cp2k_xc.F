@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -57,7 +59,7 @@ MODULE input_cp2k_xc
    LOGICAL, PRIVATE, PARAMETER :: debug_this_module = .TRUE.
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'input_cp2k_xc'
 
-   PUBLIC :: create_xc_section, create_libxc_section
+   PUBLIC :: create_xc_section, create_xc_fun_section
 
 CONTAINS
 
@@ -68,9 +70,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_xc_fun_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_xc_fun_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -779,9 +778,6 @@ CONTAINS
       TYPE(section_type), POINTER                        :: section
       CHARACTER(len=*), INTENT(in)                       :: name, description, usage
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_libxc_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -824,9 +820,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_xc_potential_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_xc_potential_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -883,9 +876,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_vdw_potential_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_vdw_potential_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
@@ -1141,9 +1131,6 @@ CONTAINS
    SUBROUTINE create_gcp_potential_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_gcp_potential_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -1192,9 +1179,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_xc_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_xc_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -1333,9 +1317,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_adiabatic_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_adiabatic_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 

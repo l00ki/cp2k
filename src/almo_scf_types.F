@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -435,9 +437,6 @@ CONTAINS
       TYPE(optimizer_options_type), INTENT(IN)           :: optimizer
       INTEGER, INTENT(IN)                                :: unit_nr
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_optimizer_options', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(33)                                      :: conj_string, prec_string, type_string
 
       IF (unit_nr .GT. 0) THEN
@@ -549,8 +548,7 @@ CONTAINS
    SUBROUTINE almo_scf_env_release(almo_scf_env)
       TYPE(almo_scf_env_type), POINTER                   :: almo_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_env_release', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'almo_scf_env_release'
 
       INTEGER                                            :: handle, ispin, istore
 

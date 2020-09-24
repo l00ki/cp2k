@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -158,8 +160,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: homo_beta
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: mo_coeff_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_ri_mp2_nonsep', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'calc_ri_mp2_nonsep'
 
       INTEGER :: alpha, atom_a, beta, dimen, dir, eri_method, handle, handle2, handle3, i, iatom, &
          igrid_level, ikind, iorb, ipgf, iset, itmp(2), L_counter, lb(3), LLL, location(3), &
@@ -1025,8 +1026,7 @@ CONTAINS
       TYPE(dbcsr_p_type), INTENT(INOUT), OPTIONAL        :: G_P_inu_beta
       TYPE(dbcsr_type), INTENT(IN), OPTIONAL             :: mo_coeff_v_beta, mo_coeff_o_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'G_P_transform_MO_to_AO', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'G_P_transform_MO_to_AO'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: alpha_beta
@@ -1072,8 +1072,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(2), INTENT(IN)            :: fraction_add
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'G_P_transform_alpha_beta', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'G_P_transform_alpha_beta'
 
       INTEGER                                            :: handle
 
@@ -1122,8 +1121,7 @@ CONTAINS
       TYPE(dbcsr_type), OPTIONAL, POINTER                :: mo_coeff_o_beta
       TYPE(dbcsr_p_type), INTENT(INOUT), OPTIONAL        :: Lag_nu_a_2_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'update_lagrangian', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'update_lagrangian'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: alpha_beta
@@ -1163,9 +1161,6 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: mo_coeff_o
       TYPE(dbcsr_p_type), INTENT(INOUT)                  :: Lag_nu_a_2
       REAL(KIND=dp), INTENT(IN)                          :: eps_filter
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'update_lagrangian_alpha_beta', &
-         routineP = moduleN//':'//routineN
 
       ! first contract mat_munu with the half back transformed Gamma_i_nu
       ! in order to update Lag_mu_i_1
@@ -1216,7 +1211,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: factor
       LOGICAL, INTENT(IN)                                :: alpha_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_W_P', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'create_W_P'
 
       INTEGER :: color_exchange, comm_exchange, dummy_proc, handle, handle2, handle3, i, i_global, &
          i_local, iiB, iii, iproc, itmp(2), j_global, j_local, jjB, max_col_size, max_row_size, &

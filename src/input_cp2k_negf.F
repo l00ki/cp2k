@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -48,9 +50,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_negf_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_negf_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection
@@ -232,9 +231,6 @@ CONTAINS
    SUBROUTINE create_contact_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_contact_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, subsection, subsection2
 
@@ -326,9 +322,6 @@ CONTAINS
       CHARACTER(len=*), INTENT(in)                       :: name, description
       LOGICAL, INTENT(in)                                :: repeats
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_atomlist_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -365,9 +358,6 @@ CONTAINS
    SUBROUTINE create_print_dos_section(section, name, description)
       TYPE(section_type), POINTER                        :: section
       CHARACTER(len=*), INTENT(in)                       :: name, description
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_print_dos_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 

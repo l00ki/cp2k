@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -146,9 +148,6 @@ CONTAINS
       TYPE(mixed_cdft_type), POINTER                     :: mixed_cdft
       TYPE(mixed_cdft_settings_type)                     :: settings
       INTEGER                                            :: natom
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_parse_settings', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iatom, iforce_eval, igroup, &
                                                             nforce_eval, nkinds
@@ -541,9 +540,6 @@ CONTAINS
       TYPE(mixed_cdft_type), POINTER                     :: mixed_cdft
       TYPE(mixed_cdft_settings_type)                     :: settings
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_transfer_settings', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, nkinds
       LOGICAL                                            :: is_match
       TYPE(cdft_control_type), POINTER                   :: cdft_control
@@ -641,9 +637,6 @@ CONTAINS
       TYPE(mixed_environment_type), POINTER              :: mixed_env
       TYPE(mixed_cdft_type), POINTER                     :: mixed_cdft
       TYPE(mixed_cdft_settings_type)                     :: settings
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_init_structures', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_path_length)                 :: c_val, input_file_path, output_file_path
       INTEGER                                            :: i, imap, iounit, j, lp, n_force_eval, &
@@ -1054,9 +1047,6 @@ CONTAINS
    SUBROUTINE mixed_cdft_redistribute_arrays(force_env)
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_redistribute_arrays', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: iforce_eval, ispin, ivar, ncol_overlap, &
                                                             ncol_wmat, nforce_eval, nrow_overlap, &
                                                             nrow_wmat, nspins, nvar
@@ -1375,9 +1365,6 @@ CONTAINS
    SUBROUTINE mixed_cdft_print_couplings(force_env)
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_print_couplings', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: iounit, ipermutation, istate, ivar, &
                                                             jstate, nforce_eval, npermutations, &
                                                             nvar
@@ -1497,9 +1484,6 @@ CONTAINS
    SUBROUTINE mixed_cdft_release_work(force_env)
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_release_work', &
-         routineP = moduleN//':'//routineN
-
       TYPE(mixed_cdft_type), POINTER                     :: mixed_cdft
 
       NULLIFY (mixed_cdft)
@@ -1523,9 +1507,6 @@ CONTAINS
    SUBROUTINE map_permutation_to_states(n, ipermutation, i, j)
       INTEGER, INTENT(IN)                                :: n, ipermutation
       INTEGER, INTENT(OUT)                               :: i, j
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'map_permutation_to_states', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: kcol, kpermutation, krow, npermutations
 
@@ -1561,8 +1542,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: th
       LOGICAL                                            :: just_zero
       INTEGER, OPTIONAL                                  :: bounds(2), work
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'hfun_zero', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i1, i2, i3, lb, n1, n2, n3, nzeroed, &
                                                             nzeroed_total, ub
@@ -1634,9 +1613,6 @@ CONTAINS
          INTENT(OUT)                                     :: blocks
       LOGICAL, INTENT(OUT)                               :: ignore_excited
       INTEGER, INTENT(OUT)                               :: nrecursion
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_read_block_diag', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j, k, l, nblk, nforce_eval
       INTEGER, DIMENSION(:), POINTER                     :: tmplist
@@ -1729,9 +1705,6 @@ CONTAINS
       TYPE(cp_2d_r_p_type), ALLOCATABLE, DIMENSION(:), &
          INTENT(OUT)                                     :: H_block, S_block
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_get_blocks', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, icol, irow, j, k, nblk
 
       EXTERNAL                                           :: dsygv
@@ -1778,9 +1751,6 @@ CONTAINS
       TYPE(cp_2d_r_p_type), ALLOCATABLE, DIMENSION(:)    :: H_block, S_block
       TYPE(cp_1d_r_p_type), ALLOCATABLE, DIMENSION(:), &
          INTENT(OUT)                                     :: eigenvalues
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_diagonalize_blocks', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, info, nblk, work_array_size
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: work
@@ -1843,9 +1813,6 @@ CONTAINS
       TYPE(cp_2d_r_p_type), ALLOCATABLE, DIMENSION(:)    :: H_block
       TYPE(cp_1d_r_p_type), ALLOCATABLE, DIMENSION(:)    :: eigenvalues
       INTEGER                                            :: n, iounit
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'mixed_cdft_assemble_block_diag', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=20)                                  :: ilabel, jlabel
       CHARACTER(LEN=3)                                   :: tmp

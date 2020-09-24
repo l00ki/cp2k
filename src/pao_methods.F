@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -136,9 +138,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE pao_print_atom_info(pao)
       TYPE(pao_env_type), POINTER                        :: pao
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_print_atom_info', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iatom, natoms
       INTEGER, DIMENSION(:), POINTER                     :: pao_basis, param_cols, param_rows, &
@@ -484,8 +483,7 @@ CONTAINS
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
       REAL(KIND=dp), INTENT(OUT)                         :: energy
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_calc_energy', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pao_calc_energy'
 
       INTEGER                                            :: handle, ispin
       REAL(KIND=dp)                                      :: penalty, trace_PH
@@ -525,8 +523,7 @@ CONTAINS
    SUBROUTINE pao_check_trace_PS(ls_scf_env)
       TYPE(ls_scf_env_type)                              :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_check_trace_PS', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_check_trace_PS'
 
       INTEGER                                            :: handle, ispin
       REAL(KIND=dp)                                      :: tmp, trace_PS
@@ -559,8 +556,7 @@ CONTAINS
       TYPE(pao_env_type), POINTER                        :: pao
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_read_preopt_dm', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_read_preopt_dm'
 
       INTEGER                                            :: handle, ispin
       REAL(KIND=dp)                                      :: cs_pos
@@ -614,7 +610,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_rebuild_S', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pao_rebuild_S'
 
       INTEGER                                            :: handle
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
@@ -640,7 +636,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_dm_trs4', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pao_dm_trs4'
 
       CHARACTER(LEN=default_path_length)                 :: project_name
       INTEGER                                            :: handle, ispin, nelectron_spin_real, nspin
@@ -686,8 +682,7 @@ CONTAINS
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
       TYPE(dbcsr_type)                                   :: matrix_M_diag
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_calc_outer_grad_lnv', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pao_calc_outer_grad_lnv'
 
       INTEGER                                            :: handle, nspin
       INTEGER, DIMENSION(:), POINTER                     :: pao_blk_sizes
@@ -915,7 +910,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pao_check_grad', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pao_check_grad'
 
       INTEGER                                            :: handle, i, iatom, j, natoms
       INTEGER, DIMENSION(:), POINTER                     :: blk_sizes_col, blk_sizes_row
@@ -1012,8 +1007,6 @@ CONTAINS
       TYPE(ls_scf_env_type), TARGET                      :: ls_scf_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
       REAL(dp)                                           :: energy
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eval_point', routineP = moduleN//':'//routineN
 
       REAL(dp)                                           :: old_Xij
 

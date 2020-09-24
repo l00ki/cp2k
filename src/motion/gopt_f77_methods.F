@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -85,8 +87,7 @@ RECURSIVE SUBROUTINE cp_eval_at(gopt_env, x, f, gradient, master, &
    LOGICAL, INTENT(IN), OPTIONAL            :: final_evaluation
    TYPE(cp_para_env_type), POINTER          :: para_env
 
-   CHARACTER(len=*), PARAMETER :: routineN = 'cp_eval_at', moduleN = 'gopt_f77_methods', &
-                                  routineP = moduleN//':'//routineN
+   CHARACTER(len=*), PARAMETER :: routineN = 'cp_eval_at'
 
    INTEGER                                  :: ensemble, handle, idg, idir, ip, &
                                                nparticle, nsize, shell_index

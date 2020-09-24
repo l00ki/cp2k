@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 !> \brief Provide various population analyses and print the requested output
@@ -80,8 +82,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: output_unit, print_level
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'lowdin_population_analysis', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'lowdin_population_analysis'
 
       CHARACTER(LEN=default_string_length)               :: headline
       INTEGER                                            :: handle, ispin, ndep, nsgf, nspin
@@ -253,8 +254,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: output_unit, print_level
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mulliken_population_analysis', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'mulliken_population_analysis'
 
       CHARACTER(LEN=default_string_length)               :: headline
       INTEGER                                            :: blk, handle, iatom, ic, isgf, ispin, &
@@ -450,7 +450,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: output_unit
       LOGICAL, INTENT(IN)                                :: print_orbital_contributions
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_orbpop', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'write_orbpop'
 
       CHARACTER(LEN=2)                                   :: element_symbol
       CHARACTER(LEN=6), DIMENSION(:), POINTER            :: sgf_symbol

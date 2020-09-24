@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -103,8 +105,6 @@ CONTAINS
          POINTER                                         :: pmat_ext
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: alpha
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kg_ekin_subset', routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: lrigpw
       TYPE(dft_control_type), POINTER                    :: dft_control
       TYPE(kg_environment_type), POINTER                 :: kg_env
@@ -152,7 +152,7 @@ CONTAINS
          POINTER                                         :: pmat_ext
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: alpha
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kg_ekin_embed', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'kg_ekin_embed'
 
       INTEGER                                            :: handle, ispin, isub, natom, nspins
       LOGICAL                                            :: use_virial
@@ -335,8 +335,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(out)                         :: ekin_mol
       LOGICAL                                            :: calc_force
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kg_ekin_embed_lri', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'kg_ekin_embed_lri'
 
       INTEGER                                            :: color, handle, iatom, ikind, imol, &
                                                             ispin, isub, natom, nkind, nspins
@@ -501,8 +500,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(out)                         :: ekin_mol
       LOGICAL                                            :: calc_force
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kg_ekin_ri_embed', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'kg_ekin_ri_embed'
 
       INTEGER                                            :: color, handle, iatom, ikind, imol, &
                                                             ispin, isub, natom, nkind, nspins
@@ -659,7 +657,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: ks_matrix
       REAL(KIND=dp), INTENT(out)                         :: ekin_mol
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'kg_ekin_atomic', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'kg_ekin_atomic'
 
       INTEGER                                            :: handle, ispin, nspins
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: density_matrix, tnadd_matrix
@@ -710,7 +708,7 @@ CONTAINS
       TYPE(qs_rho_type), POINTER                         :: rho, rho1
       TYPE(section_vals_type), POINTER                   :: xc_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_kernel', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'create_kernel'
 
       INTEGER                                            :: handle, ispin, nspins
       INTEGER, DIMENSION(2, 3)                           :: bo

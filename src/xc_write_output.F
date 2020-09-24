@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -10,7 +12,8 @@ MODULE xc_write_output
 
    USE input_constants,                 ONLY: xc_none
    USE input_cp2k_check,                ONLY: xc_functionals_expand
-   USE input_section_types,             ONLY: section_vals_duplicate,&
+   USE input_section_types,             ONLY: section_get_keyword_index,&
+                                              section_vals_duplicate,&
                                               section_vals_get,&
                                               section_vals_get_subs_vals,&
                                               section_vals_get_subs_vals2,&
@@ -43,8 +46,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: xc_section
       LOGICAL, INTENT(IN)                                :: lsd
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_write', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=2*default_string_length)             :: shortform
       CHARACTER(LEN=20)                                  :: tmpStr
       CHARACTER(LEN=20*default_string_length)            :: reference
@@ -57,10 +58,15 @@ CONTAINS
                                                       "XC_FUNCTIONAL")
          CALL section_vals_val_get(xc_fun_section, "_SECTION_PARAMETERS_", i_val=myfun)
          IF (myfun /= xc_none) THEN
-            CALL section_vals_val_get(xc_section, "FUNCTIONAL_ROUTINE", &
-                                      c_val=tmpStr)
-            WRITE (output_unit, fmt="(' FUNCTIONAL| ROUTINE=',a)") &
-               TRIM(tmpStr)
+
+            !check if FUNCTIONAL_ROUTINE keyword present
+            IF (section_get_keyword_index(xc_section%section, "FUNCTIONAL_ROUTINE") .NE. -2) THEN
+               CALL section_vals_val_get(xc_section, "FUNCTIONAL_ROUTINE", &
+                                         c_val=tmpStr)
+               WRITE (output_unit, fmt="(' FUNCTIONAL| ROUTINE=',a)") &
+                  TRIM(tmpStr)
+            END IF
+
             CALL xc_functionals_expand(xc_fun_section, xc_section)
             ifun = 0
             DO

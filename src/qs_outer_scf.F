@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -101,8 +103,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_gradient', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_gradient'
 
       INTEGER                                            :: handle, ihistory, ivar, n
       LOGICAL                                            :: is_constraint
@@ -186,8 +187,7 @@ CONTAINS
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
       TYPE(scf_control_type), POINTER                    :: scf_control
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_optimize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_optimize'
 
       INTEGER                                            :: handle, i, ibuf, ihigh, ihistory, ilow, &
                                                             j, jbuf, nb, nvar, optimizer_type
@@ -387,8 +387,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_update_qs_env', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_update_qs_env'
 
       INTEGER                                            :: handle, ihistory, n
       LOGICAL                                            :: is_constraint
@@ -443,8 +442,7 @@ CONTAINS
    SUBROUTINE outer_loop_extrapolate(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_extrapolate', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_extrapolate'
 
       INTEGER                                            :: handle, ihis, ivec, n, nhistory, &
                                                             nvariables, nvec, outer_scf_ihistory
@@ -542,9 +540,6 @@ CONTAINS
       TYPE(scf_control_type), POINTER                    :: scf_control
       TYPE(cdft_control_type), POINTER                   :: cdft_control
       INTEGER, INTENT(IN)                                :: dir
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'outer_loop_switch', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nvariables
 
@@ -655,8 +650,7 @@ CONTAINS
    SUBROUTINE outer_loop_purge_history(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_purge_history', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'outer_loop_purge_history'
 
       INTEGER                                            :: handle, outer_scf_ihistory
       REAL(kind=dp), DIMENSION(:, :), POINTER            :: gradient_history, outer_scf_history, &

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -51,8 +53,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER               :: matrix, eigenvectors
       REAL(KIND=dp), DIMENSION(:), INTENT(OUT) :: eigenvalues
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_heevd', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_heevd'
 
       COMPLEX(KIND=dp), DIMENSION(:), POINTER  :: work
       COMPLEX(KIND=dp), DIMENSION(:, :), &
@@ -153,7 +154,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:)                        :: eigenvalues
       TYPE(cp_cfm_type), POINTER                         :: work
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_geeig', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_cfm_geeig'
 
       INTEGER                                            :: handle, nao, nmo
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: evals
@@ -200,8 +201,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: work
       REAL(KIND=dp), INTENT(IN)                          :: epseig
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_geeig_canon', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cfm_geeig_canon'
       COMPLEX(KIND=dp), PARAMETER :: cone = CMPLX(1.0_dp, 0.0_dp, KIND=dp), &
          czero = CMPLX(0.0_dp, 0.0_dp, KIND=dp)
 

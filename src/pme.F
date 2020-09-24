@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -108,7 +110,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), OPTIONAL, POINTER     :: charges
       TYPE(atprop_type), POINTER                         :: atprop
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'pme_evaluate', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'pme_evaluate'
 
       INTEGER                                            :: group, handle, i, ig, ipart, j, nd(3), &
                                                             npart, nshell, p1, p2
@@ -512,8 +514,6 @@ CONTAINS
          POINTER                                         :: core_particle_set
       REAL(KIND=dp), DIMENSION(:), OPTIONAL, POINTER     :: charges
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_patch', routineP = moduleN//':'//routineN
-
       COMPLEX(KIND=dp), DIMENSION(:), POINTER            :: ex1, ex2, ey1, ey2, ez1, ez2
       INTEGER, DIMENSION(:), POINTER                     :: center1, center2
       LOGICAL                                            :: my_is1_core, my_is1_shell, my_is2_core, &
@@ -654,9 +654,6 @@ CONTAINS
       TYPE(pw_p_type)                                    :: rhos1, rhos2
       LOGICAL, OPTIONAL                                  :: is1_core, is2_core, is1_shell, is2_shell
       REAL(KIND=dp), DIMENSION(:), OPTIONAL, POINTER     :: charges
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_patch_again', &
-         routineP = moduleN//':'//routineN
 
       COMPLEX(KIND=dp), DIMENSION(:), POINTER            :: ex1, ex2, ey1, ey2, ez1, ez2
       LOGICAL                                            :: my_is1_core, my_is1_shell, my_is2_core, &

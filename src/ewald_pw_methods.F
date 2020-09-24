@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -64,9 +66,6 @@ CONTAINS
       TYPE(ewald_pw_type), POINTER                       :: ewald_pw
       TYPE(ewald_environment_type), POINTER              :: ewald_env
       REAL(KIND=dp), DIMENSION(3, 3)                     :: cell_hmat
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ewald_pw_grid_update', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ewald_type, o_spline
       REAL(dp)                                           :: alpha
@@ -154,9 +153,6 @@ CONTAINS
       TYPE(ewald_environment_type), POINTER              :: ewald_env
       TYPE(pw_grid_type), POINTER                        :: pw_grid
       TYPE(dg_type), POINTER                             :: dg
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ewald_pw_rho0_setup', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ewald_type, grid_index
       REAL(dp)                                           :: alpha

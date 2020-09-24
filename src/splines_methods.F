@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -46,8 +48,6 @@ CONTAINS
 
       TYPE(spline_data_type), POINTER                    :: spl
       INTEGER, INTENT(IN)                                :: nn
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_splinexy', routineP = moduleN//':'//routineN
 
       spl%n = nn
 
@@ -101,8 +101,6 @@ CONTAINS
       TYPE(spline_data_type), POINTER                    :: spl
       REAL(KIND=dp), INTENT(IN)                          :: dx
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: y1a, y1b
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_spline', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, n
       REAL(KIND=dp)                                      :: p, s

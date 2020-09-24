@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -75,8 +77,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ns
       INTEGER, INTENT(IN), POINTER                       :: states(:)
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'construct_wannier_states', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'construct_wannier_states'
 
       CHARACTER(default_string_length)                   :: unit_str
       INTEGER                                            :: handle, i, iproc, ncol_global, nproc, &

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -115,8 +117,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: dft_section
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_mo_set_to_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_mo_set_to_restart'
       CHARACTER(LEN=30), DIMENSION(2), PARAMETER :: &
          keys = (/"SCF%PRINT%RESTART_HISTORY", "SCF%PRINT%RESTART        "/)
 
@@ -178,8 +179,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: dft_section
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: tmpl_matrix
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_dm_binary_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_dm_binary_restart'
 
       CHARACTER(LEN=default_path_length)                 :: file_name, project_name
       INTEGER                                            :: handle, ispin, unit_nr
@@ -244,8 +244,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: dft_section
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_rt_mos_to_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_rt_mos_to_restart'
       CHARACTER(LEN=43), DIMENSION(2), PARAMETER :: keys = (/ &
          "REAL_TIME_PROPAGATION%PRINT%RESTART_HISTORY", &
          "REAL_TIME_PROPAGATION%PRINT%RESTART        "/)
@@ -298,8 +297,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: rt_mos
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_mo_set_low', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'write_mo_set_low'
 
       INTEGER                                            :: handle, iatom, ikind, imat, iset, &
                                                             ishell, ispin, lmax, lshell, &
@@ -510,8 +508,7 @@ CONTAINS
       LOGICAL, INTENT(OUT), OPTIONAL                     :: natom_mismatch
       LOGICAL, INTENT(IN), OPTIONAL                      :: cdft
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_mo_set_from_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_mo_set_from_restart'
 
       CHARACTER(LEN=default_path_length)                 :: file_name
       INTEGER                                            :: group, handle, ispin, natom, nspin, &
@@ -598,8 +595,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: id_nr, multiplicity
       TYPE(section_vals_type), POINTER                   :: dft_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_rt_mos_from_restart', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_rt_mos_from_restart'
 
       CHARACTER(LEN=default_path_length)                 :: file_name
       INTEGER                                            :: group, handle, ispin, natom, nspin, &
@@ -676,9 +672,6 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: rt_mos
       LOGICAL, INTENT(OUT), OPTIONAL                     :: natom_mismatch
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_mos_restart_low', &
-         routineP = moduleN//':'//routineN
 
       INTEGER :: group, homo, homo_read, i, iatom, ikind, imat, irow, iset, iset_read, ishell, &
          ishell_read, iso, ispin, lfomo_read, lmax, lshell, my_mult, nao, nao_read, natom_read, &
@@ -998,9 +991,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN), OPTIONAL             :: spin
       LOGICAL, INTENT(IN), OPTIONAL                      :: last
       INTEGER, INTENT(IN), OPTIONAL                      :: kpt
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_mo_set_to_output_unit', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=12)                                  :: symbol
       CHARACTER(LEN=12), DIMENSION(:), POINTER           :: bcgf_symbol

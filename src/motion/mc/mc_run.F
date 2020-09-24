@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -103,8 +105,6 @@ CONTAINS
       TYPE(global_environment_type), POINTER             :: globenv
       TYPE(section_type), POINTER                        :: input_declaration
       CHARACTER(LEN=*)                                   :: input_file_name
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'do_mon_car', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=20)                                  :: ensemble
       CHARACTER(LEN=40)                                  :: box2_file, dat_file

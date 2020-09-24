@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -47,9 +49,6 @@ CONTAINS
       INTEGER, INTENT(in), OPTIONAL                      :: source, mepos, num_pe
       LOGICAL, INTENT(in), OPTIONAL                      :: owns_group
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_para_env_create', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(para_env))
       ALLOCATE (para_env)
       para_env%group = group
@@ -78,9 +77,6 @@ CONTAINS
    SUBROUTINE cp_para_env_retain(para_env)
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_para_env_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(para_env))
       CPASSERT(para_env%ref_count > 0)
       para_env%ref_count = para_env%ref_count + 1
@@ -99,9 +95,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cp_para_env_release(para_env)
       TYPE(cp_para_env_type), POINTER                    :: para_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_para_env_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(para_env)) THEN
          CPASSERT(para_env%ref_count > 0)
@@ -130,8 +123,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: group, ndims
       LOGICAL, INTENT(in), OPTIONAL                      :: owns_group
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cart_create', routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(cart))
       ALLOCATE (cart)
       cart%owns_group = .TRUE.
@@ -158,8 +149,6 @@ CONTAINS
    SUBROUTINE cp_cart_update(cart)
       TYPE(cp_para_cart_type), POINTER                   :: cart
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cart_update', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(cart))
       CPASSERT(cart%ref_count > 0)
       CALL mp_environ(cart%group, cart%ndims, cart%num_pe, task_coor=cart%mepos, &
@@ -174,9 +163,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cp_cart_release(cart)
       TYPE(cp_para_cart_type), POINTER                   :: cart
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cart_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(cart)) THEN
          CPASSERT(cart%ref_count > 0)

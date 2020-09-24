@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -192,8 +194,6 @@ CONTAINS
       TYPE(qs_scf_env_type), OPTIONAL, POINTER           :: scf_env
       TYPE(scf_control_type), OPTIONAL, POINTER          :: scf_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_xas_env', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(xas_env))
 
       IF (PRESENT(iter_count)) iter_count = xas_env%iter_count
@@ -266,8 +266,6 @@ CONTAINS
       TYPE(qs_scf_env_type), OPTIONAL, POINTER           :: scf_env
       TYPE(scf_control_type), OPTIONAL, POINTER          :: scf_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'set_xas_env', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(xas_env))
 
       IF (PRESENT(iter_count)) xas_env%iter_count = iter_count
@@ -308,8 +306,6 @@ CONTAINS
 
       TYPE(xas_environment_type), POINTER                :: xas_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_env_create', routineP = moduleN//':'//routineN
-
       ALLOCATE (xas_env)
 
       xas_env%ref_count = 1
@@ -343,9 +339,6 @@ CONTAINS
    SUBROUTINE xas_env_release(xas_env)
 
       TYPE(xas_environment_type), POINTER                :: xas_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_env_release', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ik, j
 
@@ -436,8 +429,6 @@ CONTAINS
    SUBROUTINE xas_env_retain(xas_env)
 
       TYPE(xas_environment_type), POINTER                :: xas_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_env_retain', routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(xas_env))
       CPASSERT(xas_env%ref_count > 0)

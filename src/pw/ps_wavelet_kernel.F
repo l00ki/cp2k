@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -82,8 +84,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: itype_scf, iproc, nproc
       REAL(KIND=dp), POINTER                             :: kernel(:)
       INTEGER, INTENT(in)                                :: mpi_group
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'createKernel', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: m1, m2, m3, md1, md2, md3, n1, n2, n3, &
                                                             nd1, nd2, nd3, nlimd, nlimk
@@ -227,8 +227,6 @@ CONTAINS
          INTENT(out)                                     :: karray
       INTEGER, INTENT(in)                                :: mpi_group
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'Surfaces_Kernel', &
-         routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: n_points = 2**6, ncache_optimal = 8*1024
 
       INTEGER :: i, i1, i2, i3, ic, iend, imu, ind1, ind2, inzee, ipolyord, ireim, istart, j2, &
@@ -558,8 +556,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(in)                          :: mu, hres
       REAL(KIND=dp), DIMENSION(n), INTENT(out)           :: g_mu
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculates_green_opt', &
-         routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: mu_max = 0.2_dp
 
       INTEGER                                            :: i, iend, ikern, ivalue, izero, n_iter, &
@@ -849,7 +845,6 @@ CONTAINS
          INTENT(out)                                     :: karray
       INTEGER, INTENT(in)                                :: mpi_group
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'Free_Kernel', routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: n_gauss = 89, n_points = 2**6
       REAL(KIND=dp), PARAMETER                           :: p0_ref = 1._dp
 
@@ -1110,7 +1105,6 @@ CONTAINS
          INTENT(inout)                                   :: zr
       INTEGER, INTENT(in)                                :: mpi_group
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'kernelfft', routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: ncache_optimal = 8*1024
 
       INTEGER                                            :: i, i1, i3, ic1, ic2, ic3, inzee, j, j2, &

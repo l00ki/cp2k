@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 !> \brief Calculation of the non-local pseudopotential contribution to the core Hamiltonian
@@ -97,8 +99,7 @@ CONTAINS
       INTEGER, DIMENSION(:, :, :), POINTER               :: cell_to_index
       CHARACTER(LEN=*), INTENT(IN)                       :: basis_type
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_core_ppnl', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'build_core_ppnl'
 
       INTEGER :: atom_a, first_col, handle, i, iab, iac, iatom, ibc, icol, ikind, ilist, img, &
          irow, iset, j, jatom, jkind, jneighbor, kac, katom, kbc, kkind, l, lc_max, lc_min, ldai, &

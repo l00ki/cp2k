@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE pao_input
@@ -213,8 +215,6 @@ CONTAINS
       INTEGER                                            :: id
       CHARACTER(LEN=10)                                  :: s
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'id2str', routineP = moduleN//':'//routineN
-
       SELECT CASE (id)
       CASE (pao_gth_param)
          s = "GTH"
@@ -257,9 +257,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_pao_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_pao_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: printkey, subsection, subsubsection

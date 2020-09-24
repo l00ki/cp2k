@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -70,8 +72,7 @@ CONTAINS
       TYPE(pw_pool_type), POINTER                        :: pw_pool
       TYPE(dielectric_parameters), INTENT(IN)            :: dielectric_params
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'dielectric_create'
 
       INTEGER                                            :: handle, i
 
@@ -122,8 +123,7 @@ CONTAINS
       TYPE(pw_type), INTENT(IN), POINTER                 :: rho
       TYPE(pw_type), INTENT(IN), OPTIONAL, POINTER       :: rho_core
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_compute_periodic', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_compute_periodic'
       REAL(dp), PARAMETER                                :: small_value = EPSILON(1.0_dp)
 
       INTEGER                                            :: derivative_method, dielec_functiontype, &
@@ -308,8 +308,7 @@ CONTAINS
       TYPE(pw_type), INTENT(IN), POINTER                 :: rho
       TYPE(pw_type), INTENT(IN), OPTIONAL, POINTER       :: rho_core
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_compute_neumann', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_compute_neumann'
       REAL(dp), PARAMETER                                :: small_value = EPSILON(1.0_dp)
 
       INTEGER                                            :: derivative_method, dielec_functiontype, &
@@ -493,8 +492,7 @@ CONTAINS
       TYPE(pw_type), POINTER                             :: rho, eps, deps_drho
       REAL(KIND=dp), INTENT(IN)                          :: eps0, rho_max, rho_min
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_sccs', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_sccs'
 
       INTEGER                                            :: handle, i, j, k, lb1, lb2, lb3, ub1, &
                                                             ub2, ub3
@@ -567,8 +565,7 @@ CONTAINS
       REAL(dp), ALLOCATABLE, DIMENSION(:), INTENT(IN)    :: x_glbl, y_glbl, z_glbl, x_locl, y_locl, &
                                                             z_locl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_aa_cuboidal', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_aa_cuboidal'
       LOGICAL, DIMENSION(6), PARAMETER                   :: test_forb_xtnts = .TRUE.
 
       INTEGER                                            :: handle, i, j, k, lb1, lb2, lb3, &
@@ -663,8 +660,7 @@ CONTAINS
       REAL(dp), ALLOCATABLE, DIMENSION(:), INTENT(IN)    :: x_glbl, y_glbl, z_glbl, x_locl, y_locl, &
                                                             z_locl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_xaa_annular', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_xaa_annular'
       LOGICAL, DIMENSION(6), PARAMETER                   :: test_forb_xtnts = .TRUE.
 
       INTEGER                                            :: handle, i, j, k, lb1, lb2, lb3, &
@@ -743,8 +739,7 @@ CONTAINS
       TYPE(pw_pool_type), INTENT(IN), POINTER            :: pw_pool
       TYPE(dielectric_parameters), INTENT(IN)            :: dielectric_params
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_spatially_dependent', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_spatially_dependent'
 
       INTEGER                                            :: handle, j, n_aa_cuboidal, &
                                                             n_dielectric_region, n_xaa_annular
@@ -817,8 +812,7 @@ CONTAINS
       TYPE(pw_pool_type), INTENT(IN), POINTER            :: pw_pool
       TYPE(dielectric_parameters), INTENT(IN)            :: dielectric_params
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_spatially_rho_dependent', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'dielectric_constant_spatially_rho_dependent'
 
       INTEGER                                            :: handle
       TYPE(pw_type), POINTER                             :: dswch_func_drho, eps_sptldep, swch_func
@@ -863,7 +857,7 @@ CONTAINS
       TYPE(pw_p_type), DIMENSION(3), INTENT(INOUT)       :: df
       TYPE(pw_pool_type), POINTER                        :: pw_pool
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'derive_fft', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'derive_fft'
 
       INTEGER                                            :: handle, i
       INTEGER, DIMENSION(3)                              :: nd

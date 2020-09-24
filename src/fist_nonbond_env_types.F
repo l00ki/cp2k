@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -272,9 +274,6 @@ CONTAINS
                                                             vdw_scale14
       LOGICAL, INTENT(IN)                                :: shift_cutoff
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_nonbond_env_create', &
-         routineP = moduleN//':'//routineN
-
       ALLOCATE (fist_nonbond_env)
       NULLIFY (fist_nonbond_env%potparm14)
       NULLIFY (fist_nonbond_env%potparm)
@@ -319,9 +318,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: verlet_skin, ewald_rcut, ei_scale14, &
                                                             vdw_scale14
       LOGICAL, INTENT(IN)                                :: shift_cutoff
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_fist_nonbond_env', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: idim, jdim, natom_types
       LOGICAL                                            :: check, use_potparm, use_potparm14
@@ -442,9 +438,6 @@ CONTAINS
    SUBROUTINE fist_nonbond_env_retain(fist_nonbond_env)
       TYPE(fist_nonbond_env_type), POINTER               :: fist_nonbond_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_nonbond_env_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(fist_nonbond_env))
       CPASSERT(fist_nonbond_env%ref_count > 0)
       fist_nonbond_env%ref_count = fist_nonbond_env%ref_count + 1
@@ -459,9 +452,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE fist_nonbond_env_release(fist_nonbond_env)
       TYPE(fist_nonbond_env_type), POINTER               :: fist_nonbond_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_nonbond_env_release', &
-         routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(fist_nonbond_env)) THEN
          CPASSERT(fist_nonbond_env%ref_count > 0)

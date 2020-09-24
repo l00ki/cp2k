@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -165,8 +167,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: cutoff_radius
       TYPE(pw_grid_type), POINTER                        :: grid_s, grid_b
       REAL(KIND=dp), INTENT(OUT)                         :: cutoff
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dg_find_cutoff', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nout(3)
       REAL(KIND=dp)                                      :: b_cell_deth, cell_lengths(3), dr(3)
@@ -363,8 +363,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(IN)                  :: npts_s, npts_b
       INTEGER, DIMENSION(:), INTENT(OUT)                 :: centre
       REAL(KIND=dp), DIMENSION(:), INTENT(OUT)           :: delta
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'dg_get_delta', routineP = moduleN//':'//routineN
 
       REAL(KIND=dp)                                      :: cell_deth
       REAL(KIND=dp), DIMENSION(3)                        :: grid_i, s
@@ -860,8 +858,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: charge1
       COMPLEX(KIND=dp), DIMENSION(:), INTENT(IN)         :: ex1, ey1, ez1
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'dg_get_patch_1', routineP = moduleN//':'//routineN
-
       COMPLEX(KIND=dp)                                   :: za, zb
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:)        :: zs
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)  :: cd
@@ -911,8 +907,6 @@ CONTAINS
       TYPE(pw_p_type), INTENT(INOUT)                     :: rhos1, rhos2
       REAL(KIND=dp), INTENT(IN)                          :: charge1, charge2
       COMPLEX(KIND=dp), DIMENSION(:), INTENT(IN)         :: ex1, ey1, ez1, ex2, ey2, ez2
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'dg_get_patch_2', routineP = moduleN//':'//routineN
 
       COMPLEX(KIND=dp)                                   :: za, zb
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:)        :: zs

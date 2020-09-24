@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 !> \brief Calculation of the nuclear attraction contribution to the core Hamiltonian
@@ -93,7 +95,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nimages
       INTEGER, DIMENSION(:, :, :), POINTER               :: cell_to_index
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_core_ae', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'build_core_ae'
 
       INTEGER :: atom_a, handle, iatom, icol, ikind, img, irow, iset, jatom, jkind, jset, katom, &
          kkind, ldai, ldsab, maxco, maxl, maxnset, maxsgf, mepos, na_plus, natom, nb_plus, ncoa, &
@@ -511,8 +513,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: lb_max, lb_min, npgfb
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: zetb
       REAL(KIND=dp), DIMENSION(3), INTENT(IN)            :: rab
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'verfc_force', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ic_a, ic_b, icam1, icam2, icam3, icap1, &
                                                             icap2, icap3, icax, icbm1, icbm2, &

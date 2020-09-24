@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -78,9 +80,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: maxchrg
       LOGICAL, INTENT(IN)                                :: compatibility
       TYPE(section_vals_type), POINTER                   :: print_section, qmmm_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qmmm_gaussian_initialize', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ilevel, j, Ndim, num_geep_gauss, &
                                                             output_unit

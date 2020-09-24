@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -128,7 +130,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3, 3), INTENT(OUT), &
          OPTIONAL                                        :: h_stress
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'sccs', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'sccs'
       REAL(KIND=dp), PARAMETER                           :: tol = 1.0E-12_dp
 
       CHARACTER(LEN=4*default_string_length)             :: message
@@ -898,7 +900,7 @@ CONTAINS
       TYPE(pw_type), POINTER                             :: rho_elec, eps_elec, deps_elec
       REAL(KIND=dp), INTENT(IN)                          :: epsilon_solvent, rho_max, rho_min
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'andreussi', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'andreussi'
       REAL(KIND=dp), PARAMETER                           :: tol = 1.0E-12_dp
 
       INTEGER                                            :: handle, i, j, k
@@ -976,7 +978,7 @@ CONTAINS
       TYPE(pw_type), POINTER                             :: rho_elec, eps_elec, deps_elec
       REAL(KIND=dp), INTENT(IN)                          :: epsilon_solvent, beta, rho_zero
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'fattebert_gygi', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'fattebert_gygi'
       REAL(KIND=dp), PARAMETER                           :: tol = 1.0E-12_dp
 
       INTEGER                                            :: handle, i, j, k
@@ -1043,7 +1045,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: input
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'derive', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'derive'
 
       INTEGER                                            :: border_points, handle, i
       INTEGER, DIMENSION(3)                              :: lb, n, ub
@@ -1157,8 +1159,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: epsilon_solvent, rho_max, rho_min, &
                                                             delta_rho
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'surface_andreussi', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'surface_andreussi'
       REAL(KIND=dp), PARAMETER                           :: tol = 1.0E-12_dp
 
       INTEGER                                            :: handle, i, j, k, l
@@ -1241,8 +1242,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: epsilon_solvent, beta, rho_zero, &
                                                             delta_rho
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'surface_fattebert_gygi', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'surface_fattebert_gygi'
       REAL(KIND=dp), PARAMETER                           :: tol = 1.0E-12_dp
 
       INTEGER                                            :: handle, i, j, k, l

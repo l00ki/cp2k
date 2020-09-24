@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -172,8 +174,7 @@ CONTAINS
       TYPE(cp_cfm_p_type), DIMENSION(:, :), OPTIONAL, POINTER       :: zij_cfm_set
       TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_vectors
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_berry', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_berry'
 
       TYPE(cp_cfm_p_type), DIMENSION(:, :), POINTER      :: my_zij_cfm_set
       INTEGER                                            :: handle, max_iter, nao, nmoloc, out_each, &
@@ -353,8 +354,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ispin
       TYPE(section_vals_type), POINTER                   :: print_loc_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_pipek', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_pipek'
 
       INTEGER                                            :: handle, iatom, isgf, ldz, nao, natom, &
                                                             ncol, nmoloc, output_unit, sweeps
@@ -476,9 +476,6 @@ CONTAINS
       TYPE(cp_fm_p_type), INTENT(INOUT), OPTIONAL        :: zij(:, :)
       TYPE(cp_cfm_p_type), INTENT(INOUT), OPTIONAL       :: c_zij(:, :)
       LOGICAL, INTENT(IN), OPTIONAL                      :: only_initial_out
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'centers_spreads_berry', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_path_length)                 :: file_tmp, iter
       COMPLEX(KIND=dp)                                   :: z
@@ -611,9 +608,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ispin
       TYPE(section_vals_type), POINTER                   :: print_loc_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'centers_spreads_pipek', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(len=default_path_length)                 :: file_tmp, iter
       INTEGER                                            :: iatom, istate, natom, nstate, unit_out_s
       INTEGER, DIMENSION(:), POINTER                     :: atom_of_state
@@ -706,7 +700,7 @@ CONTAINS
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: ext_mo_coeff
       TYPE(cp_cfm_type), OPTIONAL, POINTER               :: complex_mo_coeff
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_loc_driver', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_loc_driver'
 
       CHARACTER(LEN=default_string_length)               :: my_pos
       INTEGER                                            :: dim_op, handle, i, imo, imoloc, ir, &
@@ -1038,7 +1032,7 @@ CONTAINS
       INTEGER, OPTIONAL                                  :: state0
       CHARACTER(LEN=default_string_length), OPTIONAL     :: file_position
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_print_cubes', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_print_cubes'
       CHARACTER, DIMENSION(3), PARAMETER                 :: labels = (/'x', 'y', 'z'/)
 
       CHARACTER                                          :: label
@@ -1193,9 +1187,6 @@ CONTAINS
       TYPE(cp_logger_type), POINTER                      :: logger
       INTEGER, INTENT(IN)                                :: ispin
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_wannier_centers', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(default_string_length)                   :: iter, unit_str
       CHARACTER(LEN=default_string_length)               :: my_ext, my_form
       INTEGER                                            :: iunit, l, nstates
@@ -1254,9 +1245,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: iunit
       LOGICAL, INTENT(IN)                                :: init_traj
       REAL(KIND=dp), INTENT(IN)                          :: unit_conv
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_wannier_traj', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_string_length)               :: iter, remark1, remark2, title
       INTEGER                                            :: i, iskip, natom, ntot, outformat

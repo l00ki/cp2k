@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -106,9 +108,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: omega
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_operators_r12_ab_shg', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: la_max, lb_max
       REAL(KIND=dp)                                      :: my_omega
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: Waux_mat
@@ -173,9 +172,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(IN)      :: scona_shg, sconb_shg
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_ab_shg', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: la_max, lb_max
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: Waux_mat
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :, :)  :: dWaux_mat
@@ -215,9 +211,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(IN)      :: sconb_shg
       INTEGER, INTENT(IN)                                :: m
       LOGICAL, INTENT(IN)                                :: calculate_forces
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_ra2m_ab_shg', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: la_max, lb_max
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: Waux_mat
@@ -269,9 +262,6 @@ CONTAINS
       INTEGER, DIMENSION(:, :, :), INTENT(IN)            :: cg_none0_list
       INTEGER, DIMENSION(:, :), INTENT(IN)               :: ncg_none0
       LOGICAL, INTENT(IN)                                :: calculate_forces
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_aba_shg', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: laa_max, lb_max
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: Waux_mat
@@ -329,9 +319,6 @@ CONTAINS
       INTEGER, DIMENSION(:, :), INTENT(IN)               :: ncg_none0
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_abb_shg', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: la_max, lbb_max
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)     :: Waux_mat
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :, :)  :: dWaux_mat
@@ -370,9 +357,6 @@ CONTAINS
       REAL(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :, :), INTENT(OUT)              :: dWaux_mat
       LOGICAL, INTENT(IN)                                :: calculate_forces
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'precalc_angular_shg_part', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: lmax, mdim(3)
       INTEGER, DIMENSION(:), POINTER                     :: la_max_all
@@ -435,8 +419,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(IN)      :: Waux_mat
       REAL(KIND=dp), DIMENSION(:, :, :, :), INTENT(IN)   :: dWaux_mat
       LOGICAL, INTENT(IN)                                :: calculate_forces
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_operator_ab_shg_low', routineP = moduleN//':'//routineN
 
       INTEGER :: iset, jset, la_max_set, lb_max_set, ndev, nds, nds_max, npgfa_set, &
                  npgfb_set, nseta, nsetb, nsgfa_set, nsgfb_set, nshella_set, nshellb_set
@@ -552,9 +534,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :, :), INTENT(IN)   :: dWaux_mat
       LOGICAL, INTENT(IN)                                :: calculate_ints, calculate_forces
       LOGICAL, INTENT(IN), OPTIONAL                      :: contraction_high
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_ab_shg_low', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iset, jset, la_max_set, lb_max_set, &
                                                             ndev, nds, nds_max, npgfa_set, &
@@ -684,9 +663,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :, :), INTENT(IN)   :: dWaux_mat
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_ra2m_ab_shg_low', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: iset, jset, la_max_set, lb_max_set, &
                                                             ndev, nds, nds_max, npgfa_set, &
                                                             npgfb_set, nseta, nsetb, nshella_set, &
@@ -809,9 +785,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(IN)      :: Waux_mat
       REAL(KIND=dp), DIMENSION(:, :, :, :), INTENT(IN)   :: dWaux_mat
       LOGICAL, INTENT(IN)                                :: calculate_ints, calculate_forces
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_abb_shg_low', &
-         routineP = moduleN//':'//routineN
 
       INTEGER :: iset, jset, kset, la_max_set, lb_max_set, lbb_max, lbb_max_set, lcb_max_set, na, &
          nb, ncb, ndev, nds, nds_max, nl, nl_set, npgfa_set, npgfb_set, npgfcb_set, nseta, nsetb, &
@@ -972,9 +945,6 @@ CONTAINS
       TYPE(gto_basis_set_type), POINTER                  :: oba, fba
       LOGICAL, INTENT(IN)                                :: calculate_ints, calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_abb_same_kind', &
-         routineP = moduleN//':'//routineN
-
       INTEGER :: i, iend, iset, isgfa, ishella, istart, jend, jset, jsgfa, jshella, jstart, kend, &
          kset, ksgfa, kshella, kstart, lai, laj, lak, nseta, nsetca, nsgfa, nsgfca, sgfa_end, &
          sgfa_start
@@ -1121,9 +1091,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(IN)      :: Waux_mat
       REAL(KIND=dp), DIMENSION(:, :, :, :), INTENT(IN)   :: dWaux_mat
       LOGICAL, INTENT(IN)                                :: calculate_ints, calculate_forces
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_aba_shg_low', &
-         routineP = moduleN//':'//routineN
 
       INTEGER :: iset, jset, kset, la_max_set, laa_max, laa_max_set, lb_max_set, lca_max_set, na, &
          nb, nca, ndev, nds, nds_max, nl, nl_set, npgfa_set, npgfb_set, npgfca_set, nseta, nsetb, &
@@ -1280,9 +1247,6 @@ CONTAINS
       REAL(KIND=dp), ALLOCATABLE, &
          DIMENSION(:, :, :, :), INTENT(OUT)              :: dWaux_mat
       LOGICAL, INTENT(IN)                                :: calculate_forces
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'lri_precalc_angular_shg_part', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, isize, j, k, la_max, laa_max, lb_max, &
                                                             lbb_max, lca_max, lcb_max, li_max, &

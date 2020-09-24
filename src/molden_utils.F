@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -64,8 +66,7 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(section_vals_type), POINTER                   :: print_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_mos_molden', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'write_mos_molden'
       CHARACTER(LEN=molden_lmax+1), PARAMETER            :: angmom = "spdfg"
 
       CHARACTER(LEN=15)                                  :: fmtstr1
@@ -406,8 +407,7 @@ CONTAINS
       TYPE(cp_logger_type), POINTER                      :: logger
       INTEGER, DIMENSION(:), OPTIONAL, POINTER           :: list
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_vibrations_molden', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'write_vibrations_molden'
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: handle, i, iw, j, k, l, z

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -77,8 +79,7 @@ CONTAINS
       TYPE(qs_energy_type), POINTER                      :: energy
       LOGICAL, INTENT(in)                                :: calculate_forces, just_energy
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efield_tb_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'efield_tb_matrix'
 
       INTEGER                                            :: handle
       TYPE(dft_control_type), POINTER                    :: dft_control
@@ -125,8 +126,7 @@ CONTAINS
       TYPE(qs_energy_type), POINTER                      :: energy
       LOGICAL, INTENT(in)                                :: calculate_forces, just_energy
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'efield_tb_local', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'efield_tb_local'
 
       INTEGER                                            :: atom_a, atom_b, blk, handle, ia, icol, &
                                                             idir, ikind, irow, ispin, jkind, &
@@ -274,8 +274,7 @@ CONTAINS
       TYPE(qs_energy_type), POINTER                      :: energy
       LOGICAL, INTENT(in)                                :: calculate_forces, just_energy
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'efield_tb_berry', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'efield_tb_berry'
 
       COMPLEX(KIND=dp)                                   :: zdeta
       COMPLEX(KIND=dp), DIMENSION(3)                     :: zi(3)
@@ -527,8 +526,7 @@ CONTAINS
       TYPE(qs_energy_type), POINTER                      :: energy
       LOGICAL, INTENT(in)                                :: calculate_forces, just_energy
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dfield_tb_berry', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'dfield_tb_berry'
 
       COMPLEX(KIND=dp)                                   :: zdeta
       COMPLEX(KIND=dp), DIMENSION(3)                     :: zi(3)

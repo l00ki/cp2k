@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -97,9 +99,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: root_section
       INTEGER, INTENT(IN)                                :: n_walkers, iw
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'glbopt_master_init', &
-         routineP = moduleN//':'//routineN
-
       TYPE(cp_logger_type), POINTER                      :: logger
 
       NULLIFY (logger)
@@ -195,9 +194,6 @@ CONTAINS
       TYPE(glbopt_master_type), INTENT(INOUT)            :: this
       TYPE(swarm_message_type)                           :: report, cmd
       LOGICAL, INTENT(INOUT)                             :: should_stop
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'glbopt_master_steer', &
-         routineP = moduleN//':'//routineN
 
       CALL progress_report(this, report)
 
@@ -311,9 +307,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE glbopt_master_finalize(this)
       TYPE(glbopt_master_type), INTENT(INOUT)            :: this
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'glbopt_master_finalize', &
-         routineP = moduleN//':'//routineN
 
       TYPE(cp_logger_type), POINTER                      :: logger
 

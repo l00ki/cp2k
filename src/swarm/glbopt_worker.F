@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -89,9 +91,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(IN)                       :: input_path
       INTEGER, INTENT(in)                                :: worker_id, iw
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'glbopt_worker_init', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
       REAL(kind=dp)                                      :: dist_in_angstrom
       TYPE(section_vals_type), POINTER                   :: glbopt_section
@@ -143,9 +142,6 @@ CONTAINS
       TYPE(glbopt_worker_type), INTENT(INOUT)            :: worker
       TYPE(swarm_message_type), INTENT(IN)               :: cmd
       TYPE(swarm_message_type), INTENT(INOUT)            :: report
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'glbopt_worker_execute', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_string_length)               :: command
 
@@ -372,9 +368,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE glbopt_worker_finalize(worker)
       TYPE(glbopt_worker_type), INTENT(INOUT)            :: worker
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'glbopt_worker_finalize', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ierr
 

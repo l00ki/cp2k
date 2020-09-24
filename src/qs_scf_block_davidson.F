@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -82,8 +84,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: output_unit
       TYPE(preconditioner_type), OPTIONAL, POINTER       :: preconditioner
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'generate_extended_space', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'generate_extended_space'
 
       INTEGER :: handle, homo, i_first, i_last, imo, iter, j, jj, max_iter, n, nao, nmat, nmat2, &
          nmo, nmo_converged, nmo_not_converged, nset, nset_conv, nset_not_conv
@@ -479,8 +480,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: output_unit
       TYPE(preconditioner_type), OPTIONAL, POINTER       :: preconditioner
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'generate_extended_space_sparse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'generate_extended_space_sparse'
 
       INTEGER :: handle, homo, i_first, i_last, imo, iter, j, jj, k, max_iter, n, nao, nmat, &
          nmat2, nmo, nmo_converged, nmo_not_converged, nset, nset_conv, nset_not_conv
@@ -938,8 +938,7 @@ CONTAINS
       REAL(dp), DIMENSION(:)                             :: evals
       INTEGER                                            :: ndim
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'reduce_extended_space', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'reduce_extended_space'
 
       INTEGER                                            :: handle, info
 

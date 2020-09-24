@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -61,9 +63,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_mp2_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_mp2_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -160,9 +159,6 @@ CONTAINS
    SUBROUTINE create_mp2_details_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_mp2_details_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key
 
@@ -220,8 +216,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_ri_mp2(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ri_mp2', routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -284,9 +278,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_opt_ri_basis(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_opt_ri_basis', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 
@@ -371,9 +362,6 @@ CONTAINS
    SUBROUTINE create_ri_laplace(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ri_laplace', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -419,8 +407,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_ri_rpa(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ri_rpa', routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -551,8 +537,6 @@ CONTAINS
    SUBROUTINE create_ri_axk(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ri_axk', routineP = moduleN//':'//routineN
-
       !TYPE(section_type), POINTER                        :: subsection
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -571,8 +555,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_ri_g0w0(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ri_g0w0', routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -719,7 +701,7 @@ CONTAINS
                           "This is only recommended in case exact exchange is very costly, e.g. when "// &
                           "using diffuse basis functions (seems not to work for periodic systems).", &
                           usage="RI_SIGMA_X", &
-                          default_l_val=.FALSE., &
+                          default_l_val=.TRUE., &
                           lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
@@ -842,9 +824,6 @@ CONTAINS
    SUBROUTINE create_print_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_print_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -872,9 +851,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_periodic_gw_correction_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_periodic_gw_correction_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 
@@ -983,9 +959,6 @@ CONTAINS
    SUBROUTINE create_bse_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_bse_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -1030,9 +1003,6 @@ CONTAINS
    SUBROUTINE create_ic_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ic_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -1069,11 +1039,7 @@ CONTAINS
    SUBROUTINE create_low_scaling(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_low_scaling', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
-      TYPE(section_type), POINTER                        :: subsection
 
       CPASSERT(.NOT. ASSOCIATED(section))
       CALL section_create( &
@@ -1183,38 +1149,16 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
-      NULLIFY (subsection)
-      CALL section_create(subsection, __LOCATION__, name="TEST", &
-                          description="Manually set performance-critical parameters that are otherwise automatically chosen. "// &
-                          "This section should not be "// &
-                          "placed except for testing/debugging.", &
-                          repeats=.FALSE.)
-
-      CALL keyword_create(keyword, __LOCATION__, name="_SECTION_PARAMETERS_", &
-                          description="Activates use of parameters in this section.", &
-                          default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(subsection, keyword)
+      CALL keyword_create( &
+         keyword, __LOCATION__, &
+         name="MIN_BLOCK_SIZE_MO", &
+         description="Tensor block size for MOs. Only relevant for GW calculations. "// &
+         "The memory consumption of GW scales as O(MIN_BLOCK_SIZE_MO). It is recommended to "// &
+         "set this parameter to a smaller number if GW runs out of memory. "// &
+         "Otherwise the default should not be changed.", &
+         default_i_val=64)
+      CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
-
-      CALL keyword_create(keyword, __LOCATION__, name="GROUP_SIZE_3c", &
-                          description= &
-                          "Group size used for "// &
-                          "the multiplication M^occ/virt(it)=(alpha beta P)*D^occ/virt.", &
-                          usage="GROUP_SIZE_3c 8", &
-                          default_i_val=1)
-      CALL section_add_keyword(subsection, keyword)
-      CALL keyword_release(keyword)
-
-      CALL keyword_create(keyword, __LOCATION__, name="GROUP_SIZE_P", &
-                          description= &
-                          "Group size used for the calculation of P(it)=(Mocc(it))^T*Mvirt(it). ", &
-                          usage="GROUP_SIZE_P 8", &
-                          default_i_val=1)
-      CALL section_add_keyword(subsection, keyword)
-      CALL keyword_release(keyword)
-
-      CALL section_add_subsection(section, subsection)
-      CALL section_release(subsection)
 
    END SUBROUTINE
 
@@ -1224,8 +1168,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_wfc_gpw(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_wfc_gpw', routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 
@@ -1298,8 +1240,6 @@ CONTAINS
    SUBROUTINE create_cphf(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_cphf', routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
 
       CPASSERT(.NOT. ASSOCIATED(section))
@@ -1336,9 +1276,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_mp2_potential(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_mp2_potential', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 
@@ -1406,9 +1343,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_ri_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_ri_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
@@ -1500,9 +1434,6 @@ CONTAINS
    SUBROUTINE create_integrals_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_integrals_section', &
-         routineP = moduleN//':'//routineN
-
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: subsection
 
@@ -1558,9 +1489,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_RI_metric_section(section)
       TYPE(section_type), POINTER                        :: section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_RI_metric_section', &
-         routineP = moduleN//':'//routineN
 
       TYPE(keyword_type), POINTER                        :: keyword
 

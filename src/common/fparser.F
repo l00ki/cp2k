@@ -1,23 +1,20 @@
+!--------------------------------------------------------------------------------------------------!
+!   CP2K: A general program to perform molecular dynamics simulations                              !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
+!--------------------------------------------------------------------------------------------------!
+
+! **************************************************************************************************
+!> \brief This public domain function parser module is intended for applications
+!>        where a set of mathematical expressions is specified at runtime and is
+!>        then evaluated for a large number of variable values. This is done by
+!>        compiling the set of function strings into byte code, which is interpreted
+!>        very efficiently for the various variable values.
+!>
+!> \author Roland Schmehl <Roland.Schmehl@mach.uni-karlsruhe.de>
 ! **************************************************************************************************
 MODULE fparser
-   !------- -------- --------- --------- --------- --------- --------- --------- -------
-   ! Fortran 90 function parser v1.1
-   !------- -------- --------- --------- --------- --------- --------- --------- -------
-   !
-   ! This public domain function parser module is intended for applications
-   ! where a set of mathematical expressions is specified at runtime and is
-   ! then evaluated for a large number of variable values. This is done by
-   ! compiling the set of function strings into byte code, which is interpreted
-   ! very efficiently for the various variable values.
-   !
-   ! The source code is available from:
-   ! http://www.its.uni-karlsruhe.de/~schmehl/opensource/fparser-v1.1.tar.gz
-   !
-   ! Please send comments, corrections or questions to the author:
-   ! Roland Schmehl <Roland.Schmehl@mach.uni-karlsruhe.de>
-   !
-   !------- -------- --------- --------- --------- --------- --------- --------- -------
-
    USE kinds,                           ONLY: default_string_length,&
                                               rn => dp
 #include "../base/base_uses.f90"
@@ -104,7 +101,6 @@ CONTAINS
       !----- -------- --------- --------- --------- --------- --------- --------- -------
       ! Finalize function parser
       !----- -------- --------- --------- --------- --------- --------- --------- -------
-      CHARACTER(len=*), PARAMETER :: routineN = 'finalizef', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -158,8 +154,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(in)                       :: FuncStr
       CHARACTER(LEN=*), DIMENSION(:), INTENT(in)         :: Var
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'parsef', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=LEN(FuncStr))                        :: Func
 
 ! Function string, local use
@@ -195,7 +189,6 @@ CONTAINS
       REAL(rn), DIMENSION(:), INTENT(in)                 :: Val
       REAL(rn)                                           :: res
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'evalf', routineP = moduleN//':'//routineN
       REAL(rn), PARAMETER                                :: zero = 0._rn
 
       INTEGER                                            :: DP, IP, ipow, SP
@@ -391,8 +384,6 @@ CONTAINS
       CHARACTER(LEN=*), INTENT(in)                       :: FuncStr
       CHARACTER(LEN=*), INTENT(in), OPTIONAL             :: Msg
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ParseErrMsg', routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=default_string_length)               :: message
 
 ! Original function string
@@ -578,8 +569,6 @@ CONTAINS
       INTEGER, INTENT(in)                                :: i
       CHARACTER(LEN=*), INTENT(in)                       :: F
       CHARACTER(LEN=*), DIMENSION(:), INTENT(in)         :: Var
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'Compile', routineP = moduleN//':'//routineN
 
 ! Function identifier
 ! Function string
@@ -995,7 +984,6 @@ CONTAINS
       REAL(KIND=rn), INTENT(OUT)                         :: err
       REAL(KIND=rn)                                      :: derivative
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'evalfd', routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: ntab = 10
       REAL(KIND=rn), PARAMETER                           :: big_error = 1.0E30_rn, con = 1.4_rn, &
                                                             con2 = con*con, safe = 2.0_rn

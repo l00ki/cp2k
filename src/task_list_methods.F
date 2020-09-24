@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -10,6 +12,8 @@
 !> \author Joost VandeVondele
 ! **************************************************************************************************
 MODULE task_list_methods
+   USE grid_api, ONLY: &
+      grid_create_basis_set, grid_create_task_list
    USE ao_util, ONLY: exp_radius_very_extended
    USE basis_set_types, ONLY: get_gto_basis_set, &
                               gto_basis_set_p_type, &
@@ -126,8 +130,7 @@ CONTAINS
       TYPE(neighbor_list_set_p_type), DIMENSION(:), &
          OPTIONAL, POINTER                               :: sab_orb_external
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'generate_qs_task_list', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'generate_qs_task_list'
       INTEGER, PARAMETER                                 :: max_tasks = 2000
 
       CHARACTER(LEN=default_string_length)               :: my_basis_type
@@ -327,9 +330,13 @@ CONTAINS
                            buffer_size=task_list%buffer_size_recv)
       DEALLOCATE (basis_set_list, nsgf)
 
-      ! allocate buffer for receiving matrix blocks
-      IF (ASSOCIATED(task_list%buffer_recv)) DEALLOCATE (task_list%buffer_recv)
-      ALLOCATE (task_list%buffer_recv(task_list%buffer_size_recv))
+      CALL create_grid_task_list(task_list=task_list, &
+                                 qs_kind_set=qs_kind_set, &
+                                 particle_set=particle_set, &
+                                 cell=cell, &
+                                 soft=my_soft, &
+                                 basis_type=my_basis_type, &
+                                 nlevels=gridlevel_info%ngrid_levels)
 
       ! If the rank order has changed, reallocate any of the distributed rs_grids
       IF (reorder_rs_grid_ranks) THEN
@@ -501,6 +508,123 @@ CONTAINS
    END SUBROUTINE generate_qs_task_list
 
 ! **************************************************************************************************
+!> \brief Sends the task list data to the grid API.
+!> \author Ole Schuett
+! **************************************************************************************************
+   SUBROUTINE create_grid_task_list(task_list, qs_kind_set, particle_set, cell, soft, basis_type, nlevels)
+      TYPE(task_list_type), POINTER                      :: task_list
+      TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
+      TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
+      TYPE(cell_type), POINTER                           :: cell
+      LOGICAL                                            :: soft
+      CHARACTER(LEN=default_string_length)               :: basis_type
+      INTEGER                                            :: nlevels
+
+      TYPE(gto_basis_set_type), POINTER                  :: orb_basis_set
+      INTEGER                                            :: nset, natoms, nkinds, ntasks, ikind, iatom, itask, nsgf
+
+      INTEGER, DIMENSION(:), ALLOCATABLE                 :: atom_kinds, level_list, iatom_list, jatom_list, &
+                                                            iset_list, jset_list, ipgf_list, jpgf_list, &
+                                                            border_mask_list, block_num_list
+      REAL(KIND=dp), DIMENSION(:), ALLOCATABLE           :: radius_list
+      REAL(KIND=dp), DIMENSION(:, :), ALLOCATABLE        :: rab_list, atom_positions
+      TYPE(task_type), DIMENSION(:), POINTER             :: tasks
+      INTEGER, DIMENSION(:, :), POINTER                  :: first_sgf
+      REAL(KIND=dp), DIMENSION(:, :), POINTER            :: sphi, zet
+      INTEGER, DIMENSION(:), POINTER                     :: lmax, lmin, npgf, nsgf_set
+
+      nkinds = SIZE(qs_kind_set)
+      natoms = SIZE(particle_set)
+      ntasks = task_list%ntasks
+      tasks => task_list%tasks
+
+      IF (.NOT. ASSOCIATED(task_list%grid_basis_sets)) THEN
+         ! Basis sets do not change during simulation - only need to create them once.
+         ALLOCATE (task_list%grid_basis_sets(nkinds))
+         DO ikind = 1, nkinds
+            CALL get_qs_kind(qs_kind_set(ikind), softb=soft, basis_type=basis_type, basis_set=orb_basis_set)
+            CALL get_gto_basis_set(gto_basis_set=orb_basis_set, &
+                                   nset=nset, &
+                                   nsgf=nsgf, &
+                                   nsgf_set=nsgf_set, &
+                                   npgf=npgf, &
+                                   first_sgf=first_sgf, &
+                                   lmax=lmax, &
+                                   lmin=lmin, &
+                                   sphi=sphi, &
+                                   zet=zet)
+            CALL grid_create_basis_set(nset=nset, &
+                                       nsgf=nsgf, &
+                                       maxco=SIZE(sphi, 1), &
+                                       maxpgf=SIZE(zet, 1), &
+                                       lmin=lmin, &
+                                       lmax=lmax, &
+                                       npgf=npgf, &
+                                       nsgf_set=nsgf_set, &
+                                       first_sgf=first_sgf, &
+                                       sphi=sphi, &
+                                       zet=zet, &
+                                       basis_set=task_list%grid_basis_sets(ikind))
+         END DO
+      ENDIF
+
+      ! Pack task list infos
+      ALLOCATE (atom_kinds(natoms), atom_positions(3, natoms))
+      DO iatom = 1, natoms
+         atom_kinds(iatom) = particle_set(iatom)%atomic_kind%kind_number
+         atom_positions(:, iatom) = pbc(particle_set(iatom)%r, cell)
+      END DO
+
+      ALLOCATE (level_list(ntasks), iatom_list(ntasks), jatom_list(ntasks))
+      ALLOCATE (iset_list(ntasks), jset_list(ntasks), ipgf_list(ntasks), jpgf_list(ntasks))
+      ALLOCATE (border_mask_list(ntasks), block_num_list(ntasks))
+      ALLOCATE (radius_list(ntasks), rab_list(3, ntasks))
+
+      DO itask = 1, ntasks
+         level_list(itask) = tasks(itask)%grid_level
+         iatom_list(itask) = tasks(itask)%iatom
+         jatom_list(itask) = tasks(itask)%jatom
+         iset_list(itask) = tasks(itask)%iset
+         jset_list(itask) = tasks(itask)%jset
+         ipgf_list(itask) = tasks(itask)%ipgf
+         jpgf_list(itask) = tasks(itask)%jpgf
+         IF (tasks(itask)%dist_type == 2) THEN
+            border_mask_list(itask) = IAND(63, NOT(tasks(itask)%subpatch_pattern))  ! invert last 6 bits
+         ELSE
+            border_mask_list(itask) = 0 ! no masking
+         ENDIF
+         block_num_list(itask) = tasks(itask)%pair_index  ! change of nomenclature pair_index -> block_num
+         radius_list(itask) = tasks(itask)%radius
+         rab_list(:, itask) = tasks(itask)%rab(:)
+      END DO
+
+      CALL grid_create_task_list(ntasks=ntasks, &
+                                 nlevels=nlevels, &
+                                 natoms=natoms, &
+                                 nkinds=nkinds, &
+                                 nblocks=SIZE(task_list%pair_offsets_recv), &
+                                 buffer_size=task_list%buffer_size_recv, &
+                                 block_offsets=task_list%pair_offsets_recv, &
+                                 atom_positions=atom_positions, &
+                                 atom_kinds=atom_kinds, &
+                                 basis_sets=task_list%grid_basis_sets, &
+                                 level_list=level_list, &
+                                 iatom_list=iatom_list, &
+                                 jatom_list=jatom_list, &
+                                 iset_list=iset_list, &
+                                 jset_list=jset_list, &
+                                 ipgf_list=ipgf_list, &
+                                 jpgf_list=jpgf_list, &
+                                 border_mask_list=border_mask_list, &
+                                 block_num_list=block_num_list, &
+                                 radius_list=radius_list, &
+                                 rab_list=rab_list, &
+                                 blocks_buffer=task_list%buffer_recv, &
+                                 task_list=task_list%grid_task_list)
+
+   END SUBROUTINE create_grid_task_list
+
+! **************************************************************************************************
 !> \brief ...
 !> \param tasks ...
 !> \param ntasks ...
@@ -552,9 +676,6 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER                     :: la_max, la_min, lb_max, lb_min, npgfa, &
                                                             npgfb
       INTEGER                                            :: nseta, nsetb
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'task_list_inner_loop', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: cube_center(3), igrid_level, ipgf, iset, &
                                                             jpgf, jset, lb_cube(3), ub_cube(3)
@@ -651,9 +772,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: zetb
       INTEGER, INTENT(IN)                                :: lb_min
       REAL(KIND=dp), INTENT(IN)                          :: ra(3), rab(3), rab2, eps
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_pgf_properties', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: extent(3)
       INTEGER, DIMENSION(:), POINTER                     :: sphere_bounds
@@ -849,8 +967,7 @@ CONTAINS
          POINTER                                         :: rs_descs
       INTEGER                                            :: grid_level, natoms
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'load_balance_distributed', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'load_balance_distributed'
 
       INTEGER                                            :: handle
       INTEGER, DIMENSION(:, :, :), POINTER               :: list
@@ -887,8 +1004,7 @@ CONTAINS
    SUBROUTINE balance_global_list(list_global)
       INTEGER, DIMENSION(:, :, 0:)                       :: list_global
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'balance_global_list', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'balance_global_list'
       INTEGER, PARAMETER                                 :: Max_Iter = 100
       REAL(KIND=dp), PARAMETER                           :: Tolerance_factor = 0.005_dp
 
@@ -1040,8 +1156,7 @@ CONTAINS
       INTEGER, DIMENSION(:, :, 0:)                       :: list
       INTEGER, INTENT(IN)                                :: group, my_pos
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'optimize_load_list', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'optimize_load_list'
       INTEGER, PARAMETER                                 :: rank_of_root = 0
 
       INTEGER                                            :: handle, icpu, idest, maxdest, ncpu
@@ -1123,8 +1238,7 @@ CONTAINS
       INTEGER                                            :: ntasks, natoms
       LOGICAL                                            :: create_list
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_load_list', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_load_list'
 
       INTEGER :: cost, dest, handle, i, iatom, ilevel, img, img_old, iopt, ipgf, iset, itask, &
                  itask_start, itask_stop, jatom, jpgf, jset, li, maxdest, ncpu, ndest_pair, nopt, nshort, &
@@ -1367,8 +1481,7 @@ CONTAINS
          POINTER                                         :: rs_descs
       INTEGER, INTENT(IN)                                :: grid_level
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_destination_list', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_destination_list'
 
       INTEGER                                            :: handle, i, icpu, j, maxcount, ncpu, &
                                                             ultimate_max
@@ -1438,8 +1551,7 @@ CONTAINS
       TYPE(task_type), DIMENSION(:), POINTER             :: tasks
       LOGICAL, INTENT(IN)                                :: use_reordered_ranks
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_current_loads', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_current_loads'
 
       INTEGER                                            :: handle, i, iatom, ilevel, img, ipgf, &
                                                             iset, jatom, jpgf, jset
@@ -1509,8 +1621,7 @@ CONTAINS
       INTEGER                                            :: ntasks
       TYPE(task_type), DIMENSION(:), POINTER             :: tasks
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'load_balance_replicated', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'load_balance_replicated'
 
       INTEGER                                            :: handle, i, iatom, ilevel, img, ipgf, &
                                                             iset, j, jatom, jpgf, jset, &
@@ -1672,8 +1783,7 @@ CONTAINS
       INTEGER                                            :: ntasks_recv
       TYPE(task_type), DIMENSION(:), POINTER             :: tasks_recv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_local_tasks', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_local_tasks'
 
       INTEGER                                            :: handle, i, j, k, l, rank
       INTEGER(KIND=int_8), ALLOCATABLE, DIMENSION(:)     :: recv_buf, send_buf
@@ -1795,8 +1905,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: symmetric, reorder_rs_grid_ranks, &
                                                             skip_load_balance_distributed
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'distribute_tasks', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'distribute_tasks'
 
       INTEGER                                            :: handle, igrid_level, irank, ntasks_recv
       INTEGER(KIND=int_8)                                :: load_gap, max_load, replicated_load
@@ -1998,9 +2107,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: send, symmetric
       TYPE(realspace_grid_desc_p_type), DIMENSION(:), INTENT(IN) :: rs_descs
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_atom_pair', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, ilevel, iatom, jatom, npairs, virt_rank
       INTEGER, DIMENSION(:), ALLOCATABLE                 :: indices
       TYPE(atom_pair_type), DIMENSION(:), ALLOCATABLE    :: atom_pair_tmp
@@ -2086,8 +2192,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: hmats
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rs_distribute_matrix', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'rs_distribute_matrix'
 
       INTEGER                                            :: acol, arow, handle, i, img, j, k, l, me, &
                                                             nblkcols_total, nblkrows_total, ncol, &
@@ -2370,9 +2475,6 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER                     :: pair_offsets, rank_offsets, rank_sizes
       INTEGER, INTENT(INOUT)                             :: buffer_size
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rs_calc_offsets', &
-                                     routineP = moduleN//':'//routineN
-
       INTEGER                                            :: acol, arow, i, block_size, total_size, k, prev_k
 
       IF (ASSOCIATED(pair_offsets)) DEALLOCATE (pair_offsets)
@@ -2416,13 +2518,12 @@ CONTAINS
 !> \brief Scatters dbcsr matrix blocks and receives them into a buffer as needed for collocation.
 !> \author Ole Schuett
 ! **************************************************************************************************
-   SUBROUTINE rs_scatter_matrix(task_list, rs_descs, pmats)
+   SUBROUTINE rs_scatter_matrix(task_list, group, pmats)
       TYPE(task_list_type), INTENT(INOUT)                :: task_list
-      TYPE(realspace_grid_desc_p_type), DIMENSION(:), INTENT(IN)   :: rs_descs
+      INTEGER, INTENT(IN)                                :: group
       TYPE(dbcsr_p_type), DIMENSION(:), INTENT(IN)       :: pmats
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rs_scatter_matrix', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'rs_scatter_matrix'
 
       INTEGER                                            :: handle
       REAL(KIND=dp), DIMENSION(:), ALLOCATABLE           :: buffer_send
@@ -2440,7 +2541,7 @@ CONTAINS
       ! mpi all-to-all communication, receiving directly into blocks_recv%buffer.
       CALL mp_alltoall(buffer_send, task_list%rank_sizes_send, task_list%rank_offsets_send, &
                        task_list%buffer_recv, task_list%rank_sizes_recv, task_list%rank_offsets_recv, &
-                       rs_descs(1)%rs_desc%group)
+                       group)
 
       DEALLOCATE (buffer_send)
       CALL timestop(handle)
@@ -2471,9 +2572,6 @@ CONTAINS
       TYPE(atom_pair_type), DIMENSION(:), INTENT(IN)     :: atom_pair
       INTEGER, DIMENSION(:), INTENT(IN)                  :: pair_offsets
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: buffer
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rs_pack_matrix', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                            :: acol, arow, img, i, offset, block_size
       LOGICAL                                            :: found
@@ -2525,8 +2623,6 @@ CONTAINS
       INTEGER, DIMENSION(3), INTENT(IN)                  :: lb_cube, ub_cube
       INTEGER, INTENT(OUT)                               :: added_tasks
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rs_find_node', &
-                                     routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: add_tasks = 1000
       REAL(kind=dp), PARAMETER                           :: mult_tasks = 2.0_dp
 

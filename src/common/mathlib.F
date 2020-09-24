@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -377,7 +379,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(OUT)           :: eigval
       LOGICAL, INTENT(IN), OPTIONAL                      :: dac
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'diamat_all', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'diamat_all'
 
       INTEGER                                            :: handle, info, liwork, lwork, n, nb
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: iwork
@@ -548,8 +550,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: a(:, :)
       INTEGER, INTENT(OUT)                               :: info
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'invmat', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: lwork, n
       INTEGER, ALLOCATABLE                               :: ipiv(:)
       REAL(KIND=dp), ALLOCATABLE                         :: work(:)
@@ -581,7 +581,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT)                       :: a(:, :)
       CHARACTER(LEN=1), INTENT(IN), OPTIONAL             :: cholesky_triangle
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'invmat_symm', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'invmat_symm'
 
       CHARACTER(LEN=1)                                   :: my_triangle
       INTEGER                                            :: handle, i, info, n
@@ -653,9 +653,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: eval_error
       CHARACTER(LEN=1), INTENT(IN), OPTIONAL             :: option
       LOGICAL, INTENT(IN), OPTIONAL                      :: improve
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'invert_matrix_d', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=1)                                   :: norm, trans
       CHARACTER(LEN=default_string_length)               :: message
@@ -818,9 +815,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: eval_error
       CHARACTER(LEN=1), INTENT(IN), OPTIONAL             :: option
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'invert_matrix_z', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=1)                                   :: norm, trans
       CHARACTER(LEN=default_string_length)               :: message
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:)        :: work
@@ -966,8 +960,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT), &
          OPTIONAL, POINTER                               :: sval
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_pseudo_inverse_svd', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_pseudo_inverse_svd'
 
       INTEGER                                            :: handle, i, info, lwork, n
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: iwork
@@ -1046,8 +1039,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :)                     :: a, a_pinverse
       REAL(KIND=dp), INTENT(IN)                          :: rskip
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_pseudo_inverse_diag', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_pseudo_inverse_diag'
 
       INTEGER                                            :: handle, i, info, lwork, n
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: eig, work
@@ -1065,7 +1057,7 @@ CONTAINS
 
       ! work size query
       lwork = -1
-      CALL dsyev('V', 'U', n, a(1, 1), n, eig(1), work(1), lwork, info)
+      CALL dsyev('V', 'U', n, a, n, eig(1), work(1), lwork, info)
       IF (info /= 0) THEN
          CPABORT("ERROR in DSYEV: Could not retrieve work array sizes")
       END IF
@@ -1075,7 +1067,7 @@ CONTAINS
       work = 0.0_dp
 
       ! get eigenvalues and eigenvectors
-      CALL dsyev('V', 'U', n, a(1, 1), n, eig(1), work(1), lwork, info)
+      CALL dsyev('V', 'U', n, a, n, eig(1), work(1), lwork, info)
 
       IF (info /= 0) THEN
          CPABORT("Matrix diagonalization failed")
@@ -1226,9 +1218,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: a
       CHARACTER(LEN=*), INTENT(IN)                       :: option
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'symmetrize_matrix', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, n
 
       n = MIN(SIZE(a, 1), SIZE(a, 2))
@@ -1368,7 +1357,6 @@ CONTAINS
    FUNCTION ei(x)
       REAL(dp)                                           :: x, ei
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ei', routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: maxit = 100
       REAL(dp), PARAMETER                                :: eps = EPSILON(0.0_dp), &
                                                             fpmin = TINY(0.0_dp)
@@ -1497,7 +1485,6 @@ CONTAINS
       INTEGER                                            :: n
       REAL(dp)                                           :: x, expint
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'expint', routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: maxit = 100
       REAL(dp), PARAMETER :: eps = 6.e-14_dp, euler = 0.5772156649015328606065120_dp, &
          fpmin = TINY(0.0_dp)
@@ -1752,8 +1739,6 @@ CONTAINS
    SUBROUTINE swap_vector(a, b)
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: a, b
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'swap_vector', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, n
       REAL(KIND=dp)                                      :: c
 
@@ -1787,8 +1772,7 @@ CONTAINS
       REAL(dp), INTENT(in)  :: eps, omg
       REAL(dp), INTENT(out) :: r_cutoff
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'erfc_cutoff', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'erfc_cutoff'
 
       REAL(dp), PARAMETER :: abstol = 1E-10_dp, soltol = 1E-16_dp
       REAL(dp) :: r0, f0, fprime0, delta_r
@@ -1830,4 +1814,3 @@ CONTAINS
    END SUBROUTINE erfc_cutoff
 
 END MODULE mathlib
-

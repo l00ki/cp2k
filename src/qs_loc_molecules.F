@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -47,9 +49,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: center(:, :)
       TYPE(molecule_type), POINTER                       :: molecule_set(:)
       INTEGER, INTENT(IN)                                :: ispin, nspins
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfc_to_molecule', &
-         routineP = moduleN//':'//routineN
 
       INTEGER :: counter, first_atom, i, iatom, ikind, imol, imol_now, istate, k, local_location, &
          natom, natom_loc, natom_max, nkind, nmol, nstate

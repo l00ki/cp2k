@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE qs_tddfpt2_eigensolver
@@ -90,8 +92,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:, :), INTENT(in)    :: evects
       TYPE(cp_fm_p_type), DIMENSION(:), INTENT(in)       :: S_C0_C0T
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_orthogonalize_psi1_psi0', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_orthogonalize_psi1_psi0'
 
       INTEGER                                            :: handle, ispin, ivect, nactive, nao, &
                                                             nspins, nvects
@@ -143,8 +144,7 @@ CONTAINS
       REAL(kind=dp), INTENT(in)                          :: max_norm
       LOGICAL                                            :: is_nonortho
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_is_nonorthogonal_psi1_psi0', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_is_nonorthogonal_psi1_psi0'
 
       INTEGER                                            :: handle, ispin, ivect, nactive, nao, &
                                                             nocc, nspins, nvects
@@ -226,8 +226,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:, :), INTENT(in)    :: S_evects
       TYPE(dbcsr_type), POINTER                          :: matrix_s
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_orthonormalize_psi1_psi1', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_orthonormalize_psi1_psi1'
 
       INTEGER                                            :: handle, ispin, ivect, jvect, nspins, &
                                                             nvects_old, nvects_total
@@ -315,8 +314,7 @@ CONTAINS
       TYPE(tddfpt_subgroup_env_type), INTENT(in)         :: sub_env
       TYPE(tddfpt_work_matrices), INTENT(inout)          :: work_matrices
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_compute_Aop_evects', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_compute_Aop_evects'
 
       INTEGER                                            :: handle, ispin, ivect, nspins, nvects
       INTEGER, DIMENSION(maxspins)                       :: nmo_occ
@@ -423,8 +421,7 @@ CONTAINS
       REAL(kind=dp), DIMENSION(:, :), POINTER            :: Atilde
       INTEGER, INTENT(IN)                                :: nkvo, nkvn
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_compute_ritz_vects', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_compute_ritz_vects'
 
       INTEGER                                            :: handle, ikv, irv, ispin, nkvs, nrvs, &
                                                             nspins
@@ -528,8 +525,7 @@ CONTAINS
          INTENT(in)                                      :: gs_mos
       TYPE(dbcsr_type), POINTER                          :: matrix_s
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_compute_residual_vects', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_compute_residual_vects'
       REAL(kind=dp), PARAMETER :: eref_scale = 0.99_dp, threshold = 16.0_dp*EPSILON(1.0_dp)
 
       INTEGER                                            :: handle, icol_local, irow_local, irv, &
@@ -658,8 +654,7 @@ CONTAINS
       TYPE(tddfpt_work_matrices), INTENT(inout)          :: work_matrices
       REAL(kind=dp)                                      :: conv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_davidson_solver', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_davidson_solver'
 
       INTEGER                                            :: handle, ispin, istate, iter, &
                                                             max_krylov_vects, nspins, nstates, &

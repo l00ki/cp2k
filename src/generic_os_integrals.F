@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -83,8 +85,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: omega, r_cutoff
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_operators_r12_ab_os', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_operators_r12_ab_os'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: my_omega, my_r_cutoff
@@ -150,7 +151,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: omega, r_cutoff
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_operator_ab_os_low', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_operator_ab_os_low'
 
       INTEGER                                            :: handle, i, iset, jset, lds, m1, m2, &
                                                             maxco, maxcoa, maxcob, maxl, maxla, &
@@ -275,8 +276,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: calculate_forces, debug
       REAL(KIND=dp), INTENT(INOUT)                       :: dmax
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_ab_os', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'int_overlap_ab_os'
 
       INTEGER                                            :: handle, i, iset, jset, m1, m2, maxco, &
                                                             maxcoa, maxcob, maxl, maxla, maxlb, &
@@ -404,7 +404,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: m
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_ra2m_ab_os', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'int_ra2m_ab_os'
 
       INTEGER                                            :: handle, i, iset, jset, m1, m2, maxco, &
                                                             maxcoa, maxcob, maxl, maxla, maxlb, &
@@ -512,8 +512,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: calculate_forces, debug
       REAL(KIND=dp), INTENT(INOUT)                       :: dmax
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_aba_os', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_aba_os'
 
       INTEGER                                            :: handle, i, iset, jset, kaset, m1, m2, &
                                                             m3, ncoa, ncob, ncoc, nseta, nsetb, &
@@ -674,8 +673,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: calculate_forces, debug
       REAL(KIND=dp), INTENT(INOUT)                       :: dmax
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_abb_os', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_abb_os'
 
       INTEGER                                            :: handle, i, iset, jset, kbset, m1, m2, &
                                                             m3, ncoa, ncob, ncoc, nseta, nsetb, &
@@ -830,8 +828,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: debug
       REAL(KIND=dp), INTENT(INOUT)                       :: dmax
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_aabb_os', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'int_overlap_aabb_os'
 
       INTEGER :: handle, iset, isgfa1, jset, jsgfa2, kset, ksgfb1, lds, lset, lsgfb2, m1, m2, m3, &
          m4, maxco, maxcoa, maxcob, maxl, maxla, maxlb, ncoa1, ncoa2, ncob1, ncob2, nseta, nsetb, &

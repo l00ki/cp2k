@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE qs_tddfpt2_operators
@@ -88,8 +90,7 @@ CONTAINS
          INTENT(in)                                      :: gs_mos
       TYPE(dbcsr_p_type), DIMENSION(:), INTENT(in)       :: matrix_ks
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_energy_diff', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_energy_diff'
 
       INTEGER                                            :: handle, ispin, ivect, nactive, nao, &
                                                             nspins, nvects
@@ -155,8 +156,7 @@ CONTAINS
       TYPE(pw_env_type), POINTER                         :: pw_env
       TYPE(pw_p_type), INTENT(inout)                     :: work_v_gspace, work_v_rspace
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_coulomb', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_coulomb'
 
       INTEGER                                            :: handle, ispin, nspins
       REAL(kind=dp)                                      :: alpha, pair_energy
@@ -209,9 +209,6 @@ CONTAINS
       TYPE(pw_env_type), POINTER                         :: pw_env
       TYPE(pw_p_type), DIMENSION(:), POINTER             :: work_v_xc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_xc', &
-         routineP = moduleN//':'//routineN
-
       IF (kernel_env%deriv2_analytic) THEN
          CALL tddfpt_apply_xc_analytic(A_ia_rspace, kernel_env, rho_ia_struct, is_rks_triplets, &
                                        pw_env, work_v_xc)
@@ -250,8 +247,7 @@ CONTAINS
       TYPE(pw_env_type), POINTER                         :: pw_env
       TYPE(pw_p_type), DIMENSION(:), POINTER             :: work_v_xc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_xc_analytic', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_xc_analytic'
 
       INTEGER                                            :: handle, ispin, nspins
       TYPE(pw_p_type), DIMENSION(:), POINTER             :: rho_ia_g, rho_ia_g2, rho_ia_r, &
@@ -344,8 +340,7 @@ CONTAINS
       TYPE(pw_env_type), POINTER                         :: pw_env
       TYPE(pw_p_type), DIMENSION(:), POINTER             :: work_v_xc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_xc_fd', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_xc_fd'
       REAL(KIND=dp), PARAMETER                           :: h = 0.001_dp
 
       INTEGER                                            :: handle, ispin, nspins
@@ -513,8 +508,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: work_rho_ia_ao, work_hmat
       TYPE(cp_fm_type), POINTER                          :: wfm_rho_orb
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_apply_hfx', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'tddfpt_apply_hfx'
 
       INTEGER                                            :: handle, ispin, ivect, nao, nao_aux, &
                                                             nspins, nvects

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -46,9 +48,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE create_kp_from_gamma(qs_env, qs_env_kp)
       TYPE(qs_environment_type), POINTER                 :: qs_env, qs_env_kp
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'create_kp_from_gamma', &
-         routineP = moduleN//':'//routineN
 
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(cp_subsys_type), POINTER                      :: cp_subsys

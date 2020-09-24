@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -202,8 +204,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: gw_corr_lev_occ_beta, &
                                                             gw_corr_lev_virt_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rpa_ri_compute_en', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'rpa_ri_compute_en'
 
       INTEGER :: best_integ_group_size, best_num_integ_point, color_rpa_group, dimen_homo_square, &
          dimen_ia, dimen_ia_beta, dimen_nm_gw, dimen_virt_square, handle, handle2, handle3, i, &
@@ -303,7 +304,7 @@ CONTAINS
             IF (.NOT. ANY(num_integ_points == (/26, 28, 30, 32, 34/))) THEN
                IF (unit_nr > 0) &
                   CALL cp_warn(__LOCATION__, &
-                               "Please use NUM_INTEG_POINTS 26, 28, 30, 32, or 34 for low-scaling GW to "// &
+                               "Please use NUM_INTEG_POINTS 30 for low-scaling GW to "// &
                                "achieve good accuracy.")
             END IF
             IF (num_integ_points > 34) THEN
@@ -425,7 +426,7 @@ CONTAINS
 
       END IF
 
-      IF (unit_nr > 0) THEN
+      IF (unit_nr > 0 .AND. .NOT. do_im_time) THEN
          IF (do_ri_sos_laplace_mp2) THEN
             WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
                "RI_INFO| Group size for laplace numerical integration:", integ_group_size*para_env_sub%num_pe
@@ -781,8 +782,6 @@ CONTAINS
       INTEGER                                            :: my_ia_size, my_ia_start, my_ia_end, &
                                                             my_group_L_size
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calculate_BIb_C_2D', &
-         routineP = moduleN//':'//routineN
       INTEGER, PARAMETER                                 :: occ_chunk = 128
 
       INTEGER :: ia_global, iiB, itmp(2), jjB, my_B_size, my_B_virtual_start, occ_high, occ_low, &
@@ -917,8 +916,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: nmo, homo
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_mat_Q_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_integ_mat', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'create_integ_mat'
 
       INTEGER :: comm_exchange, comm_rpa, grid_2D(2), handle, handle2, i, iproc, iproc_col, &
          iproc_row, mepos_in_RPA_group, row_col_proc_ratio, sub_sub_color
@@ -979,7 +977,7 @@ CONTAINS
          END IF
          CALL cp_blacs_env_create(blacs_env=blacs_env, para_env=para_env_RPA, grid_2d=grid_2d)
 
-         IF (unit_nr > 0) THEN
+         IF (unit_nr > 0 .AND. .NOT. my_do_im_time) THEN
             WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
                "MATRIX_INFO| Number row processes:", grid_2D(1)
             WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
@@ -1002,7 +1000,7 @@ CONTAINS
             ncol_block_mat = MAX(ncol_block_mat, 1)
          END IF
 
-         IF (unit_nr > 0) THEN
+         IF (unit_nr > 0 .AND. .NOT. my_do_im_time) THEN
             WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
                "MATRIX_INFO| Row block size:", nrow_block_mat
             WRITE (UNIT=unit_nr, FMT="(T3,A,T75,i6)") &
@@ -1152,8 +1150,7 @@ CONTAINS
                                                             mo_coeff
       INTEGER, INTENT(IN)                                :: nmo, homo
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_occ_virt_mo_coeffs', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_occ_virt_mo_coeffs'
 
       INTEGER                                            :: handle, icol_global, irow_global
 
@@ -1314,7 +1311,7 @@ CONTAINS
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: mo_coeff_beta
       LOGICAL, INTENT(IN)                                :: do_ri_sos_laplace_mp2
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rpa_num_int', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'rpa_num_int'
 
       COMPLEX(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :)  :: vec_Sigma_c_gw, vec_Sigma_c_gw_beta
       INTEGER :: count_ev_sc_GW, cut_memory, group_size_P, gw_corr_lev_tot, handle, handle3, &
@@ -1457,7 +1454,7 @@ CONTAINS
                             fm_mo_coeff_virt_scaled, mat_dm, mat_L, mat_M_P_munu_occ, mat_M_P_munu_virt, mat_P_global_copy, &
                             mat_SinvVSinv, mat_P_omega, mat_P_omega_kp, &
                             mat_work, &
-                            mat_P_omega_beta)
+                            mat_P_omega_beta, unit_nr)
 
          IF (my_do_gw) THEN
 
@@ -1648,12 +1645,6 @@ CONTAINS
 
             IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(/T3,A,T66,i15)") &
                "MEMORY_INFO| Memory cut:", cut_memory
-            IF (.NOT. mp2_env%ri_rpa_im_time%group_size_internal) THEN
-               IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T66,i15)") &
-                  "MEMORY_INFO| Im. time group size for RI functions:", mp2_env%ri_rpa_im_time%group_size_3c
-               IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T66,i15)") &
-                  "MEMORY_INFO| Im. time group size for local P matrix:", group_size_P
-            ENDIF
             IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T66,ES15.2)") &
                "SPARSITY_INFO| Eps pgf orb for imaginary time:", mp2_env%mp2_gpw%eps_grid
             IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3,A,T66,ES15.2)") &
@@ -1731,9 +1722,6 @@ CONTAINS
 
          DO jquad = 1, num_integ_points
 
-            IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3, A, 1X, I3, 1X, A, 1X, I3)") &
-               "INTEG_INFO| Started with Integration point", jquad, "of", num_integ_points
-
             IF (MODULO(jquad, num_integ_group) /= color_rpa_group) CYCLE
 
             CALL timeset(routineN//"_RPA_matrix_operations", handle3)
@@ -1765,6 +1753,9 @@ CONTAINS
                END IF
 
             ELSE
+
+               IF (unit_nr > 0) WRITE (UNIT=unit_nr, FMT="(T3, A, 1X, I3, 1X, A, 1X, I3)") &
+                  "INTEG_INFO| Started with Integration point", jquad, "of", num_integ_points
 
                CALL calc_mat_Q(fm_mat_S, do_ri_sos_laplace_mp2, first_cycle, count_ev_sc_GW, iter_sc_GW0, virtual, &
                                Eigenval, Eigenval_last, Eigenval_scf, &

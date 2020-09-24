@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -60,9 +62,6 @@ CONTAINS
       TYPE(qs_loc_env_new_type), INTENT(IN)              :: qs_loc_env
       TYPE(section_vals_type), POINTER                   :: loc_print_key
       TYPE(molecule_type), POINTER                       :: molecule_set(:)
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_molecular_dipole', &
-         routineP = moduleN//':'//routineN
 
       COMPLEX(KIND=dp)                                   :: zeta
       COMPLEX(KIND=dp), DIMENSION(3)                     :: ggamma, zphase

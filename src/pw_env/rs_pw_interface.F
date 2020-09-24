@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -71,7 +73,7 @@ CONTAINS
       TYPE(realspace_grid_p_type), DIMENSION(:), POINTER :: rs_rho
       TYPE(pw_p_type), INTENT(INOUT)                     :: rho, rho_gspace
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_rs2pw', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'density_rs2pw'
 
       INTEGER                                            :: handle, igrid_level, interp_kind
       TYPE(gridlevel_info_type), POINTER                 :: gridlevel_info
@@ -160,8 +162,7 @@ CONTAINS
       TYPE(realspace_grid_p_type), DIMENSION(:), POINTER :: rs_rho
       TYPE(pw_p_type), INTENT(INOUT)                     :: rho, rho_gspace
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_rs2pw_basic', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_rs2pw_basic'
 
       INTEGER                                            :: handle, igrid_level, interp_kind
       TYPE(gridlevel_info_type), POINTER                 :: gridlevel_info
@@ -249,8 +250,7 @@ CONTAINS
       TYPE(pw_p_type), INTENT(IN)                        :: v_rspace
       TYPE(pw_env_type), POINTER                         :: pw_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'potential_pw2rs', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'potential_pw2rs'
 
       INTEGER                                            :: auxbas_grid, handle, igrid_level, &
                                                             interp_kind

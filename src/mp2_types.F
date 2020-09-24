@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -114,8 +116,7 @@ MODULE mp2_types
       INTEGER                  :: group_size_P, group_size_3c
       INTEGER, DIMENSION(:), POINTER     :: kp_grid
       LOGICAL                  :: do_im_time_kpoints
-      LOGICAL                  :: group_size_internal
-      INTEGER                  :: min_bsize
+      INTEGER                  :: min_bsize, min_bsize_mo
    END TYPE
 
    TYPE ri_g0w0_type
@@ -263,8 +264,7 @@ CONTAINS
    SUBROUTINE mp2_env_release(mp2_env)
       TYPE(mp2_type), POINTER                            :: mp2_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mp2_env_release', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'mp2_env_release'
 
       INTEGER                                            :: handle
 
@@ -293,7 +293,7 @@ CONTAINS
    SUBROUTINE mp2_env_create(mp2_env)
       TYPE(mp2_type), POINTER                            :: mp2_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mp2_env_create', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'mp2_env_create'
 
       INTEGER                                            :: handle
 

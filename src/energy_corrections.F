@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -190,8 +192,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(IN), OPTIONAL                      :: ec_init, calculate_forces
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'energy_correction', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'energy_correction'
 
       INTEGER                                            :: handle, nkind, unit_nr
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: natom_of_kind
@@ -303,8 +304,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: calculate_forces
       INTEGER, INTENT(IN)                                :: unit_nr
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'harris_energy', routineP = moduleN//':'//routineN
-
       REAL(KIND=dp)                                      :: exc
 
       IF (ec_env%should_update) THEN
@@ -356,8 +355,6 @@ CONTAINS
       TYPE(energy_correction_type), POINTER              :: ec_env
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_disp', routineP = moduleN//':'//routineN
-
       REAL(KIND=dp)                                      :: edisp
 
       CALL calculate_dispersion_pairpot(qs_env, ec_env%dispersion_env, edisp, calculate_forces)
@@ -376,8 +373,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_core_hamiltonian', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_core_hamiltonian'
 
       INTEGER                                            :: handle, iounit, nder, nimages
       INTEGER, DIMENSION(:, :, :), POINTER               :: cell_to_index
@@ -484,8 +480,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_ks_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_ks_matrix'
 
       CHARACTER(LEN=default_string_length)               :: headline
       INTEGER                                            :: handle, iounit, ispin, nspins
@@ -620,8 +615,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_core_hamiltonian_force', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_core_hamiltonian_force'
 
       INTEGER                                            :: handle, iounit, nder, nimages
       INTEGER, DIMENSION(:, :, :), POINTER               :: cell_to_index
@@ -780,8 +774,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_ks_matrix_force', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_ks_matrix_force'
 
       INTEGER                                            :: handle, i, iounit, ispin, nao, natom, &
                                                             norb, nspins
@@ -1118,7 +1111,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_ks_solver', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ec_ks_solver'
 
       CHARACTER(LEN=default_string_length)               :: headline
       INTEGER                                            :: handle, ispin, nspins
@@ -1196,8 +1189,7 @@ CONTAINS
       TYPE(energy_correction_type), POINTER              :: ec_env
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: ksmat, smat, pmat, wmat
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mao_create_matrices', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'mao_create_matrices'
 
       INTEGER                                            :: handle, ispin, nspins
       INTEGER, DIMENSION(:), POINTER                     :: col_blk_sizes
@@ -1271,8 +1263,7 @@ CONTAINS
       TYPE(energy_correction_type), POINTER              :: ec_env
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: ksmat, smat, pmat, wmat
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mao_release_matrices', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'mao_release_matrices'
 
       INTEGER                                            :: handle, ispin, nspins
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: mao_coef
@@ -1321,10 +1312,9 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: matrix_ks, matrix_s, matrix_p, matrix_w
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_diag_solver', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ec_diag_solver'
 
-      INTEGER                                            :: handle, info, ispin, nmo(2), nsize, &
-                                                            nspins
+      INTEGER                                            :: handle, ispin, nmo(2), nsize, nspins
       REAL(KIND=dp)                                      :: eps_filter, focc(2)
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: eigenvalues
       TYPE(cp_blacs_env_type), POINTER                   :: blacs_env
@@ -1395,8 +1385,7 @@ CONTAINS
                              0.0_dp, buf1_dbcsr, filter_eps=eps_filter)
          ! copy to fm format
          CALL copy_dbcsr_to_fm(buf1_dbcsr, fm_ks)
-         CALL choose_eigv_solver(fm_ks, fm_mo, eigenvalues, info)
-         CPASSERT(info == 0)
+         CALL choose_eigv_solver(fm_ks, fm_mo, eigenvalues)
          ! back transform of mos c = Z(T)*c
          CALL copy_fm_to_dbcsr(fm_mo, buf1_dbcsr)
          CALL dbcsr_multiply("N", "N", 1.0_dp, ortho_dbcsr, buf1_dbcsr, &
@@ -1448,7 +1437,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ls_method
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: matrix_ks, matrix_s, matrix_p, matrix_w
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_ls_solver', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ec_ls_solver'
 
       INTEGER :: cluster_type, extrapolation_order, handle, ispin, max_iter_lanczos, nelectron, &
          nspins, s_inversion_type, s_preconditioner_type, s_sqrt_method, s_sqrt_order, &
@@ -1601,7 +1590,7 @@ CONTAINS
       TYPE(energy_correction_type)                       :: ec_env
       INTEGER, INTENT(IN)                                :: unit_nr
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_energy', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ec_energy'
 
       INTEGER                                            :: handle, ispin, nspins
       REAL(KIND=dp)                                      :: eband, trace
@@ -1651,8 +1640,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_neighborlist', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_build_neighborlist'
 
       INTEGER                                            :: handle, ikind, nkind
       LOGICAL                                            :: gth_potential_present, &
@@ -1784,7 +1772,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(energy_correction_type), POINTER              :: ec_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ec_properties', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ec_properties'
 
       CHARACTER(LEN=8), DIMENSION(3)                     :: rlab
       CHARACTER(LEN=default_path_length)                 :: filename

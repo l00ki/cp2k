@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -75,9 +77,6 @@ CONTAINS
       INTEGER, INTENT(OUT), OPTIONAL                     :: ielement
       REAL(KIND=dp), INTENT(OUT), OPTIONAL               :: covalent_radius, vdw_radius
       LOGICAL, OPTIONAL                                  :: found
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_ptable_info', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: symb_ielem, symbol_in
       INTEGER                                            :: ielem, ielem_found

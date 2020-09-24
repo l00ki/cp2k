@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -62,9 +64,6 @@ CONTAINS
       TYPE(xc_rho_cflags_type), INTENT(out)              :: cflags
       LOGICAL, INTENT(in)                                :: value
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_rho_cflags_setall', &
-         routineP = moduleN//':'//routineN
-
       cflags%rho = value
       cflags%rho_spin = value
       cflags%drho = value
@@ -89,9 +88,6 @@ CONTAINS
    FUNCTION xc_rho_cflags_equal(cflags1, cflags2) RESULT(equal)
       TYPE(xc_rho_cflags_type), INTENT(in)               :: cflags1, cflags2
       LOGICAL                                            :: equal
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_rho_cflags_equal', &
-         routineP = moduleN//':'//routineN
 
       equal = ((cflags1%rho .EQV. cflags2%rho) .AND. &
                (cflags1%rho_spin .EQV. cflags2%rho_spin) .AND. &

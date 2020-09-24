@@ -48,11 +48,12 @@ PROFOPT_FLAGS="\$(PROFOPT)"
 # special flags for gfortran
 # https://gcc.gnu.org/onlinedocs/gfortran/Error-and-Warning-Options.html
 # we error out for these warnings (-Werror=uninitialized -Wno-maybe-uninitialized -> error on variables that must be used uninitialized)
-WFLAGS_ERROR="-Werror=aliasing -Werror=ampersand -Werror=c-binding-type -Werror=intrinsic-shadow -Werror=intrinsics-std -Werror=line-truncation -Werror=tabs -Werror=target-lifetime -Werror=underflow -Werror=unused-but-set-variable -Werror=unused-variable -Werror=unused-dummy-argument -Werror=conversion -Werror=zerotrip -Werror=uninitialized -Wno-maybe-uninitialized"
+WFLAGS_ERROR="-Werror=aliasing -Werror=ampersand -Werror=c-binding-type -Werror=intrinsic-shadow -Werror=intrinsics-std -Werror=line-truncation -Werror=tabs -Werror=target-lifetime -Werror=underflow -Werror=unused-but-set-variable -Werror=unused-variable -Werror=unused-dummy-argument -Werror=conversion -Werror=zerotrip -Wno-maybe-uninitialized"
 # we just warn for those (that eventually might be promoted to WFLAGSERROR). It is useless to put something here with 100s of warnings.
-WFLAGS_WARN="-Wuse-without-only"
+WFLAGS_WARN="-Wuninitialized -Wuse-without-only"
 # while here we collect all other warnings, some we'll ignore
-WFLAGS_WARNALL="-pedantic -Wall -Wextra -Wsurprising -Wunused-parameter -Warray-temporaries -Wcharacter-truncation -Wconversion-extra -Wimplicit-interface -Wimplicit-procedure -Wreal-q-constant -Wunused-parameter -Walign-commons -Wfunction-elimination -Wrealloc-lhs -Wcompare-reals -Wzerotrip"
+# TODO: -Wpedantic with -std2008 requires an upgrade of the MPI interfaces from mpi to mpi_f08
+WFLAGS_WARNALL="-Wno-pedantic -Wall -Wextra -Wsurprising -Wunused-parameter -Warray-temporaries -Wcharacter-truncation -Wconversion-extra -Wimplicit-interface -Wimplicit-procedure -Wreal-q-constant -Walign-commons -Wfunction-elimination -Wrealloc-lhs -Wcompare-reals -Wzerotrip"
 
 # IEEE_EXCEPTIONS dependency
 IEEE_EXCEPTIONS_DFLAGS="-D__HAS_IEEE_EXCEPTIONS"
@@ -167,8 +168,7 @@ EOF
     if [ "$__WARNALL" = "on" ] ; then
         cat <<EOF >> $__filename
 #
-FCLOGPIPE   =  2> \\\$(notdir \\\$<).warn
-export LC_ALL=C
+FCLOGPIPE   = 2>&1 | tee \\\$(notdir \\\$<).warn
 EOF
     fi
     if [ "$with_gcc" != "__DONTUSE__" ] ; then

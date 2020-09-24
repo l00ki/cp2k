@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -85,8 +87,7 @@ CONTAINS
       REAL(KIND=dp)                                      :: rnd_nr
       LOGICAL, OPTIONAL                                  :: approx_ener
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'acceptance_check', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'acceptance_check'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: ekin_last_acc, elem_ener, kB, parent_ener
@@ -207,8 +208,7 @@ CONTAINS
       TYPE(tmc_param_type), POINTER                      :: tmc_params
       LOGICAL                                            :: accept
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'swap_acceptance_check', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'swap_acceptance_check'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: delta, elem1_ener, elem2_ener, kB, vol1, &
@@ -283,8 +283,7 @@ CONTAINS
       TYPE(tmc_param_type), POINTER                      :: tmc_params
       LOGICAL                                            :: accept
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'volume_acceptance_check', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'volume_acceptance_check'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: d_enthalpy, kB, n_vol, p_vol
@@ -357,8 +356,7 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: tree_elem
       TYPE(tmc_env_type), POINTER                        :: tmc_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_acceptance_of_depending_subtree_nodes', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_acceptance_of_depending_subtree_nodes'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: parent_ready
@@ -436,8 +434,7 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: act_elem, parent_elem
       TYPE(tmc_env_type), POINTER                        :: tmc_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_and_change_status_of_subtree_elem', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_and_change_status_of_subtree_elem'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: flag, result_acc
@@ -517,8 +514,7 @@ CONTAINS
       INTEGER                                            :: stat
       TYPE(tmc_param_type), POINTER                      :: tmc_params
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'subtree_configuration_stat_change', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'subtree_configuration_stat_change'
 
       INTEGER                                            :: handle
       TYPE(tree_type), POINTER                           :: ptr
@@ -568,8 +564,7 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: elem
       LOGICAL                                            :: ready
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'elem_ready_to_check', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'elem_ready_to_check'
 
       INTEGER                                            :: handle
 
@@ -609,7 +604,7 @@ CONTAINS
       TYPE(tmc_env_type), POINTER                        :: tmc_env
       LOGICAL                                            :: check_done, result_acc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_elements', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'check_elements'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: act_ready, tmp_ready
@@ -718,7 +713,7 @@ CONTAINS
       TYPE(tmc_env_type), POINTER                        :: tmc_env
       LOGICAL                                            :: result_acc, something_updated
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tree_update', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'tree_update'
 
       INTEGER                                            :: handle, itmp
       LOGICAL                                            :: found
@@ -880,9 +875,6 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: elem
       LOGICAL                                            :: ready
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ready_for_update_acc_prob', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(elem))
       ready = .FALSE.
       IF ((elem%scf_energies_count .GE. 4) &
@@ -903,8 +895,7 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: tree_elem
       TYPE(tmc_env_type), POINTER                        :: tmc_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_elements_for_acc_prob_update', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'check_elements_for_acc_prob_update'
 
       INTEGER                                            :: handle
       TYPE(tree_type), POINTER                           :: act_elem, parent_elem
@@ -975,8 +966,7 @@ CONTAINS
       LOGICAL                                            :: act_parent
       TYPE(tmc_env_type), POINTER                        :: tmc_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'update_prob_gt_node_list', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'update_prob_gt_node_list'
 
       INTEGER                                            :: handle, integration_steps
       REAL(KIND=dp)                                      :: kB, tmp_prob

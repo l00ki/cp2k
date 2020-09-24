@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 !> \brief Calculation of the non-local pseudopotential contribution to the core Hamiltonian
@@ -77,7 +79,7 @@ CONTAINS
          POINTER                                         :: sab_orb, sap_ppnl
       REAL(KIND=dp), INTENT(IN)                          :: eps_ppnl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_com_rpnl', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'build_com_rpnl'
 
       INTEGER :: handle, i, iab, iac, iatom, ibc, icol, ikind, ilist, inode, irow, iset, jatom, &
          jkind, jneighbor, kac, katom, kbc, kkind, l, lc_max, lc_min, ldai, ldsab, lppnl, maxco, &
@@ -434,8 +436,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3), INTENT(IN), OPTIONAL  :: ref_point
       TYPE(cell_type), INTENT(IN), OPTIONAL, POINTER     :: cell
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_com_mom_nl', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'build_com_mom_nl'
 
       INTEGER                                            :: handle, i, iab, iac, iatom, ibc, icol, &
                                                             ikind, ind, irow, jatom, jkind, kac, &

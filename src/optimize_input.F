@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 MODULE optimize_input
    USE cell_types,                      ONLY: parse_cell_line
@@ -107,8 +109,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: root_section
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'run_optimize_input', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'run_optimize_input'
 
       INTEGER                                            :: handle, i_var
       REAL(KIND=dp)                                      :: random_number, seed(3, 2)
@@ -161,7 +162,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: root_section
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'force_matching', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'force_matching'
 
       CHARACTER(len=default_path_length)                 :: input_path, output_path
       CHARACTER(len=default_string_length), &
@@ -506,8 +507,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: energy_traj
       REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: cell_traj
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_reference_data', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'read_reference_data'
 
       CHARACTER(len=default_path_length)                 :: filename
       CHARACTER(len=default_string_length)               :: AA
@@ -616,7 +616,7 @@ CONTAINS
       TYPE(oi_env_type)                                  :: oi_env
       TYPE(section_vals_type), POINTER                   :: root_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'parse_input', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'parse_input'
 
       INTEGER                                            :: handle, ivar, n_var
       LOGICAL                                            :: explicit

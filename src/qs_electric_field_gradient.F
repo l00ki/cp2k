@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -89,7 +91,7 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_efg_calc', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_efg_calc'
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: aint_precond, handle, i, iat, iatom, ij, &
@@ -427,8 +429,6 @@ CONTAINS
       TYPE(qs_kind_type), INTENT(IN)                     :: qs_kind
       INTEGER, DIMENSION(:), INTENT(IN)                  :: atom_list
       INTEGER, INTENT(IN)                                :: natom, nspins
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'vlimit_atom', routineP = moduleN//':'//routineN
 
       INTEGER :: i, i1, i2, iat, iatom, icg, ipgf1, ipgf2, iset1, iset2, iso, iso1, iso1_first, &
          iso1_last, iso2, iso2_first, iso2_last, l, l_iso, llmax, m1s, m2s, m_iso, max_iso_not0, &

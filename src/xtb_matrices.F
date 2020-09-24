@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -117,8 +119,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       LOGICAL, INTENT(IN)                                :: calculate_forces
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_xtb_matrices', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_xtb_matrices'
 
       INTEGER :: after, atom_a, atom_b, atom_c, handle, i, iatom, ic, icol, ikind, img, ir, irow, &
          iset, iw, j, jatom, jkind, jset, katom, kkind, la, lb, ldsab, lmaxa, lmaxb, maxder, maxs, &
@@ -953,15 +954,14 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: ext_ks_matrix
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_xtb_ks_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'build_xtb_ks_matrix'
 
       INTEGER                                            :: atom_a, handle, iatom, ikind, img, &
                                                             iounit, is, ispin, na, natom, natorb, &
                                                             nimg, nkind, ns, nsgf, nspins
       INTEGER, DIMENSION(25)                             :: lao
       INTEGER, DIMENSION(5)                              :: occ
-      LOGICAL                                            :: pass_check
+      LOGICAL                                            :: do_efield, pass_check
       REAL(KIND=dp)                                      :: achrg, chmax, pc_ener, qmmm_el
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: mcharge
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :)        :: aocg, charges
@@ -1011,6 +1011,7 @@ CONTAINS
 
       energy%hartree = 0.0_dp
       energy%qmmm_el = 0.0_dp
+      energy%efield = 0.0_dp
 
       scf_section => section_vals_get_subs_vals(qs_env%input, "DFT%SCF")
       nspins = dft_control%nspins
@@ -1026,7 +1027,14 @@ CONTAINS
          END DO
       END DO
 
-      IF (dft_control%qs_control%xtb_control%coulomb_interaction) THEN
+      IF (dft_control%apply_period_efield .OR. dft_control%apply_efield .OR. &
+          dft_control%apply_efield_field) THEN
+         do_efield = .TRUE.
+      ELSE
+         do_efield = .FALSE.
+      END IF
+
+      IF (dft_control%qs_control%xtb_control%coulomb_interaction .OR. do_efield) THEN
          ! Mulliken charges
          CALL get_qs_env(qs_env=qs_env, particle_set=particle_set, matrix_s_kp=matrix_s)
          CALL qs_rho_get(rho, rho_ao_kp=matrix_p)
@@ -1058,7 +1066,6 @@ CONTAINS
             END DO
          END DO
          DEALLOCATE (aocg)
-
          ! charge mixing
          IF (dft_control%qs_control%do_ls_scf) THEN
             !
@@ -1071,12 +1078,18 @@ CONTAINS
          DO iatom = 1, natom
             mcharge(iatom) = SUM(charges(iatom, :))
          END DO
+      END IF
 
+      IF (dft_control%qs_control%xtb_control%coulomb_interaction) THEN
          CALL build_xtb_coulomb(qs_env, ks_matrix, rho, charges, mcharge, energy, &
                                 calculate_forces, just_energy)
+      END IF
 
+      IF (do_efield) THEN
          CALL efield_tb_matrix(qs_env, ks_matrix, rho, mcharge, energy, calculate_forces, just_energy)
+      END IF
 
+      IF (dft_control%qs_control%xtb_control%coulomb_interaction) THEN
          IF (dft_control%qs_control%xtb_control%check_atomic_charges) THEN
             pass_check = .TRUE.
             DO ikind = 1, nkind
@@ -1102,7 +1115,9 @@ CONTAINS
                CPABORT("xTB Charges")
             END IF
          END IF
+      END IF
 
+      IF (dft_control%qs_control%xtb_control%coulomb_interaction .OR. do_efield) THEN
          DEALLOCATE (mcharge, charges)
       END IF
 
@@ -1178,8 +1193,6 @@ CONTAINS
          INTENT(INOUT)                                   :: neighbor_atoms
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xb_neighbors', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: iatom, ikind, natom, nkind
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: matom
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: dmloc
@@ -1249,8 +1262,6 @@ CONTAINS
       TYPE(qs_force_type), DIMENSION(:), POINTER         :: force
       TYPE(virial_type), POINTER                         :: virial
       TYPE(atprop_type), POINTER                         :: atprop
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xb_interaction', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: atom_a, atom_b, atom_c, iatom, ikind, &
                                                             jatom, jkind, katom, kkind

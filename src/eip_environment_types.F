@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -126,8 +128,6 @@ CONTAINS
 
       TYPE(eip_environment_type), POINTER                :: eip_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_env_retain', routineP = moduleN//':'//routineN
-
 !   ------------------------------------------------------------------------
 
       CPASSERT(ASSOCIATED(eip_env))
@@ -145,9 +145,6 @@ CONTAINS
    SUBROUTINE eip_env_release(eip_env)
 
       TYPE(eip_environment_type), POINTER                :: eip_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_env_release', &
-         routineP = moduleN//':'//routineN
 
 !   ------------------------------------------------------------------------
 
@@ -243,8 +240,6 @@ CONTAINS
       LOGICAL, INTENT(OUT), OPTIONAL                     :: use_ref_cell
       REAL(KIND=dp), INTENT(OUT), OPTIONAL               :: eip_kinetic_energy, eip_potential_energy
       TYPE(virial_type), OPTIONAL, POINTER               :: virial
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_env_get', routineP = moduleN//':'//routineN
 
       TYPE(atomic_kind_list_type), POINTER               :: atomic_kinds
       TYPE(molecule_kind_list_type), POINTER             :: molecule_kinds
@@ -354,8 +349,6 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: use_ref_cell
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: eip_kinetic_energy, eip_potential_energy
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_env_set', routineP = moduleN//':'//routineN
-
       TYPE(atomic_kind_list_type), POINTER               :: atomic_kinds
       TYPE(molecule_kind_list_type), POINTER             :: molecule_kinds
       TYPE(molecule_list_type), POINTER                  :: molecules
@@ -435,8 +428,6 @@ CONTAINS
 
       TYPE(eip_environment_type), POINTER                :: eip_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_env_clear', routineP = moduleN//':'//routineN
-
 !   ------------------------------------------------------------------------
 
       CPASSERT(ASSOCIATED(eip_env))
@@ -476,8 +467,6 @@ CONTAINS
    SUBROUTINE eip_env_create(eip_env)
 
       TYPE(eip_environment_type), POINTER                :: eip_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'eip_env_create', routineP = moduleN//':'//routineN
 
       ALLOCATE (eip_env)
 

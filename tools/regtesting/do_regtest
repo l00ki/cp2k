@@ -10,7 +10,7 @@
 # command line argument passing
 #
 ###################################################################################
-export LC_ALL=C
+export LC_ALL=en_US.UTF-8
 
 # init
 dir_base=$PWD
@@ -369,19 +369,19 @@ function run_regtest_dir() {
   #
   echo "Starting regression tests in ${dir_test}/tests/${dir} (${idir} of ${ndir})"
   echo ">>> ${dir_test}/tests/${dir}" > ${dir_test}/status/REGTEST_TASK_TESTS-$task
-  ntest=`grep -v "#" TEST_FILES | ${awk} '{c=c+1}END{print c}'`
+  ntest=`grep '^\s*\w' TEST_FILES | wc -l`
   t1=`date +%s`
   for ((itest=1;itest<=ntest;itest++));
   do
      touch ${lockfile}
      n_tests=$((n_tests+1))
      this_test=""
-     input_file=`grep -v "#" TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) print $1}'`
-     test_type=`grep -v "#" TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) print $2}'`
+     input_file=`grep '^\s*\w' TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) print $1}'`
+     test_type=`grep '^\s*\w' TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) print $2}'`
      # third field allows numerical tolerances to be read from the TEST_FILES
      # if value does not exist set to the default of 1.0E-14
-     test_tolerance=`grep -v "#" TEST_FILES | ${awk} -v itest=$itest -v def_err_tol=$default_err_tolerance '{c=c+1;if (c==itest) if (NF >= 3) { print $3 } else { print def_err_tol } }'`
-     test_ref_value=`grep -v "#" TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) if (NF == 4) { print $4 } }'`
+     test_tolerance=`grep '^\s*\w' TEST_FILES | ${awk} -v itest=$itest -v def_err_tol=$default_err_tolerance '{c=c+1;if (c==itest) if (NF >= 3) { print $3 } else { print def_err_tol } }'`
+     test_ref_value=`grep '^\s*\w' TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) if (NF == 4) { print $4 } }'`
 
      output_file=${dir_test}/${dir}/${input_file}.out
      output_last=${dir_last}/${dir}/${input_file}.out
@@ -773,17 +773,24 @@ echo "--------------------------- Preparations ---------------------------------
 # make realclean
 if [[ ${quick} != "quick" ]]; then
    cd ${dir_base}/${cp2k_dir}
-   ${make} realclean ${ARCH_SPEC} VERSION=${cp2k_version} >>${make_out} 2>&1
+   if [[ "${cp2k_version}" == "sopt" ]]; then
+      ext="sopt ssmp"
+   elif [[ "${cp2k_version}" == "popt" ]]; then
+      ext="popt psmp"
+   else
+      ext="${cp2k_version}"
+   fi
+   ${make} realclean ${ARCH_SPEC} VERSION="${ext}" >>${make_out} 2>&1
    if (( $? )); then
       echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" >>${error_description_file}
       cat ${make_out} >>${error_description_file}
       echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" >>${error_description_file}
-      echo "ERROR: ${make} realclean ${ARCH_SPEC} VERSION=${cp2k_version} failed ... bailing out" >>${error_description_file}
+      echo "ERROR: ${make} realclean ${ARCH_SPEC} VERSION=\"${ext}\" failed ... bailing out" >>${error_description_file}
       cat "${error_description_file}"
       rm ${lockfile}
       exit 3
    else
-      echo "${make} realclean ${ARCH_SPEC} VERSION=${cp2k_version} went fine"
+      echo "${make} realclean ${ARCH_SPEC} VERSION=\"${ext}\" went fine"
    fi
 else
    echo "Quick testing, no realclean"
@@ -820,7 +827,7 @@ if [[ ${nobuild} != "nobuild" ]]; then
       rm ${lockfile}
       exit 4
    else
-      compile_warnings=`grep "Warning" ${make_out} | wc -l`
+      compile_warnings=`grep -i "Warning" ${make_out} | wc -l`
       echo "${make} -j $((maxbuildtasks)) ${ARCH_SPEC} VERSION=${cp2k_version} went fine (${compile_warnings} warnings)"
    fi
 else
@@ -1060,10 +1067,10 @@ EOF
        # generate the equivalent farming input
        #
        idir=$((idir+1))
-       ntest=`grep -v "#" ${dir_test}/tests/${dir}/TEST_FILES | ${awk} '{c=c+1}END{print c}'`
+       ntest=`grep '^\s*\w' ${dir_test}/tests/${dir}/TEST_FILES | ${awk} '{c=c+1}END{print c}'`
        for ((itest=1;itest<=ntest;itest++));
        do
-         input_file=`grep -v "#" ${dir_test}/tests/${dir}/TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) print $1}'`
+         input_file=`grep '^\s*\w' ${dir_test}/tests/${dir}/TEST_FILES | ${awk} -v itest=$itest '{c=c+1;if (c==itest) print $1}'`
          output_file=${dir_test}/${dir}/${input_file}.out
          jobid=$((idir*100000+itest))
          if [[ $itest != 1 ]]; then

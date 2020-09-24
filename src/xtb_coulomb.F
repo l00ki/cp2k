@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -107,8 +109,7 @@ CONTAINS
       TYPE(qs_energy_type), POINTER                      :: energy
       LOGICAL, INTENT(in)                                :: calculate_forces, just_energy
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'build_xtb_coulomb', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'build_xtb_coulomb'
 
       INTEGER :: atom_i, atom_j, blk, ewald_type, handle, i, ia, iac, iatom, ic, icol, ikind, img, &
          irow, is, j, jatom, jkind, la, lb, lmaxa, lmaxb, natom, natorb_a, natorb_b, ni, nimg, nj, &
@@ -688,7 +689,6 @@ CONTAINS
       REAL(dp), DIMENSION(:), INTENT(IN)                 :: kappab
       REAL(dp), INTENT(IN)                               :: etab, kg, rcut
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'gamma_rab_sr', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: rsmooth = 1.0_dp
 
       INTEGER                                            :: i, j
@@ -759,7 +759,6 @@ CONTAINS
       REAL(dp), DIMENSION(:), INTENT(IN)                 :: kappab
       REAL(dp), INTENT(IN)                               :: etab, kg, rcut
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'dgamma_rab_sr', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: rsmooth = 1.0_dp
 
       INTEGER                                            :: i, j
@@ -812,7 +811,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(sap_int_type), DIMENSION(:), POINTER          :: sap_int
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'xtb_dsint_list', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'xtb_dsint_list'
 
       INTEGER :: handle, i, iac, iatom, ikind, ilist, iset, jatom, jkind, jneighbor, jset, ldsab, &
          n1, n2, natorb_a, natorb_b, ncoa, ncob, nkind, nlist, nneighbor, nseta, nsetb, sgfa, sgfb

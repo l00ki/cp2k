@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -48,9 +50,6 @@ CONTAINS
 
       TYPE(helium_solvent_type), INTENT(INOUT), POINTER  :: helium
       TYPE(pint_env_type), INTENT(INOUT), POINTER        :: pint_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_sample_worm', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_string_length)               :: stmp
       INTEGER :: ac, iatom, ibead, icrawl, iMC, imove, ncentracc, ncentratt, ncloseacc, ncloseatt, &

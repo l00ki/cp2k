@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -675,8 +677,6 @@ CONTAINS
          POINTER                                         :: mos_last_converged
       REAL(KIND=dp), DIMENSION(:), OPTIONAL, POINTER     :: rhs
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_qs_env', routineP = moduleN//':'//routineN
-
       TYPE(rho0_mpole_type), POINTER                     :: rho0_m
 
       NULLIFY (rho0_m)
@@ -1174,8 +1174,6 @@ CONTAINS
          POINTER                                         :: mos_last_converged
       REAL(KIND=dp), DIMENSION(:), OPTIONAL, POINTER     :: rhs
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'set_qs_env', routineP = moduleN//':'//routineN
-
       TYPE(qs_subsys_type), POINTER                      :: subsys
 
 !    CPPrecondition(ASSOCIATED(qs_env),cp_failure_level,routineP,failure)
@@ -1376,8 +1374,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(global_environment_type), OPTIONAL, POINTER   :: globenv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_create', routineP = moduleN//':'//routineN
-
       ALLOCATE (qs_env)
       CALL init_qs_env(qs_env, globenv=globenv)
    END SUBROUTINE qs_env_create
@@ -1391,8 +1387,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE qs_env_retain(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_retain', routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(qs_env))
       CPASSERT(qs_env%ref_count > 0)
@@ -1410,9 +1404,7 @@ CONTAINS
    SUBROUTINE qs_env_release(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_release', routineP = moduleN//':'//routineN
-
-      INTEGER                                            :: i, j
+      INTEGER                                            :: i
 
       IF (ASSOCIATED(qs_env)) THEN
          CPASSERT(qs_env%ref_count > 0)

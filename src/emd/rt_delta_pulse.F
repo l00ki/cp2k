@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -84,8 +86,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: mos_old, mos_new
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_delta_pulse_periodic', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'apply_delta_pulse_periodic'
 
       COMPLEX(KIND=dp), DIMENSION(:), POINTER            :: eigenvalues_sqrt
       INTEGER                                            :: handle, icol, idir, irow, ispin, nao, &
@@ -318,8 +319,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: mos_old, mos_new
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'apply_delta_pulse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'apply_delta_pulse'
 
       COMPLEX(KIND=dp), DIMENSION(:), POINTER            :: eigenvalues_sqrt
       INTEGER                                            :: handle, i, nao, nmo

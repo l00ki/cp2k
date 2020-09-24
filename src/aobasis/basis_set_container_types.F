@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -66,9 +68,6 @@ CONTAINS
    SUBROUTINE remove_basis_set_container(basis)
       TYPE(basis_set_container_type), DIMENSION(:), &
          INTENT(inout)                                   :: basis
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'remove_basis_set_container', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -140,9 +139,6 @@ CONTAINS
       TYPE(gto_basis_set_type), POINTER                  :: basis_set
       CHARACTER(len=*)                                   :: basis_set_type
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'add_basis_set_to_container', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
       LOGICAL                                            :: success
 
@@ -171,9 +167,6 @@ CONTAINS
          INTENT(inout)                                   :: container
       INTEGER, INTENT(IN), OPTIONAL                      :: inum
       CHARACTER(len=*), OPTIONAL                         :: basis_type
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'remove_basis_from_container', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: basis_nr, i, ibas
 
@@ -227,9 +220,6 @@ CONTAINS
       TYPE(gto_basis_set_type), POINTER                  :: basis_set
       INTEGER, OPTIONAL                                  :: inumbas
       CHARACTER(len=*), OPTIONAL                         :: basis_type
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_basis_from_container', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: basis_nr, i
 

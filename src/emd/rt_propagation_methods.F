@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -136,8 +138,7 @@ CONTAINS
       TYPE(rt_prop_type), POINTER                        :: rtp
       TYPE(rtp_control_type), POINTER                    :: rtp_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'propagation_step', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'propagation_step'
 
       INTEGER                                            :: aspc_order, handle, i, im, re, unit_nr
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: delta_mos, mos_new
@@ -301,7 +302,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: delta_mos
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: delta_P
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'step_finalize', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'step_finalize'
 
       INTEGER                                            :: handle, i, ihist
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: mos_new, mos_old
@@ -380,8 +381,7 @@ CONTAINS
       TYPE(rt_prop_type), POINTER                        :: rtp
       INTEGER                                            :: propagator
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_propagator_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'compute_propagator_matrix'
 
       INTEGER                                            :: handle, i
       REAL(Kind=dp)                                      :: dt, prefac
@@ -417,7 +417,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_ks, matrix_ks_im
       TYPE(rtp_control_type), POINTER                    :: rtp_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'calc_SinvH', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'calc_SinvH'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle, im, ispin, re
@@ -493,8 +493,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: s_mat
       TYPE(rt_prop_type), POINTER                        :: rtp
 
-      CHARACTER(len=*), PARAMETER :: routineN = 's_matrices_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 's_matrices_create'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle
@@ -534,8 +533,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(out)                         :: frob_norm
       TYPE(dbcsr_type), POINTER                          :: mat_re, mat_im
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'complex_frobenius_norm', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'complex_frobenius_norm'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: col_atom, handle, row_atom
@@ -594,8 +592,7 @@ CONTAINS
       INTEGER, INTENT(in)                                :: max_iter
       REAL(KIND=dp), INTENT(in)                          :: threshold
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'purify_mcweeny_complex_nonorth', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'purify_mcweeny_complex_nonorth'
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
 
       INTEGER                                            :: handle, i, im, imax, ispin, re, unit_nr
@@ -692,8 +689,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
       INTEGER, INTENT(in)                                :: aspc_order
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'aspc_extrapolate', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'aspc_extrapolate'
       COMPLEX(KIND=dp), PARAMETER                        :: cone = (1.0_dp, 0.0_dp), &
                                                             czero = (0.0_dp, 0.0_dp)
       REAL(KIND=dp), PARAMETER                           :: one = 1.0_dp, zero = 0.0_dp
@@ -841,9 +837,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: s_mat
       INTEGER                                            :: ihist
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'put_data_to_history', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 

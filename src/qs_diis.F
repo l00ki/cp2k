@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -84,8 +86,7 @@ CONTAINS
       TYPE(qs_diis_buffer_type), POINTER                 :: diis_buffer
       INTEGER, INTENT(in)                                :: nbuffer
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_diis_b_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_diis_b_create'
 
       INTEGER                                            :: handle
 
@@ -131,8 +132,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: nspin
       TYPE(section_vals_type), POINTER                   :: scf_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_check_i_alloc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_check_i_alloc'
 
       INTEGER                                            :: handle, ibuffer, ispin, nbuffer, &
                                                             output_unit
@@ -238,7 +238,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: scf_section
       LOGICAL, INTENT(IN), OPTIONAL                      :: roks
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_step', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_diis_b_step'
       REAL(KIND=dp), PARAMETER :: eigenvalue_threshold = 1.0E-12_dp
 
       CHARACTER(LEN=2*default_string_length)             :: message
@@ -516,8 +516,7 @@ CONTAINS
 
       TYPE(qs_diis_buffer_type), POINTER                 :: diis_buffer
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_clear', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_diis_b_clear'
 
       INTEGER                                            :: handle
 
@@ -567,8 +566,7 @@ CONTAINS
       TYPE(dbcsr_type), OPTIONAL                         :: s_matrix
       REAL(KIND=dp), INTENT(IN)                          :: threshold
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_step_4lscf', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_step_4lscf'
       REAL(KIND=dp), PARAMETER :: eigenvalue_threshold = 1.0E-12_dp
 
       INTEGER                                            :: handle, ib, ispin, jb, my_nmixing, nb, &
@@ -783,8 +781,7 @@ CONTAINS
       TYPE(ls_scf_env_type)                              :: ls_scf_env
       INTEGER, INTENT(IN)                                :: nspin
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_check_i_alloc_sparse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_check_i_alloc_sparse'
 
       INTEGER                                            :: handle, ibuffer, ispin, nbuffer
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -849,8 +846,7 @@ CONTAINS
 
       TYPE(qs_diis_buffer_type_sparse), POINTER          :: diis_buffer
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_clear_sparse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_diis_b_clear_sparse'
 
       INTEGER                                            :: handle
 
@@ -880,8 +876,7 @@ CONTAINS
       TYPE(qs_diis_buffer_type_sparse), POINTER          :: diis_buffer
       INTEGER, INTENT(in)                                :: nbuffer
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_diis_b_create_sparse', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_diis_b_create_sparse'
 
       INTEGER                                            :: handle
 

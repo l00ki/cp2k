@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 ! **************************************************************************************************
 !> \brief Calculation of the local potential contribution of the nonadditive kinetic energy
@@ -94,8 +96,7 @@ CONTAINS
          POINTER                                         :: sab_orb
       TYPE(dbcsr_distribution_type), POINTER             :: dbcsr_dist
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_tnadd_mat', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'build_tnadd_mat'
       INTEGER, PARAMETER                                 :: nexp_max = 10
 
       INTEGER :: atom_a, atom_b, atom_c, handle, i, iatom, icol, ikind, img, imol, inode, irow, &

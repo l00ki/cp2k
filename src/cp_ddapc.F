@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -92,7 +94,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:, :), POINTER       :: ks_matrix
       LOGICAL, INTENT(in)                                :: just_energy
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_ks_ddapc', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_ks_ddapc'
 
       INTEGER                                            :: ddapc_size, handle, i, my_id
       LOGICAL                                            :: ddapc_restraint_is_spin, &
@@ -234,8 +236,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: calculate_forces
       CHARACTER(LEN=*)                                   :: Itype_of_density
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_ddapc_apply_CD', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_ddapc_apply_CD'
 
       INTEGER                                            :: handle, iw
       LOGICAL                                            :: apply_decpl, need_f
@@ -368,8 +369,7 @@ CONTAINS
       TYPE(ddapc_restraint_type), POINTER                :: ddapc_restraint_control
       LOGICAL, INTENT(IN), OPTIONAL                      :: calculate_forces
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_ddapc_apply_RS', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_ddapc_apply_RS'
 
       INTEGER                                            :: handle, iw, my_id
       LOGICAL                                            :: apply_restrain, need_f
@@ -474,8 +474,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: calculate_forces
       CHARACTER(LEN=*)                                   :: Itype_of_density
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_ddapc_apply_RF', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_ddapc_apply_RF'
 
       INTEGER                                            :: handle, iw
       LOGICAL                                            :: apply_solvation, need_f

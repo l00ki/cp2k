@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -82,9 +84,6 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: virial_avg
       TYPE(force_env_type), POINTER                      :: force_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'create_averages', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, nint
       LOGICAL                                            :: do_colvars
 
@@ -148,9 +147,6 @@ CONTAINS
    SUBROUTINE retain_averages(averages)
       TYPE(average_quantities_type), POINTER             :: averages
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'retain_averages', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(averages))
       CPASSERT(averages%ref_count > 0)
       averages%ref_count = averages%ref_count + 1
@@ -163,9 +159,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE release_averages(averages)
       TYPE(average_quantities_type), POINTER             :: averages
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'release_averages', &
-         routineP = moduleN//':'//routineN
 
       TYPE(section_vals_type), POINTER                   :: work_section
 
@@ -227,8 +220,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: time
       CHARACTER(LEN=default_string_length), INTENT(IN)   :: my_pos, my_act
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'compute_averages', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'compute_averages'
 
       CHARACTER(LEN=default_string_length)               :: ctmp
       INTEGER                                            :: delta_t, handle, i, nint, output_unit
@@ -449,9 +441,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: add
       INTEGER, INTENT(IN)                                :: delta_t
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_averages_rs', &
-         routineP = moduleN//':'//routineN
-
       avg = (avg*REAL(delta_t - 1, dp) + add)/REAL(delta_t, dp)
    END SUBROUTINE get_averages_rs
 
@@ -466,9 +455,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: avg
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: add
       INTEGER, INTENT(IN)                                :: delta_t
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_averages_rv', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
       LOGICAL                                            :: check
@@ -491,9 +477,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: avg
       REAL(KIND=dp), DIMENSION(:, :), INTENT(IN)         :: add
       INTEGER, INTENT(IN)                                :: delta_t
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'get_averages_rm', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j
       LOGICAL                                            :: check

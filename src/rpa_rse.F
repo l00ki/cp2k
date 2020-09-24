@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -100,7 +102,7 @@ CONTAINS
       INTEGER, OPTIONAL                                  :: homo_beta
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: mo_coeff_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rse_energy', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'rse_energy'
 
       INTEGER                                            :: dimen, handle, i_global, iiB, ispin, &
                                                             j_global, jjB, n_rep_hf, ncol_local, &
@@ -402,8 +404,7 @@ CONTAINS
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_X_mo_beta, fm_P_mu_nu_beta, &
                                                             mo_coeff_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'exchange_contribution', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'exchange_contribution'
 
       INTEGER                                            :: handle, irep, is, ns
       LOGICAL                                            :: alpha_beta, my_recalc_hfx_integrals
@@ -513,8 +514,7 @@ CONTAINS
       INTEGER                                            :: dimen
       TYPE(cp_fm_type), OPTIONAL, POINTER                :: fm_XC_mo_beta, mo_coeff_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'xc_contribution', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'xc_contribution'
 
       INTEGER                                            :: handle, i
       LOGICAL                                            :: alpha_beta
@@ -609,7 +609,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), OPTIONAL              :: Eigenval_beta
       INTEGER, OPTIONAL                                  :: homo_beta
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'non_diag_rse', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'non_diag_rse'
 
       INTEGER                                            :: handle, i_global, iiB, j_global, jjB, &
                                                             ncol_local, nrow_local, virtual, &

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -73,8 +75,7 @@ CONTAINS
       REAL(dp), DIMENSION(:)                             :: hf_energy
       LOGICAL, INTENT(in)                                :: just_energy, calculate_forces, use_virial
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'rescale_xc_potential', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'rescale_xc_potential'
 
       INTEGER                                            :: adiabatic_functional, adiabatic_model, &
                                                             handle, n_rep_hf, nimages

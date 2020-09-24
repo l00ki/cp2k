@@ -1,5 +1,6 @@
-FROM ubuntu:18.04
-ARG GCC_VERSION=8
+ARG BASE_IMAGE=ubuntu:20.04
+FROM ${BASE_IMAGE}
+ARG GCC_VERSION=9
 ARG LIBINT_LMAX=5
 USER root
 
@@ -8,7 +9,8 @@ USER root
 # Installs lean toolchain without MPI and relying mostly on Ubuntu packages.
 
 # Install Ubuntu packages.
-RUN apt-get update -qq && apt-get install -qq --no-install-recommends \
+RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
+    apt-get update -qq && apt-get install -qq --no-install-recommends \
     autoconf \
     autogen \
     automake \
@@ -19,6 +21,7 @@ RUN apt-get update -qq && apt-get install -qq --no-install-recommends \
     git \
     less \
     libtool \
+    locales \
     make \
     nano \
     pkg-config \
@@ -36,6 +39,10 @@ RUN apt-get update -qq && apt-get install -qq --no-install-recommends \
     libgsl-dev \
     libhdf5-dev \
    && rm -rf /var/lib/apt/lists/*
+
+# generate a unicode-enabled locale, see https://hub.docker.com/_/ubuntu?tab=description
+RUN localedef -i C -c -f UTF-8 -A /usr/share/locale/locale.alias C.UTF-8
+ENV LANG en_US.UTF-8
 
 # Create links.
 RUN ln -sf gcc-${GCC_VERSION}      /usr/bin/gcc  && \
@@ -60,5 +67,3 @@ RUN ./install_cp2k_toolchain.sh  \
     --with-libint=install        \
     --libint-lmax=${LIBINT_LMAX} \
     && rm -rf ./build
-
-#EOF

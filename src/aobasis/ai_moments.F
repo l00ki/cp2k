@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -1488,8 +1490,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3), INTENT(IN)            :: rac, rbc
       REAL(KIND=dp), DIMENSION(:, :), INTENT(IN)         :: pab
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: forcea, forceb
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'dipole_force', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, imom, ipgf, j, jpgf, lda, lda_min, &
                                                             ldb, ldb_min, lmax, na, nb

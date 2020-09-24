@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -89,7 +91,7 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: force_update
       TYPE(exclusion_type), DIMENSION(:), OPTIONAL       :: exclusions
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'list_control', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'list_control'
 
       INTEGER :: counter, handle, ikind, iparticle, iparticle_kind, iparticle_local, ishell, &
          jkind, last_update, nparticle, nparticle_kind, nparticle_local, nshell, num_update, &

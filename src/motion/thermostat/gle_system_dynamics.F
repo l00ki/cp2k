@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -84,7 +86,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(INOUT), OPTIONAL             :: vel(:, :), shell_vel(:, :), &
                                                             core_vel(:, :)
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'gle_particles', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'gle_particles'
 
       INTEGER                                            :: handle, iadd, ideg, imap, ndim, num
       LOGICAL                                            :: my_shell_adiabatic, present_vel
@@ -191,9 +193,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: gle_section
       TYPE(global_constraint_type), POINTER              :: gci
       LOGICAL, INTENT(IN)                                :: save_mem
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'initialize_gle_part', &
-         routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: restart
       REAL(dp)                                           :: Mtmp(gle%ndim, gle%ndim)
@@ -333,9 +332,6 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'gle_to_particle_mapping', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i, imap, j, mal_size, natoms_local, &
                                                             nkind, number, region, &
                                                             sum_of_thermostats
@@ -422,8 +418,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: gle_section
       LOGICAL, INTENT(IN)                                :: save_mem
       LOGICAL, INTENT(OUT)                               :: restart
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'restart_gle', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=rng_record_length)                   :: rng_record
       INTEGER                                            :: glob_num, i, ind, j, loc_num, n_rep
@@ -516,9 +510,6 @@ CONTAINS
    SUBROUTINE init_gle_variables(gle)
 
       TYPE(gle_type), POINTER                            :: gle
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'init_gle_variables', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j
       REAL(dp)                                           :: rr(gle%ndim), cc(gle%ndim, gle%ndim)

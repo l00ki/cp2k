@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -90,9 +92,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: mm_section
       INTEGER                                            :: do_ipol
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_pol_evaluate', &
-         routineP = moduleN//':'//routineN
-
       SELECT CASE (do_ipol)
       CASE (do_fist_pol_sc)
          CALL fist_pol_evaluate_sc(atomic_kind_set, multipoles, ewald_env, &
@@ -155,8 +154,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3, 3)                     :: pv_g, pv_nonbond
       TYPE(section_vals_type), POINTER                   :: mm_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_pol_evaluate_sc', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'fist_pol_evaluate_sc'
 
       INTEGER                                            :: ewald_type, handle, i, iatom, ii, ikind, &
                                                             iter, iw, iw2, j, max_ipol_iter, &
@@ -368,8 +366,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3, 3)                     :: pv_g, pv_nonbond
       TYPE(section_vals_type), POINTER                   :: mm_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'fist_pol_evaluate_cg', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'fist_pol_evaluate_cg'
 
       INTEGER                                            :: ewald_type, handle, i, iatom, ii, ikind, &
                                                             iter, iw, iw2, max_ipol_iter, &
@@ -695,7 +692,7 @@ CONTAINS
          OPTIONAL                                        :: forces_local, forces_glob, pv_local, &
                                                             pv_glob
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'eval_pol_ewald', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'eval_pol_ewald'
 
       INTEGER                                            :: handle
 

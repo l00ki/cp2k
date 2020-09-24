@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -3708,8 +3710,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(inout)                       :: b(*)
       INTEGER, INTENT(in)                                :: job
       INTEGER, INTENT(out)                               :: info
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'dtrsl', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: CASE, j, jj
       REAL(KIND=dp)                                      :: ddot, temp

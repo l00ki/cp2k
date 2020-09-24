@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -84,9 +86,6 @@ CONTAINS
 
       TYPE(xas_control_type)                             :: xas_control
       TYPE(section_vals_type), POINTER                   :: xas_section
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'read_xas_control', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, ir, n_rep, nex_at, nex_st
       INTEGER, DIMENSION(:), POINTER                     :: list
@@ -213,9 +212,6 @@ CONTAINS
       TYPE(xas_control_type)                             :: xas_control
       TYPE(section_vals_type), POINTER                   :: dft_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'write_xas_control', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: output_unit
       TYPE(cp_logger_type), POINTER                      :: logger
 
@@ -276,9 +272,6 @@ CONTAINS
 
       TYPE(xas_control_type), POINTER                    :: xas_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_control_create', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(.NOT. ASSOCIATED(xas_control))
       ALLOCATE (xas_control)
 
@@ -308,9 +301,6 @@ CONTAINS
 
       TYPE(xas_control_type), POINTER                    :: xas_control
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_control_release', &
-         routineP = moduleN//':'//routineN
-
       IF (ASSOCIATED(xas_control)) THEN
          CPASSERT(xas_control%ref_count > 0)
          xas_control%ref_count = xas_control%ref_count - 1
@@ -336,9 +326,6 @@ CONTAINS
    SUBROUTINE xas_control_retain(xas_control)
 
       TYPE(xas_control_type), POINTER                    :: xas_control
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'xas_control_retain', &
-         routineP = moduleN//':'//routineN
 
       CPASSERT(ASSOCIATED(xas_control))
       xas_control%ref_count = xas_control%ref_count + 1

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -70,8 +72,7 @@ CONTAINS
       TYPE(sancho_work_matrices_type), INTENT(inout)     :: work
       TYPE(cp_fm_struct_type), POINTER                   :: fm_struct
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'sancho_work_matrices_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'sancho_work_matrices_create'
 
       INTEGER                                            :: handle, ncols, nrows
 
@@ -102,8 +103,7 @@ CONTAINS
    SUBROUTINE sancho_work_matrices_release(work)
       TYPE(sancho_work_matrices_type), INTENT(inout)     :: work
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'sancho_work_matrices_release', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'sancho_work_matrices_release'
 
       INTEGER                                            :: handle
 
@@ -142,7 +142,7 @@ CONTAINS
       LOGICAL, INTENT(in)                                :: transp
       TYPE(sancho_work_matrices_type), INTENT(in)        :: work
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'do_sancho', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'do_sancho'
 
       INTEGER                                            :: handle, ncols, nrows
 
@@ -240,8 +240,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: zwork1, zwork2
       LOGICAL, INTENT(in)                                :: transp
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'negf_contact_self_energy', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'negf_contact_self_energy'
 
       INTEGER                                            :: handle, nao_contact, nao_scattering
 
@@ -281,8 +280,7 @@ CONTAINS
    SUBROUTINE negf_contact_broadening_matrix(gamma_c, self_energy_c)
       TYPE(cp_cfm_type), POINTER                         :: gamma_c, self_energy_c
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'negf_contact_broadening_matrix', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'negf_contact_broadening_matrix'
 
       INTEGER                                            :: handle
 
@@ -319,8 +317,7 @@ CONTAINS
       TYPE(cp_cfm_type), POINTER                         :: self_energy_ret_sum
       TYPE(cp_fm_type), POINTER                          :: h_s, s_s, v_hartree_s
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'negf_retarded_green_function', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'negf_retarded_green_function'
 
       INTEGER                                            :: handle
 

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -126,8 +128,6 @@ CONTAINS
    SUBROUTINE wfs_release(snapshot)
       TYPE(qs_wf_snapshot_type), POINTER                 :: snapshot
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfs_release', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
 
       IF (ASSOCIATED(snapshot)) THEN
@@ -170,8 +170,6 @@ CONTAINS
    SUBROUTINE wfi_retain(wf_history)
       TYPE(qs_wf_history_type), POINTER                  :: wf_history
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_retain', routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(wf_history))
       wf_history%ref_count = wf_history%ref_count + 1
 
@@ -187,8 +185,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE wfi_release(wf_history)
       TYPE(qs_wf_history_type), POINTER                  :: wf_history
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_release', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -221,9 +217,6 @@ CONTAINS
       TYPE(qs_wf_history_type), POINTER                  :: wf_history
       INTEGER, INTENT(in)                                :: wf_index
       TYPE(qs_wf_snapshot_type), POINTER                 :: res
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfi_get_snapshot', &
-         routineP = moduleN//':'//routineN
 
       NULLIFY (res)
 

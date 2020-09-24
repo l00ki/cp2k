@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -117,8 +119,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: unit_nr
       REAL(KIND=dp), INTENT(INOUT)                       :: e_axk_corr
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_axk_ener', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'compute_axk_ener'
       REAL(KIND=dp), PARAMETER                           :: thresh = 0.0000001_dp
 
       INTEGER :: avirt, color_sub, handle, i_global, iib, iitmp(2), iocc, j_global, jjb, kkb, &
@@ -397,8 +398,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: axk_corr
       INTEGER, INTENT(IN)                                :: my_group_L_start, my_group_L_end
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'integrate_exchange', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'integrate_exchange'
 
       INTEGER                                            :: aux, handle, irep, kkb, n_rep_hf, ns
       LOGICAL                                            :: my_recalc_hfx_integrals
@@ -459,7 +459,7 @@ CONTAINS
 
          my_recalc_hfx_integrals = .FALSE.
          ! One more dbcsr multiplication and trace
-         CALL dbcsr_multiply("T", "N", 1.0_dp, mat_2d(1, 1)%matrix, dbcsr_Gamma_munu_P(aux)%matrix, &
+         CALL dbcsr_multiply("T", "N", 1.0_dp, mat_2d(1, 1)%matrix, rho_work_ao(1)%matrix, &
                              0.0_dp, dbcsr_Gamma_munu_P(aux)%matrix, filter_eps=eps_filter)
          CALL dbcsr_trace(dbcsr_Gamma_munu_P(aux)%matrix, e_axk_p)
          axk_corr = axk_corr + e_axk_P
@@ -495,8 +495,7 @@ CONTAINS
       TYPE(hfx_type), DIMENSION(:, :), POINTER           :: x_data
       INTEGER, INTENT(OUT)                               :: n_rep_hf
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_create_subgroup', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'hfx_create_subgroup'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: do_hfx

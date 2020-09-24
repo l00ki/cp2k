@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -62,9 +64,6 @@ CONTAINS
       TYPE(al_system_type), POINTER                      :: al
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_constraint_type), POINTER              :: gci
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'al_to_particle_mapping', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, imap, j, natoms_local, &
                                                             sum_of_thermostats
@@ -155,9 +154,6 @@ CONTAINS
       INTEGER, INTENT(OUT)                               :: sum_of_thermostats
       TYPE(global_constraint_type), POINTER              :: gci
       LOGICAL, INTENT(IN), OPTIONAL                      :: shell
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_al_thermostat', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: nkind, number, region
       LOGICAL                                            :: do_shell

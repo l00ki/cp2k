@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -33,8 +35,6 @@ MODULE arnoldi_data_methods
    IMPLICIT NONE
 
    PRIVATE
-
-   CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'arnoldi_data_methods'
 
    PUBLIC :: select_evals, get_selected_ritz_val, arnoldi_is_converged, &
              arnoldi_data_type, get_nrestart, set_arnoldi_initial_vector, &
@@ -69,9 +69,6 @@ CONTAINS
       REAL(real_8)                                       :: threshold
       INTEGER                                            :: selection_crit, nval_request, nrestarts
       LOGICAL                                            :: generalized_ev, iram
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_arnoldi_data', &
-                                     routineP = moduleN//':'//routineN
 
       CALL setup_arnoldi_control(arnoldi_data, matrix, max_iter, threshold, selection_crit, &
                                  nval_request, nrestarts, generalized_ev, iram)
@@ -109,9 +106,6 @@ CONTAINS
       REAL(real_8)                                       :: threshold
       INTEGER                                            :: selection_crit, nval_request, nrestarts
       LOGICAL                                            :: generalized_ev, iram
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_arnoldi_control', &
-                                     routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: subgroups_defined
       TYPE(arnoldi_control_type), POINTER                :: control
@@ -183,9 +177,6 @@ CONTAINS
       INTEGER                                            :: ind
       TYPE(dbcsr_type)                                   :: matrix, vector
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_selected_ritz_vector', &
-                                     routineP = moduleN//':'//routineN
-
       IF (has_d_real(arnoldi_data)) CALL get_selected_ritz_vector_d(arnoldi_data, ind, matrix, vector)
       IF (has_s_real(arnoldi_data)) CALL get_selected_ritz_vector_s(arnoldi_data, ind, matrix, vector)
       IF (has_d_cmplx(arnoldi_data)) CALL get_selected_ritz_vector_z(arnoldi_data, ind, matrix, vector)
@@ -199,9 +190,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE deallocate_arnoldi_data(arnoldi_data)
       TYPE(arnoldi_data_type)                            :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'deallocate_arnoldi_data', &
-                                     routineP = moduleN//':'//routineN
 
       TYPE(arnoldi_control_type), POINTER                :: control
 
@@ -222,8 +210,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE select_evals(arnoldi_data)
       TYPE(arnoldi_data_type)                            :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'select_evals', routineP = moduleN//':'//routineN
 
       IF (has_d_real(arnoldi_data)) CALL select_evals_d(arnoldi_data)
       IF (has_s_real(arnoldi_data)) CALL select_evals_s(arnoldi_data)
@@ -323,9 +309,6 @@ CONTAINS
       INTEGER                                            :: ind
       COMPLEX(real_8)                                    :: eval_out
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_selected_ritz_val', &
-                                     routineP = moduleN//':'//routineN
-
       COMPLEX(real_4), DIMENSION(:), POINTER             :: evals_s
       COMPLEX(real_8), DIMENSION(:), POINTER             :: evals_d
       INTEGER                                            :: ev_ind
@@ -357,9 +340,6 @@ CONTAINS
    SUBROUTINE get_all_selected_ritz_val(ar_data, eval_out)
       TYPE(arnoldi_data_type)                            :: ar_data
       COMPLEX(real_8), DIMENSION(:)                      :: eval_out
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'get_all_selected_ritz_val', &
-                                     routineP = moduleN//':'//routineN
 
       COMPLEX(real_4), DIMENSION(:), POINTER             :: evals_s
       COMPLEX(real_8), DIMENSION(:), POINTER             :: evals_d

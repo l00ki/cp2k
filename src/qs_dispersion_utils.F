@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -58,9 +60,6 @@ CONTAINS
    SUBROUTINE qs_dispersion_env_set(dispersion_env, xc_section)
       TYPE(qs_dispersion_type), POINTER                  :: dispersion_env
       TYPE(section_vals_type), POINTER                   :: xc_section
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_dispersion_env_set', &
-         routineP = moduleN//':'//routineN
 
       LOGICAL                                            :: exfun, explicit
       REAL(dp), POINTER                                  :: params(:), scal(:)
@@ -192,9 +191,6 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_dispersion_type), POINTER                  :: dispersion_env
       INTEGER, INTENT(in), OPTIONAL                      :: ounit
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_write_dispersion', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: symbol
       INTEGER                                            :: i, ikind, nkind, output_unit

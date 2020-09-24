@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -71,7 +73,7 @@ CONTAINS
       INTEGER                                            :: output_unit
       INTEGER, DIMENSION(:, :, :), OPTIONAL, POINTER     :: marked_states
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'wfn_mix', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'wfn_mix'
 
       INTEGER :: handle, i_rep, ispin, mark_ind, mark_number, n_rep, orig_mo_index, &
          orig_spin_index, result_mo_index, result_spin_index

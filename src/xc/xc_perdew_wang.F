@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -63,9 +65,6 @@ CONTAINS
       TYPE(xc_rho_cflags_type), INTENT(inout), OPTIONAL  :: needs
       INTEGER, INTENT(out), OPTIONAL                     :: max_deriv
       REAL(kind=dp), INTENT(in)                          :: scale
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'perdew_wang_info', &
-                                     routineP = moduleN//':'//routineN
 
       CHARACTER(len=3)                                   :: p_string
 
@@ -143,8 +142,7 @@ CONTAINS
       INTEGER, INTENT(in)                                :: order
       REAL(kind=dp), INTENT(in)                          :: scale
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'perdew_wang_lda_eval', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'perdew_wang_lda_eval'
 
       INTEGER                                            :: npoints, timer_handle
       INTEGER, DIMENSION(:, :), POINTER                  :: bo
@@ -278,8 +276,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: order
       REAL(kind=dp), INTENT(in)                          :: scale
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'perdew_wang_lsd_eval', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'perdew_wang_lsd_eval'
 
       INTEGER                                            :: npoints, timer_handle
       INTEGER, DIMENSION(:, :), POINTER                  :: bo

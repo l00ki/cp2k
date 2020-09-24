@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -117,8 +119,7 @@ CONTAINS
 
       TYPE(preconditioner_type)                          :: preconditioner_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'destroy_preconditioner', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'destroy_preconditioner'
 
       INTEGER                                            :: handle, i
 

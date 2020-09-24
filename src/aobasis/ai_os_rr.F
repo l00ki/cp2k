@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE ai_os_rr
@@ -122,8 +124,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: ldrr1, ldrr2
       REAL(dp), DIMENSION(0:ldrr1-1, ldrr2, *), &
          INTENT(INOUT)                                   :: rr
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'os_rr_coul', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ax, ay, az, bx, by, bz, coa, coa1x, &
                                                             coa1y, coa1z, coa2x, coa2y, coa2z, &

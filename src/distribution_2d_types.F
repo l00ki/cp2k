@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -114,9 +116,6 @@ CONTAINS
       INTEGER, DIMENSION(:), INTENT(in), OPTIONAL        :: n_local_cols
       INTEGER, INTENT(in), OPTIONAL                      :: n_row_distribution, n_col_distribution
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_2d_create', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: i
 
       CPASSERT(ASSOCIATED(blacs_env))
@@ -225,9 +224,6 @@ CONTAINS
    SUBROUTINE distribution_2d_retain(distribution_2d)
       TYPE(distribution_2d_type), POINTER                :: distribution_2d
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_2d_retain', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(ASSOCIATED(distribution_2d))
       CPASSERT(distribution_2d%ref_count > 0)
       distribution_2d%ref_count = distribution_2d%ref_count + 1
@@ -239,9 +235,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE distribution_2d_release(distribution_2d)
       TYPE(distribution_2d_type), POINTER                :: distribution_2d
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_2d_release', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
 
@@ -302,9 +295,6 @@ CONTAINS
       TYPE(distribution_2d_type), POINTER                :: distribution_2d
       INTEGER, INTENT(in)                                :: unit_nr
       LOGICAL, INTENT(in), OPTIONAL                      :: local, long_description
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_2d_write', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
       LOGICAL                                            :: my_local, my_long_description
@@ -506,9 +496,6 @@ CONTAINS
       INTEGER, INTENT(out), OPTIONAL                     :: n_flat_local_rows, n_flat_local_cols
       TYPE(cp_blacs_env_type), OPTIONAL, POINTER         :: blacs_env
       INTEGER, INTENT(out), OPTIONAL                     :: id_nr
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'distribution_2d_get', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iblock_atomic, iblock_min, ikind, &
                                                             ikind_min

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -129,8 +131,6 @@ CONTAINS
       REAL(KIND=dp), OPTIONAL                            :: hmc_e_initial, hmc_e_final
       TYPE(mdctrl_type), OPTIONAL, POINTER               :: mdctrl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_mol_dyn', routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: my_rm_restart_info
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(md_environment_type), POINTER                 :: md_env
@@ -182,7 +182,7 @@ CONTAINS
       REAL(KIND=dp), OPTIONAL                            :: hmc_e_initial, hmc_e_final
       TYPE(mdctrl_type), OPTIONAL, POINTER               :: mdctrl
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_mol_dyn_low', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_mol_dyn_low'
 
       CHARACTER(LEN=default_string_length)               :: my_act, my_pos
       INTEGER                                            :: handle, i, istep, md_stride, run_type_id, &

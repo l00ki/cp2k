@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -131,8 +133,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: reflection_z_a, reflection_z_b
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_reflection_a, do_reflection_b
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'mp2_eri_2c_integrate', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'mp2_eri_2c_integrate'
 
       INTEGER :: atom_a, atom_b, atom_end, atom_start, first_set, G_count, handle, iatom, ikind, &
                  iset, jatom, jkind, jset, jset_end, jset_start, last_set, my_eri_method, my_setpair, &
@@ -389,8 +390,7 @@ CONTAINS
       INTEGER, INTENT(INOUT), OPTIONAL                   :: G_count, R_count
       LOGICAL, INTENT(IN), OPTIONAL                      :: do_reflection_a, do_reflection_b
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'integrate_set_2c', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'integrate_set_2c'
 
       INTEGER :: ax, ay, az, bx, by, bz, hab_a_end, hab_a_start, hab_b_end, hab_b_start, handle, &
                  i_xyz, ico, icox, icoy, icoz, ipgf, jco, jcox, jcoy, jcoz, jpgf, la, la_max_d, lb, &
@@ -464,9 +464,9 @@ CONTAINS
             pab_ss(:, :) = pab(hab_a_start:hab_a_end, hab_b_start:hab_b_end)
             ALLOCATE (pab_hs(ncoa, n_hab_b)); ALLOCATE (pab_hh(ncoa, ncob))
             CALL dgemm("N", "N", ncoa, n_hab_b, n_hab_a, 1.0_dp, &
-                       sphi_a(1, sphi_a_start), SIZE(sphi_a, 1), pab_ss, n_hab_a, 0.0_dp, pab_hs, ncoa)
+                       sphi_a(:, sphi_a_start), SIZE(sphi_a, 1), pab_ss, n_hab_a, 0.0_dp, pab_hs, ncoa)
             CALL dgemm("N", "T", ncoa, ncob, n_hab_b, 1.0_dp, &
-                       pab_hs, ncoa, sphi_b(1, sphi_b_start), SIZE(sphi_b, 1), 0.0_dp, pab_hh, ncoa)
+                       pab_hs, ncoa, sphi_b(:, sphi_b_start), SIZE(sphi_b, 1), 0.0_dp, pab_hh, ncoa)
          ENDIF
 
          DO ipgf = 1, npgfa
@@ -639,8 +639,7 @@ CONTAINS
          DIMENSION(3, last_c - first_c + 1), INTENT(INOUT), &
          OPTIONAL                                        :: mat_dabc, mat_adbc, mat_abdc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'mp2_eri_3c_integrate', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'mp2_eri_3c_integrate'
 
       INTEGER :: atom_a, atom_b, atom_c, atom_end, atom_start, first_set, GG_count, GR_count, &
                  handle, i_xyz, iatom, ic, icol, ikind, inode, irow, iset, jatom, jkind, jset, katom, &
@@ -1103,8 +1102,7 @@ CONTAINS
          INTENT(OUT), OPTIONAL                           :: hdabc, hadbc, habdc
       INTEGER, INTENT(INOUT), OPTIONAL                   :: GG_count, GR_count, RR_count
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_set_3c', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'integrate_set_3c'
 
       INTEGER :: ax, ay, az, bx, by, bz, cx, cy, cz, habc_a_end, habc_a_start, habc_b_end, &
                  habc_b_start, habc_c_end, habc_c_start, handle, i_xyz, ico, icoc, icox, icoy, icoz, ipgf, &
@@ -1192,14 +1190,14 @@ CONTAINS
             ALLOCATE (pab_hh(ncoa, ncob))
 
             CALL dgemm("N", "N", ncoa, n_habc_b*n_habc_c, n_habc_a, 1.0_dp, &
-                       sphi_a(1, sphi_a_start), SIZE(sphi_a, 1), pabc_sss, n_habc_a, 0.0_dp, pabc_hss, ncoa)
+                       sphi_a(:, sphi_a_start), SIZE(sphi_a, 1), pabc_sss, n_habc_a, 0.0_dp, pabc_hss, ncoa)
             CALL dgemm("N", "T", ncoa*n_habc_b, ncoc, n_habc_c, 1.0_dp, &
-                       pabc_hss, ncoa*n_habc_b, sphi_c(1, sphi_c_start), SIZE(sphi_c, 1), 0.0_dp, pabc_hsh, ncoa*n_habc_b)
+                       pabc_hss, ncoa*n_habc_b, sphi_c(:, sphi_c_start), SIZE(sphi_c, 1), 0.0_dp, pabc_hsh, ncoa*n_habc_b)
 
             DO icoc = 1, ncoc
                pab_hs(:, :) = pabc_hsh(:, :, icoc)
                CALL dgemm("N", "T", ncoa, ncob, n_habc_b, 1.0_dp, &
-                          pab_hs, ncoa, sphi_b(1, sphi_b_start), SIZE(sphi_b, 1), 0.0_dp, pab_hh, ncoa)
+                          pab_hs, ncoa, sphi_b(:, sphi_b_start), SIZE(sphi_b, 1), 0.0_dp, pab_hh, ncoa)
                pabc_hhh(:, :, icoc) = pab_hh(:, :)
             ENDDO
          ENDIF

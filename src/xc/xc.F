@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -120,9 +122,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3, 3), INTENT(OUT)        :: virial_xc
       TYPE(pw_p_type), INTENT(INOUT), OPTIONAL           :: exc_r
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_vxc_pw_create1', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: f_routine
 
       CPASSERT(ASSOCIATED(rho_r))
@@ -180,8 +179,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: xc_section
       TYPE(pw_pool_type), POINTER                        :: pw_pool
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_vxc_pw_create_test_lsd', &
-         routineP = moduleN//':'//routineN
       LOGICAL, PARAMETER                                 :: compute_virial = .FALSE.
 
       CHARACTER(len=default_path_length)                 :: filename
@@ -520,8 +517,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: xc_section
       TYPE(pw_pool_type), POINTER                        :: pw_pool
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_vxc_pw_create_debug', &
-         routineP = moduleN//':'//routineN
       LOGICAL, PARAMETER                                 :: compute_virial = .FALSE.
 
       CHARACTER(len=default_path_length)                 :: filename
@@ -816,8 +811,7 @@ CONTAINS
       TYPE(pw_pool_type), POINTER                        :: pw_pool
       LOGICAL, INTENT(in)                                :: needs_basic_components
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_rho_set_and_dset_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'xc_rho_set_and_dset_create'
 
       INTEGER                                            :: handle, nspins
       LOGICAL                                            :: lsd
@@ -881,8 +875,6 @@ CONTAINS
       REAL(kind=dp), DIMENSION(:, :, :), OPTIONAL, &
          POINTER                                         :: e_0
       REAL(kind=dp), INTENT(in), OPTIONAL                :: e_0_scale_factor
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'smooth_cutoff', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j, k
       INTEGER, DIMENSION(2, 3)                           :: bo
@@ -1073,8 +1065,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(3, 3), INTENT(OUT)        :: virial_xc
       TYPE(pw_p_type), INTENT(INOUT), OPTIONAL           :: exc_r
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_vxc_pw_create', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xc_vxc_pw_create'
       CHARACTER(len=30), DIMENSION(2), PARAMETER :: &
          norm_drho_spin_name = (/"(norm_drhoa)", "(norm_drhob)"/)
 
@@ -1752,9 +1743,6 @@ CONTAINS
 
       ! tau part
       IF (has_tau) THEN
-         IF (use_virial) THEN
-            CPABORT("Stress tensor not available for Meta-functionals.")
-         END IF
          ALLOCATE (vxc_tau(nspins))
          DO ispin = 1, nspins
             NULLIFY (vxc_tau(ispin)%pw)
@@ -1837,7 +1825,7 @@ CONTAINS
       TYPE(pw_pool_type), POINTER                        :: pw_pool
       REAL(kind=dp)                                      :: exc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_exc_calc', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xc_exc_calc'
 
       INTEGER                                            :: handle
       REAL(dp)                                           :: density_smooth_cut_range, rho_cutoff
@@ -1929,8 +1917,7 @@ CONTAINS
          POINTER                                         :: vxg
       REAL(kind=dp), INTENT(in), OPTIONAL                :: tddfpt_fac
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_calc_2nd_deriv', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xc_calc_2nd_deriv'
 
       CHARACTER(len=MAX_DERIVATIVE_DESC_LENGTH)          :: desc
       CHARACTER(len=MAX_LABEL_LENGTH), DIMENSION(:), &
@@ -3042,8 +3029,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: xc_section
       TYPE(pw_p_type), DIMENSION(:), OPTIONAL, POINTER   :: tau_r
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'xc_prep_2nd_deriv', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'xc_prep_2nd_deriv'
 
       INTEGER                                            :: handle, ispin, nspins
       LOGICAL                                            :: lsd
@@ -3090,9 +3076,6 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       TYPE(xc_rho_set_type), POINTER                     :: rho_set
       LOGICAL, INTENT(IN)                                :: lsd
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'divide_by_norm_drho', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=MAX_DERIVATIVE_DESC_LENGTH)          :: desc
       CHARACTER(len=MAX_LABEL_LENGTH), DIMENSION(:), &

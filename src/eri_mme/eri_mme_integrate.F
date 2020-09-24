@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -77,9 +79,6 @@ CONTAINS
       LOGICAL, INTENT(IN), OPTIONAL                      :: normalize
       INTEGER, INTENT(IN), OPTIONAL                      :: potential
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: pot_par
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'eri_mme_2c_integrate', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ax, ay, az, bx, by, bz, grid, i_aw, &
                                                             i_xyz, ico, jco, l_max, la, lb, n_aw
@@ -281,9 +280,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: o1, o2, o3
       INTEGER, INTENT(INOUT), OPTIONAL                   :: GG_count, GR_count, RR_count
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'eri_mme_3c_integrate', &
-         routineP = moduleN//':'//routineN
-
       CPASSERT(param%is_valid)
       IF (param%is_ortho) THEN
          CALL eri_mme_3c_integrate_ortho(param, la_min, la_max, lb_min, lb_max, lc_min, lc_max, zeta, zetb, zetc, RA, RB, RC, &
@@ -327,9 +323,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(INOUT)   :: habc
       INTEGER, INTENT(IN)                                :: o1, o2, o3
       INTEGER, INTENT(INOUT), OPTIONAL                   :: RR_count
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'eri_mme_3c_integrate_ortho', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: grid, i_aw, lmax_0, n_aw
       INTEGER(KIND=int_8), DIMENSION(3)                  :: n_sum_3d
@@ -448,9 +441,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(INOUT)   :: habc
       INTEGER, INTENT(IN)                                :: o1, o2, o3
       INTEGER, INTENT(INOUT), OPTIONAL                   :: GG_count, GR_count, RR_count
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'eri_mme_3c_integrate_nonortho', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ax, ay, az, bx, by, bz, cx, cy, cz, &
                                                             grid, i_aw, ico, ir, jco, kco, la, lb, &

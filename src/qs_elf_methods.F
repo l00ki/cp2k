@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -59,7 +61,7 @@ CONTAINS
       TYPE(pw_p_type), DIMENSION(:), POINTER             :: elf_r
       REAL(kind=dp), INTENT(IN)                          :: rho_cutoff
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_elf_calc', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_elf_calc'
       REAL(KIND=dp), PARAMETER                           :: ELFCUT = 0.0001_dp, &
                                                             f18 = (1.0_dp/8.0_dp), &
                                                             f23 = (2.0_dp/3.0_dp), &

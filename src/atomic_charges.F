@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -52,8 +54,7 @@ CONTAINS
          OPTIONAL                                        :: electronic_charges
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), OPTIONAL  :: atomic_charges
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_atomic_charges', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'print_atomic_charges'
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: handle, iatom, ikind, natom, nspin
@@ -143,8 +144,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(IN), &
          OPTIONAL                                        :: quadrupole
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_multipoles', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'print_multipoles'
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: handle, i, iatom, ikind, natom
@@ -198,9 +198,6 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), INTENT(IN)      :: particle_set
       INTEGER, INTENT(IN)                                :: scr
       REAL(KIND=dp), DIMENSION(:, :), INTENT(IN)         :: bond_orders
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'print_bond_orders', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: el1, el2
       INTEGER                                            :: iatom, jatom, natom

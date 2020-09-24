@@ -36,8 +36,8 @@ mpiexec -np 2 /workspace/cp2k/exe/local/cp2k.pdbg "\$@"
 EndOfMessage
 chmod +x /usr/bin/cp2k
 
-mkdir -p ~/.ase
-echo '{"cp2k": "/usr/bin/cp2k_shell"}' > ~/.ase/executables.json
+mkdir -p ~/.config/ase
+echo -e "[executables]\ncp2k = /usr/bin/cp2k_shell\n" > ~/.config/ase/ase.conf
 
 echo -e "\n========== Installing ASE =========="
 cd /opt/ase/
@@ -48,7 +48,7 @@ echo -e "\n========== Running ASE Tests =========="
 cd /opt/ase/
 ASE_REVISION=$(git rev-parse --short HEAD)
 
-if ase test -j 0 -c cp2k cp2k ; then
+if ase test -j 0 -c cp2k calculator/cp2k ; then
     echo "Summary: ASE commit ${ASE_REVISION} works fine."
     echo "Status: OK"
 else

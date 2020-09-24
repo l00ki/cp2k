@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -324,8 +326,6 @@ CONTAINS
       REAL(KIND=dp)                                      :: temp_in_au
       INTEGER                                            :: step
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'temp2tempstep', routineP = moduleN//':'//routineN
-
       step = INT(LOG(temp_in_au*kelvin)/LOG(this%tempstep_base))
       !WRITE(*,*) "temp: ", temp_in_au*kelvin, this%tempstep_base
       !WRITE(*,*) "step: ", step
@@ -342,9 +342,6 @@ CONTAINS
    SUBROUTINE mincrawl_register_minima(this, report)
       TYPE(mincrawl_type)                                :: this
       TYPE(swarm_message_type)                           :: report
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'mincrawl_register_minima', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: new_mid, tempstep, wid
       LOGICAL                                            :: minima_known

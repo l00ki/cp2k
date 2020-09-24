@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 MODULE dkh_main
    USE cp_blacs_env,                    ONLY: cp_blacs_env_type
@@ -101,8 +103,7 @@ CONTAINS
       TYPE(cp_fm_type), POINTER                          :: matrix_s, matrix_v, matrix_t, matrix_pVp
       INTEGER, INTENT(IN)                                :: n, dkh_order
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'DKH_full_transformation', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'DKH_full_transformation'
 
       INTEGER                                            :: handle, i
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: aa, e, ev0t, rr, tt
@@ -1330,9 +1331,6 @@ CONTAINS
 
       REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: s, v, h, pVp
       INTEGER, INTENT(IN)                                :: n, dkh_order
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'DKH_atom_transformation', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j, k
       REAL(KIND=dp), ALLOCATABLE, DIMENSION(:)           :: aa, e, ev0t, rr, tt

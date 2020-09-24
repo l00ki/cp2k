@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -103,7 +105,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(global_environment_type), POINTER             :: globenv
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'do_tmc', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'do_tmc'
 
       INTEGER                                            :: bcast_output_unit, handle, i, ierr, &
                                                             output_unit
@@ -348,8 +350,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: root_section
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'do_analyze_files', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'do_analyze_files'
 
       INTEGER                                            :: comm, dir_ind, handle, my_mpi_world, &
                                                             nr_dim, output_unit, temp
@@ -474,9 +475,6 @@ CONTAINS
       TYPE(tree_type), POINTER                           :: elem
       TYPE(tmc_env_type), POINTER                        :: tmc_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'tmc_read_ana_files_input', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(len=default_string_length), &
          DIMENSION(:), POINTER                           :: directories
       INTEGER                                            :: env_id, ierr, nr_temp, t_act
@@ -571,9 +569,6 @@ CONTAINS
    SUBROUTINE tmc_preread_input(input, tmc_env)
       TYPE(section_vals_type), POINTER                   :: input
       TYPE(tmc_env_type), POINTER                        :: tmc_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'tmc_preread_input', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_path_length)                 :: c_tmp
       INTEGER                                            :: itmp
@@ -683,8 +678,6 @@ CONTAINS
    SUBROUTINE tmc_read_input(input, tmc_env)
       TYPE(section_vals_type), POINTER                   :: input
       TYPE(tmc_env_type), POINTER                        :: tmc_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'tmc_read_input', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: itmp
       LOGICAL                                            :: explicit, flag
@@ -811,9 +804,6 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER                                            :: ana_on_the_fly
       LOGICAL                                            :: success
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'tmc_redistributing_cores', &
-         routineP = moduleN//':'//routineN
 
       INTEGER :: cc_group, cc_group_rank, comm_tmp, master_ana_group, master_ana_rank, &
          master_first_e_worker_g, master_first_e_worker_r, master_worker_group, &
@@ -1004,8 +994,7 @@ CONTAINS
    SUBROUTINE tmc_print_params(tmc_env)
       TYPE(tmc_env_type), POINTER                        :: tmc_env
 
-      CHARACTER(LEN=*), PARAMETER :: fmt_my = '(T2,A,"| ",A,T41,A40)', plabel = "TMC", &
-         routineN = 'tmc_print_params', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: fmt_my = '(T2,A,"| ",A,T41,A40)', plabel = "TMC"
 
       CHARACTER(LEN=80)                                  :: c_tmp, fmt_tmp
       INTEGER                                            :: file_nr

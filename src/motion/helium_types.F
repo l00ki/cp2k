@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -353,9 +355,6 @@ CONTAINS
 
       TYPE(int_arr_ptr), DIMENSION(:), POINTER           :: int_arr_p
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_destroy_int_arr_ptr', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ip
 
 ! deallocate memory used by each component of the pointer array
@@ -384,9 +383,6 @@ CONTAINS
    SUBROUTINE helium_destroy_real_arr_ptr(real_arr_p)
 
       TYPE(real_arr_ptr), DIMENSION(:), POINTER          :: real_arr_p
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_destroy_real_arr_ptr', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ip
 

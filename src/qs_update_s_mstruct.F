@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! *****************************************************************************
@@ -63,8 +65,7 @@ CONTAINS
    SUBROUTINE qs_env_update_s_mstruct(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_update_s_mstruct', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_update_s_mstruct'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: do_ppl
@@ -156,8 +157,7 @@ CONTAINS
    SUBROUTINE qs_create_task_list(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_create_task_list', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_create_task_list'
 
       INTEGER                                            :: handle, isub
       LOGICAL                                            :: skip_load_balance_distributed, soft_valid
@@ -265,8 +265,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(in), OPTIONAL                      :: rebuild_ao, rebuild_grids
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_rebuild_rho', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_env_rebuild_rho'
 
       INTEGER                                            :: handle
       LOGICAL                                            :: do_admm, gapw_xc

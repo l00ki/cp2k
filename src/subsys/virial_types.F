@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -58,8 +60,6 @@ CONTAINS
    SUBROUTINE cp_virial(virial_in, virial_out)
       TYPE(virial_type), POINTER                         :: virial_in, virial_out
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cp_virial', routineP = moduleN//':'//routineN
-
       virial_out%pv_total = virial_in%pv_total
       virial_out%pv_kinetic = virial_in%pv_kinetic
       virial_out%pv_virial = virial_in%pv_virial
@@ -88,8 +88,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE sym_virial(virial)
       TYPE(virial_type), POINTER                         :: virial
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'sym_virial', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j
 
@@ -151,8 +149,6 @@ CONTAINS
       TYPE(virial_type), POINTER                         :: virial
       LOGICAL, INTENT(IN), OPTIONAL                      :: reset
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'zero_virial', routineP = moduleN//':'//routineN
-
       LOGICAL                                            :: my_reset
 
       my_reset = .TRUE.
@@ -210,8 +206,6 @@ CONTAINS
       LOGICAL, OPTIONAL                                  :: pv_availability, pv_calculate, pv_numer, &
                                                             pv_diagonal
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'virial_set', routineP = moduleN//':'//routineN
-
       IF (PRESENT(pv_total)) virial%pv_total = pv_total
       IF (PRESENT(pv_virial)) virial%pv_virial = pv_virial
       IF (PRESENT(pv_xc)) virial%pv_xc = pv_xc
@@ -240,8 +234,6 @@ CONTAINS
 
       TYPE(virial_type), POINTER                         :: virial
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'virial_create', routineP = moduleN//':'//routineN
-
       ALLOCATE (virial)
 
       CALL zero_virial(virial)
@@ -261,8 +253,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE virial_release(virial)
       TYPE(virial_type), POINTER                         :: virial
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'virial_release', routineP = moduleN//':'//routineN
 
       IF (ASSOCIATED(virial)) THEN
          CPASSERT(virial%ref_count > 0)

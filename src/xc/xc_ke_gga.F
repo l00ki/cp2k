@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -92,8 +94,6 @@ CONTAINS
       TYPE(xc_rho_cflags_type), INTENT(inout), OPTIONAL  :: needs
       INTEGER, INTENT(out), OPTIONAL                     :: max_deriv
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ke_gga_info', routineP = moduleN//':'//routineN
-
       IF (PRESENT(reference)) THEN
          SELECT CASE (functional)
          CASE (ke_ol1)
@@ -175,8 +175,7 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       INTEGER, INTENT(IN)                                :: order
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'ke_gga_lda_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'ke_gga_lda_eval'
 
       INTEGER                                            :: handle, m, npoints
       INTEGER, DIMENSION(:, :), POINTER                  :: bo
@@ -316,8 +315,7 @@ CONTAINS
       TYPE(xc_derivative_set_type), POINTER              :: deriv_set
       INTEGER, INTENT(IN), OPTIONAL                      :: order
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ke_gga_lsd_eval', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ke_gga_lsd_eval'
       CHARACTER(len=12), DIMENSION(2), PARAMETER :: &
          norm_drho_spin_name = (/"(norm_drhoa)", "(norm_drhob)"/)
       CHARACTER(len=6), DIMENSION(2), PARAMETER :: rho_spin_name = (/"(rhoa)", "(rhob)"/)
@@ -669,8 +667,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: fs
       INTEGER, INTENT(IN)                                :: m
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_ol1', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ip
       REAL(KIND=dp)                                      :: t1, t2
 
@@ -712,8 +708,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: s
       REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: fs
       INTEGER, INTENT(IN)                                :: m
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_ol2', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ip
       REAL(KIND=dp)                                      :: t1, t2, t3, y
@@ -761,8 +755,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: s
       REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: fs
       INTEGER, INTENT(IN)                                :: m
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_llp', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ip
       REAL(KIND=dp) :: as, bs, p, q, sas, sbs, t1, t10, t11, t12, t133, t16, t17, t19, t2, t20, &
@@ -932,8 +924,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: m
       REAL(dp), OPTIONAL                                 :: f2_lsd
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_pw86', routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ip
       REAL(KIND=dp)                                      :: f15, ff, p0, p1, p15, p2, p3, s1, s2, &
                                                             s4, s6, t1, t2, t3
@@ -1001,8 +991,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: s
       REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: fs
       INTEGER, INTENT(IN)                                :: m
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_t92', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ip
       REAL(KIND=dp)                                      :: a1, a2, as, asp, asp2, asp3, bs, p, q, &
@@ -1098,7 +1086,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: m, pset
       REAL(dp), OPTIONAL                                 :: f2_lsd
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'efactor_pbex', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: kappa1 = 0.804_dp, kappa2 = 1.245_dp, &
                                                             mu = 0.2195149727645171_dp
 

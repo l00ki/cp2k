@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -82,9 +84,6 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:), POINTER          :: mo_local
       TYPE(section_vals_type), POINTER                   :: loc_print_key
       TYPE(molecule_type), POINTER                       :: molecule_set(:)
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'calculate_molecular_moments', &
-         routineP = moduleN//':'//routineN
 
       INTEGER :: akind, first_atom, i, iatom, ikind, imol, imol_now, iounit, iproc, ispin, j, lx, &
          ly, lz, molkind, n, n1, n2, natom, ncol_global, nm, nmol, nmols, norder, nrow_global, ns, &

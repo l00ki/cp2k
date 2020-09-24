@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -79,9 +81,6 @@ CONTAINS
    SUBROUTINE pexsi_init_read_input(pexsi_section, pexsi_env)
       TYPE(section_vals_type), INTENT(IN), POINTER       :: pexsi_section
       TYPE(lib_pexsi_env), INTENT(INOUT)                 :: pexsi_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'pexsi_init_read_input', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: isInertiaCount_int, maxPEXSIIter, &
                                                             min_ranks_per_pole, npSymbFact, &
@@ -168,7 +167,7 @@ CONTAINS
       TYPE(lib_pexsi_env), INTENT(INOUT)                 :: pexsi_env
       TYPE(dbcsr_type), INTENT(IN)                       :: template_matrix
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pexsi_init_scf', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pexsi_init_scf'
 
       INTEGER                                            :: handle, ispin, unit_nr
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -241,8 +240,7 @@ CONTAINS
       TYPE(lib_pexsi_env), INTENT(INOUT)                 :: pexsi_env
       REAL(KIND=dp), DIMENSION(2), INTENT(IN)            :: mu_spin
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pexsi_finalize_scf', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pexsi_finalize_scf'
 
       INTEGER                                            :: handle, ispin, unit_nr
       REAL(KIND=dp)                                      :: kTS_total, mu_total
@@ -312,8 +310,7 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: mu
       INTEGER, INTENT(IN)                                :: iscf, ispin
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_pexsi', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'density_matrix_pexsi'
       INTEGER, PARAMETER                                 :: S_not_identity = 0
 
       INTEGER :: handle, is_symbolic_factorize, isInertiaCount, isInertiaCount_out, mynode, &
@@ -543,8 +540,7 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: initialize
       LOGICAL, INTENT(OUT)                               :: check_convergence
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pexsi_set_convergence_tolerance', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'pexsi_set_convergence_tolerance'
 
       INTEGER                                            :: handle
       REAL(KIND=dp)                                      :: tol_nel
@@ -590,7 +586,7 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:), INTENT(IN), &
          OPTIONAL                                        :: matrix_w
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'pexsi_to_qs', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'pexsi_to_qs'
 
       INTEGER                                            :: handle, ispin, unit_nr
       REAL(KIND=dp)                                      :: kTS_total

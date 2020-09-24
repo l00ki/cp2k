@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -80,9 +82,6 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       INTEGER, INTENT(INOUT)                             :: nr_oh, nr_h3o, nr_o
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siepmann_energy', &
-         routineP = moduleN//':'//routineN
-
       REAL(KIND=dp)                                      :: a_ij, D, E, f2, Phi_ij, pot_loc_v2, &
                                                             pot_loc_v3
 
@@ -116,8 +115,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: r
       REAL(KIND=dp)                                      :: siep_f2
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siep_f2', routineP = moduleN//':'//routineN
-
       REAL(KIND=dp)                                      :: rcut
 
       rcut = SQRT(siepmann%rcutsq)
@@ -137,8 +134,6 @@ CONTAINS
       TYPE(siepmann_pot_type), POINTER                   :: siepmann
       REAL(KIND=dp), INTENT(IN)                          :: r
       REAL(KIND=dp)                                      :: siep_f2_d
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siep_f2_d', routineP = moduleN//':'//routineN
 
       REAL(KIND=dp)                                      :: B, rcut
 
@@ -179,8 +174,6 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(cell_type), POINTER                           :: cell
       REAL(KIND=dp)                                      :: siep_a_ij
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siep_a_ij', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: ilist, kparticle
@@ -241,8 +234,6 @@ CONTAINS
       TYPE(cell_type), POINTER                           :: cell
       REAL(KIND=dp), INTENT(IN)                          :: rcutsq
       LOGICAL, INTENT(IN)                                :: use_virial
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siep_a_ij_d', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ilist, kparticle, nparticle
       REAL(KIND=dp)                                      :: costheta, d_expterm, dcos_thetahalf, &
@@ -332,8 +323,6 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       INTEGER, INTENT(INOUT), OPTIONAL                   :: nr_oh, nr_h3o, nr_o
       REAL(KIND=dp)                                      :: siep_Phi_ij
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siep_Phi_ij', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: count_h, iatom, index_h1, index_h2, natom
@@ -435,8 +424,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: rcutsq
       LOGICAL, INTENT(IN)                                :: use_virial
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siep_Phi_ij_d', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: count_h, iatom, index_h1, index_h2, natom
@@ -563,9 +550,6 @@ CONTAINS
       TYPE(cell_type), POINTER                           :: cell
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siepmann_forces_v3', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=2)                                   :: element_symbol
       REAL(KIND=dp)                                      :: a_ij, beta, drji, E, f2, f2_d, f_A1, &
                                                             f_A2, fac, prefactor, rji(3), &
@@ -653,9 +637,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: rcutsq
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'siepmann_forces_v2', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(LEN=2)                                   :: element_symbol
       REAL(KIND=dp)                                      :: D, drji, f2, f2_d, f_A1, f_A2, fac, &
                                                             Phi_ij, prefactor, rji(3)
@@ -732,8 +713,7 @@ CONTAINS
       INTEGER, DIMENSION(:), POINTER                     :: glob_loc_list_a
       TYPE(cell_type), POINTER                           :: cell
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_siepmann_arrays', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'setup_siepmann_arrays'
 
       INTEGER                                            :: handle, i, iend, igrp, ikind, ilist, &
                                                             ipair, istart, jkind, nkinds, npairs, &
@@ -831,9 +811,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: glob_cell_v
       INTEGER, DIMENSION(:), POINTER                     :: glob_loc_list_a
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'destroy_siepmann_arrays', &
-         routineP = moduleN//':'//routineN
-
       IF (ASSOCIATED(glob_loc_list)) THEN
          DEALLOCATE (glob_loc_list)
       END IF
@@ -861,9 +838,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: mm_section
       TYPE(cp_para_env_type), OPTIONAL, POINTER          :: para_env
       LOGICAL, INTENT(IN)                                :: print_oh, print_h3o, print_o
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'print_nr_ions_siepmann', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iw
       TYPE(cp_logger_type), POINTER                      :: logger

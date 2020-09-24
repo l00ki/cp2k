@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -134,9 +136,6 @@ CONTAINS
 
       TYPE(ct_step_env_type)                             :: env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ct_step_env_init', &
-         routineP = moduleN//':'//routineN
-
       env%use_occ_orbs = .TRUE.
       env%use_virt_orbs = .FALSE.
       env%occ_orbs_orthogonal = .FALSE.
@@ -231,9 +230,6 @@ CONTAINS
       LOGICAL, OPTIONAL                                  :: calculate_energy_corr, converged, &
                                                             qq_preconditioner_full, &
                                                             pp_preconditioner_full
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ct_step_env_get', &
-         routineP = moduleN//':'//routineN
 
 !INTEGER      , OPTIONAL                     :: nspins
 !SPIN!!!    TYPE(dbcsr_type), DIMENSION(:), POINTER, OPTIONAL  :: p_index_up
@@ -356,9 +352,6 @@ CONTAINS
       LOGICAL, OPTIONAL                                  :: qq_preconditioner_full, &
                                                             pp_preconditioner_full
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ct_step_env_set', &
-         routineP = moduleN//':'//routineN
-
 !INTEGER      , OPTIONAL                     :: nspins
 !SPIN!!!    TYPE(dbcsr_type), TARGET, DIMENSION(:), OPTIONAL  :: p_index_up
 !SPIN!!!    TYPE(dbcsr_type), TARGET, DIMENSION(:), OPTIONAL  :: p_index_down
@@ -421,9 +414,6 @@ CONTAINS
    SUBROUTINE ct_step_env_clean(env)
 
       TYPE(ct_step_env_type)                             :: env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'ct_step_env_clean', &
-         routineP = moduleN//':'//routineN
 
 !INTEGER                                     :: ispin
 

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -84,9 +86,6 @@ CONTAINS
          POINTER                                         :: dftb_potential
       TYPE(section_vals_type), POINTER                   :: subsys_section
       TYPE(cp_para_env_type), POINTER                    :: para_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_dftb_param_init', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: iel, jel
       CHARACTER(LEN=6)                                   :: cspline

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -79,8 +81,6 @@ CONTAINS
       TYPE(tddfpt_env_type), INTENT(out)                 :: t_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_init', routineP = moduleN//':'//routineN
-
 !------------------!
 ! create the p_env !
 !------------------!
@@ -105,9 +105,6 @@ CONTAINS
 
       TYPE(tddfpt_env_type), INTENT(inout)               :: t_env
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'tddfpt_env_init', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: n_spins, spin
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
@@ -137,8 +134,6 @@ CONTAINS
       TYPE(tddfpt_env_type), INTENT(inout)               :: t_env
       TYPE(qs_p_env_type), POINTER                       :: p_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'tddfpt_cleanup', routineP = moduleN//':'//routineN
-
       CALL tddfpt_env_deallocate(t_env)
       CALL p_env_release(p_env)
 
@@ -157,9 +152,6 @@ CONTAINS
       REAL(kind=DP), DIMENSION(:), INTENT(OUT)           :: energies
       INTEGER, INTENT(IN)                                :: n_v
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'co_initial_guess', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, n_cols, n_lumos, n_orbits, n_rows, &
                                                             n_spins, oo, spin, vo
@@ -245,11 +237,10 @@ CONTAINS
          !-------------------!
          sorter_iterator => sorter_start
          DO i = 1, MIN(n_v, n_orbits*n_lumos)
-            CALL dcopy(n_rows*n_orbits, 0.0_dp, 0, guess, 1)
+            guess(:, :) = 0.0_dp
             CALL dcopy(n_rows, lumos(:, sorter_iterator%lumo), 1, &
                        guess(:, sorter_iterator%orbit), 1)
-            CALL cp_fm_set_submatrix(matrices(i, spin)%matrix, &
-                                     guess(:, 1:n_orbits))
+            CALL cp_fm_set_submatrix(matrices(i, spin)%matrix, guess)
             energies(i) = energies(i) + sorter_iterator%value/REAL(n_spins, dp)
             sorter_iterator => sorter_iterator%next
          END DO
@@ -284,9 +275,6 @@ CONTAINS
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(tddfpt_env_type), INTENT(IN)                  :: t_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'find_contributions', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, j, n_ev, n_spins, occ, output_unit, &
                                                             spin, virt
@@ -427,8 +415,7 @@ CONTAINS
       TYPE(cp_fm_p_type), DIMENSION(:)                   :: work
       INTEGER, INTENT(IN)                                :: n
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'reorthogonalize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'reorthogonalize'
 
       INTEGER                                            :: handle, i, n_spins, spin
       REAL(DP)                                           :: dot_product, tmp

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,8 +89,7 @@ CONTAINS
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(section_vals_type), POINTER                   :: subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_coordinate_cif', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'read_coordinate_cif'
       INTEGER, PARAMETER                                 :: nblock = 1000
       REAL(KIND=dp), PARAMETER                           :: threshold = 1.0E-3_dp
 
@@ -370,8 +371,6 @@ CONTAINS
    SUBROUTINE cif_get_real(parser, r)
       TYPE(cp_parser_type), POINTER                      :: parser
       REAL(KIND=dp), INTENT(OUT)                         :: r
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'cif_get_real', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_string_length)               :: s_tag
       INTEGER                                            :: iln

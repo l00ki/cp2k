@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -74,9 +76,6 @@ CONTAINS
       TYPE(cp_para_env_type), INTENT(IN), POINTER        :: para_env
       LOGICAL, INTENT(IN)                                :: print_calib
       INTEGER, INTENT(IN)                                :: unit_nr
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'calibrate_cutoff', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i, iter1, iter2, max_iter
       LOGICAL                                            :: do_print, valid_initial
@@ -213,9 +212,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: err_mm, err_ctff, C_mm
       TYPE(cp_para_env_type), INTENT(IN), POINTER        :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cutoff_minimax_error', &
-         routineP = moduleN//':'//routineN
-
       REAL(KIND=dp)                                      :: delta_mm
 
       CALL minimax_error(cutoff, hmat, vol, G_min, zet_min, l_mm, &
@@ -252,8 +248,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(OUT)                         :: err_mm, delta_mm
       INTEGER, INTENT(IN), OPTIONAL                      :: potential
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: pot_par
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'minimax_error', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i_xyz
       REAL(KIND=dp)                                      :: prod_mm_k
@@ -298,8 +292,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(INOUT)         :: minimax_aw
       REAL(KIND=dp), INTENT(OUT)                         :: err_ctff, C_mm
       TYPE(cp_para_env_type), INTENT(IN), POINTER        :: para_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cutoff_error', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i_aw, iG, iter, max_iter, nG
       REAL(KIND=dp) :: C, dG, eps_zet, err0, err1, err_c, err_ctff_curr, err_ctff_prev, err_d, G, &
@@ -409,9 +401,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: zet_max, C_mm
       REAL(KIND=dp), INTENT(OUT)                         :: err_c
       TYPE(cp_para_env_type), INTENT(IN), POINTER        :: para_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'cutoff_error_fixed_exp', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ax, ay, az, G_l, G_u, Gl_first, Gl_last, &
                                                             Gu_first, Gu_last, i_xyz, l, my_p, &

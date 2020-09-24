@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -55,7 +57,7 @@ CONTAINS
    SUBROUTINE arnoldi_iram(arnoldi_data)
       TYPE(arnoldi_data_type)                            :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'arnoldi_iram', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'arnoldi_iram'
 
       INTEGER                                            :: handle
 
@@ -78,7 +80,7 @@ CONTAINS
    SUBROUTINE compute_evals(arnoldi_data)
       TYPE(arnoldi_data_type)                            :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_evals', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_evals'
 
       INTEGER                                            :: handle
 
@@ -106,7 +108,7 @@ CONTAINS
       TYPE(m_x_v_vectors_type)                           :: vectors
       TYPE(arnoldi_data_type)                            :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'arnoldi_init', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'arnoldi_init'
 
       INTEGER                                            :: handle
 
@@ -134,8 +136,7 @@ CONTAINS
       TYPE(m_x_v_vectors_type)                           :: vectors
       TYPE(arnoldi_data_type)                            :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'gev_arnoldi_init', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'gev_arnoldi_init'
 
       INTEGER                                            :: handle
 
@@ -161,7 +162,7 @@ CONTAINS
       TYPE(m_x_v_vectors_type)                           :: vectors
       TYPE(arnoldi_data_type)                            :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_subspace', routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_subspace'
 
       INTEGER                                            :: handle
 
@@ -188,8 +189,7 @@ CONTAINS
       TYPE(m_x_v_vectors_type)                           :: vectors
       TYPE(arnoldi_data_type)                            :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'gev_build_subspace', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'gev_build_subspace'
 
       INTEGER                                            :: handle
 
@@ -218,8 +218,7 @@ CONTAINS
       TYPE(m_x_v_vectors_type)                           :: vectors
       TYPE(arnoldi_data_type)                            :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'gev_update_data', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'gev_update_data'
 
       INTEGER                                            :: handle
 
@@ -314,9 +313,6 @@ CONTAINS
    SUBROUTINE compute_evals_${nametype1}$ (arnoldi_data)
       TYPE(arnoldi_data_type)                 :: arnoldi_data
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'compute_evals_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
-
       COMPLEX(${type_prec}$), DIMENSION(:, :), ALLOCATABLE   :: levec
       TYPE(arnoldi_data_${nametype1}$_type), POINTER            :: ar_data
       INTEGER                                  :: ndim
@@ -357,9 +353,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:)     :: matrix
       TYPE(m_x_v_vectors_type)                :: vectors
       TYPE(arnoldi_data_type)                 :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'arnoldi_init_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                  :: i, iseed(4), row_size, col_size, &
                                                   nrow_local, ncol_local, pcol_group, &
@@ -445,9 +438,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE arnoldi_iram_${nametype1}$ (arnoldi_data)
       TYPE(arnoldi_data_type)                 :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'arnoldi_iram_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
 
       TYPE(arnoldi_data_${nametype1}$_type), POINTER            :: ar_data
       TYPE(arnoldi_control_type), POINTER                     :: control
@@ -546,9 +536,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:)     :: matrix
       TYPE(m_x_v_vectors_type), TARGET        :: vectors
       TYPE(arnoldi_data_type)                 :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_subspace_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                  :: i, j, ncol_local, nrow_local
       REAL(${type_prec}$)                        :: rnorm
@@ -679,8 +666,7 @@ CONTAINS
       INTEGER                                          :: nrow_local, j, pcol_group
       LOGICAL                                          :: local_comp
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'Gram_Schmidt_ortho_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'Gram_Schmidt_ortho_${nametype1}$'
       INTEGER                                  :: handle
 
       CALL timeset(routineN, handle)
@@ -717,9 +703,7 @@ CONTAINS
       ${type_nametype1}$, DIMENSION(:, :)    :: local_history, reorth_mat
       INTEGER                                          :: nrow_local, j, pcol_group
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'DGKS_ortho_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
-
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'DGKS_ortho_${nametype1}$'
       LOGICAL                                          :: local_comp
       INTEGER                                  :: handle
 
@@ -772,9 +756,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:)     :: matrix_arnoldi
       TYPE(m_x_v_vectors_type)                :: vectors
       TYPE(arnoldi_data_type)                 :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'arnoldi_init_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                  :: iseed(4), row_size, col_size, &
                                                   nrow_local, ncol_local, pcol_group, &
@@ -865,9 +846,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:)     :: matrix
       TYPE(m_x_v_vectors_type)                :: vectors
       TYPE(arnoldi_data_type)                 :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'build_subspace_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
 
       INTEGER                                  :: j, ncol_local, nrow_local, pcol_group
       TYPE(arnoldi_control_type), POINTER           :: control
@@ -972,9 +950,6 @@ CONTAINS
       TYPE(dbcsr_p_type), DIMENSION(:)     :: matrix_arnoldi
       TYPE(m_x_v_vectors_type)                :: vectors
       TYPE(arnoldi_data_type)                 :: arnoldi_data
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'gev_update_data_${nametype1}$', &
-                                     routineP = moduleN//':'//routineN
 
       TYPE(arnoldi_control_type), POINTER           :: control
       TYPE(arnoldi_data_${nametype1}$_type), POINTER            :: ar_data

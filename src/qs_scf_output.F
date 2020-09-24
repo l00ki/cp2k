@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 MODULE qs_scf_output
@@ -85,9 +87,6 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: output_unit
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_print_summary', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: nelectron_total
       LOGICAL                                            :: gapw, gapw_xc, qmmm
       TYPE(dft_control_type), POINTER                    :: dft_control
@@ -120,9 +119,6 @@ CONTAINS
       INTEGER                                            :: output_unit
       TYPE(mo_set_p_type), DIMENSION(:), POINTER         :: mos
       TYPE(dft_control_type), POINTER                    :: dft_control
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_initial_info', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: homo, ispin, nao, nelectron_spin, nmo
 
@@ -164,9 +160,6 @@ CONTAINS
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(section_vals_type), POINTER                   :: dft_section
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_write_mos', &
-         routineP = moduleN//':'//routineN
-
       IF (SIZE(mos) > 1) THEN
          CALL write_mo_set(mos(1)%mo_set, atomic_kind_set, qs_kind_set, particle_set, 4, &
                            dft_section, spin="ALPHA", last=.FALSE.)
@@ -197,9 +190,6 @@ CONTAINS
       TYPE(qs_energy_type), POINTER                      :: energy
       INTEGER                                            :: total_steps
       LOGICAL, INTENT(IN)                                :: should_stop, outer_loop_converged
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_outer_loop_info', &
-         routineP = moduleN//':'//routineN
 
       REAL(KIND=dp)                                      :: outer_loop_eps
 
@@ -238,9 +228,6 @@ CONTAINS
       LOGICAL                                            :: just_energy
       REAL(KIND=dp)                                      :: t1, t2
       TYPE(qs_energy_type), POINTER                      :: energy
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_loop_info', &
-         routineP = moduleN//':'//routineN
 
       IF ((output_unit > 0) .AND. scf_env%print_iter_line) THEN
          IF (just_energy) THEN
@@ -295,8 +282,7 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
       LOGICAL, INTENT(IN)                                :: gapw, gapw_xc
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_print_scf_summary', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_print_scf_summary'
 
       INTEGER                                            :: bc, handle, ispin, psolver
       REAL(kind=dp)                                      :: exc1_energy, exc_energy, &
@@ -515,8 +501,7 @@ CONTAINS
       TYPE(qs_scf_env_type), POINTER                     :: scf_env
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_loop_print', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_scf_loop_print'
 
       INTEGER                                            :: after, handle, ic, ispin, iw
       LOGICAL                                            :: do_kpoints, omit_headers
@@ -662,9 +647,6 @@ CONTAINS
       LOGICAL, INTENT(IN)                                :: should_stop, outer_loop_converged, &
                                                             cdft_loop
 
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_cdft_info', &
-         routineP = moduleN//':'//routineN
-
       REAL(KIND=dp)                                      :: outer_loop_eps
 
       IF (cdft_loop) THEN
@@ -698,9 +680,6 @@ CONTAINS
    SUBROUTINE qs_scf_cdft_initial_info(output_unit, cdft_control)
       INTEGER                                            :: output_unit
       TYPE(cdft_control_type), POINTER                   :: cdft_control
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_cdft_initial_info', &
-         routineP = moduleN//':'//routineN
 
       IF (output_unit > 0) THEN
          WRITE (output_unit, '(/,A)') &
@@ -843,9 +822,6 @@ CONTAINS
    SUBROUTINE qs_scf_cdft_constraint_info(output_unit, cdft_control)
       INTEGER                                            :: output_unit
       TYPE(cdft_control_type), POINTER                   :: cdft_control
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_scf_cdft_constraint_info', &
-         routineP = moduleN//':'//routineN
 
       INTEGER                                            :: igroup
 

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -81,8 +83,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: subsys_section
       INTEGER, INTENT(IN)                                :: psf_type
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'read_topology_psf', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'read_topology_psf'
 
       CHARACTER(LEN=2*default_string_length)             :: psf_format
       CHARACTER(LEN=3)                                   :: c_int
@@ -416,8 +417,7 @@ CONTAINS
       TYPE(topology_parameters_type), INTENT(INOUT)      :: topology
       TYPE(section_vals_type), POINTER                   :: subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'psf_post_process', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'psf_post_process'
 
       INTEGER                                            :: handle, i, iatom, ibond, ionfo, iw, &
                                                             jatom, N, natom, nbond, nonfo, nphi, &
@@ -563,7 +563,7 @@ CONTAINS
       TYPE(topology_parameters_type), INTENT(INOUT)      :: topology
       TYPE(section_vals_type), POINTER                   :: section, subsys_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'idm_psf', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'idm_psf'
 
       INTEGER                                            :: handle, i, iend, iend1, istart, istart1, &
                                                             item, iw, j, mol_id, n_rep, natom, &
@@ -723,8 +723,7 @@ CONTAINS
       TYPE(topology_parameters_type), INTENT(INOUT)      :: topology
       TYPE(section_vals_type), POINTER                   :: subsys_section, force_env_section
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'write_topology_psf', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'write_topology_psf'
 
       CHARACTER(LEN=2*default_string_length)             :: psf_format
       CHARACTER(LEN=default_string_length)               :: c_int, my_tag1, my_tag2, my_tag3, record

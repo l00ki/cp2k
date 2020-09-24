@@ -1,5 +1,5 @@
 #
-# make -j 16 sopt popt ssmp psmp
+# make -j 16 ssmp psmp
 #
 # will now perform a parallel build of 4 cp2k executables
 #
@@ -11,23 +11,17 @@ CP2KHOME     := $(abspath $(shell pwd))
 export CP2KHOME
 endif
 
-ifneq ($(SPACK_COMPILER_SPEC),)
- # SPACK_COMPILER_SPEC is set when running in a Spack build-env
- ARCH         := $(shell spack arch)-$(shell echo $${SPACK_COMPILER_SPEC%%@*})
-else
- ARCH         := local
-endif
-
-export VERSION=sopt
+ARCH         := local
+export VERSION=ssmp
 
 MAKEFILE     := $(CP2KHOME)/Makefile
 ARCHDIR      := $(CP2KHOME)/arch
-DOXYGENDIR   := $(CP2KHOME)/doc/doxygen
 DATA_DIR     := $(CP2KHOME)/data
 MAINEXEDIR   := $(CP2KHOME)/exe
 MAINLIBDIR   := $(CP2KHOME)/lib
 MAINOBJDIR   := $(CP2KHOME)/obj
 MAINTSTDIR   := $(CP2KHOME)/regtesting
+PRECOMMITDIR := $(CP2KHOME)/obj/precommit
 PRETTYOBJDIR := $(CP2KHOME)/obj/prettified
 DOXIFYOBJDIR := $(CP2KHOME)/obj/doxified
 TOOLSRC      := $(CP2KHOME)/tools
@@ -76,8 +70,10 @@ endif
 .PHONY : $(VERSION) $(EXE_NAMES) \
          dirs makedep default_target all \
          toolversions extversions extclean libcp2k cp2k_shell exts python-bindings \
+         pre-commit pre-commit-clean \
+         pretty precommit precommitclean doxygenclean doxygen \
+         fpretty fprettyclean \
          doxify doxifyclean \
-         pretty prettyclean doxygen/clean doxygen \
          install clean realclean distclean mrproper help \
          test testbg testclean testrealclean \
          data \
@@ -126,17 +122,15 @@ $(EXE_NAMES) all toolversions extversions extclean libcp2k cp2k_shell exts $(EXT
 
 # stage 2: Store the version target in $(ONEVERSION),
 #          Call make recursively with $(ORIG_TARGET) as target.
-$(filter-out sopt, popt, $(VERSION)) :
+$(filter-out sopt, popt, $(VERSION)):
 	@+$(MAKE) --no-print-directory -f $(MAKEFILE) $(ORIG_TARGET) ORIG_TARGET="" VERSION="" ONEVERSION=$@
 
 sopt:
 	@+echo "Version sopt is now an alias for ssmp with OMP_NUM_THREADS=1."
 	@+$(MAKE) --no-print-directory -f $(MAKEFILE) $(ORIG_TARGET) ORIG_TARGET="" VERSION="" ONEVERSION="ssmp"
-	cd $(EXEDIR); ln -sf cp2k.ssmp cp2k.sopt
 popt:
 	@+echo "Version popt is now an alias for psmp with OMP_NUM_THREADS=1."
 	@+$(MAKE) --no-print-directory -f $(MAKEFILE) $(ORIG_TARGET) ORIG_TARGET="" VERSION="" ONEVERSION="psmp"
-	cd $(EXEDIR); ln -sf cp2k.psmp cp2k.popt
 
 else
 
@@ -223,8 +217,21 @@ $(ALL_OBJECTS): $(EXTSDEPS_MOD)
 $(ALL_EXE_OBJECTS): $(EXTSDEPS_LIB)
 
 # stage 4: Include $(OBJDIR)/all.dep, expand target all and libcp2k, and perform actual build.
+
+ifeq ("$(ONEVERSION)","psmp")
+all: $(foreach e, $(EXE_NAMES) cp2k_shell, $(EXEDIR)/$(e).$(ONEVERSION)) $(EXEDIR)/cp2k.popt
+else ifeq ("$(ONEVERSION)","ssmp")
+all: $(foreach e, $(EXE_NAMES) cp2k_shell, $(EXEDIR)/$(e).$(ONEVERSION)) $(EXEDIR)/cp2k.sopt
+else
 all: $(foreach e, $(EXE_NAMES) cp2k_shell, $(EXEDIR)/$(e).$(ONEVERSION))
+endif
 $(LIBDIR)/libcp2k$(ARCHIVE_EXT) : $(ALL_NONEXE_OBJECTS)
+
+# Create always a cp2k.[ps]opt soft link for each cp2k.[ps]smp executable
+$(EXEDIR)/cp2k.sopt: $(EXEDIR)/cp2k.ssmp
+	cd $(EXEDIR); ln -sf cp2k.ssmp cp2k.sopt
+$(EXEDIR)/cp2k.popt: $(EXEDIR)/cp2k.psmp
+	cd $(EXEDIR); ln -sf cp2k.psmp cp2k.popt
 
 $(EXEDIR)/cp2k_shell.$(ONEVERSION): $(EXEDIR)/cp2k.$(ONEVERSION)
 	cd $(EXEDIR); ln -sf cp2k.$(ONEVERSION) cp2k_shell.$(ONEVERSION)
@@ -292,8 +299,10 @@ clean:
 	rm -rf $(foreach v, $(VERSION), $(MAINLIBDIR)/$(ARCH)/$(v))
 OTHER_HELP += "clean : Remove intermediate object and mod files, but not the libraries and executables, for given ARCH and VERSION"
 
+# The Intel compiler creates a corresponding .dbg file for each executable when static linking of the Intel MPI library is requested (flag -static_mpi)
+# and also potential soft links (.popt and .sopt files) have to be cleaned
 execlean:
-	rm -rf $(foreach v, $(VERSION), $(EXEDIR)/*.$(v))
+	rm -rf $(foreach v, $(VERSION), $(EXEDIR)/*.$(v) $(EXEDIR)/*.$(v).dbg) $(EXEDIR)/cp2k.[ps]opt
 OTHER_HELP += "execlean : Remove the executables, for given ARCH and VERSION"
 
 #
@@ -316,19 +325,19 @@ OTHER_HELP += "testrealclean : Remove all LAST-* and TEST-* files for given ARCH
 #
 # Remove all files from previous builds
 #
-distclean: prettyclean doxifyclean testrealclean
+distclean: precommitclean fprettyclean doxifyclean testrealclean
 	rm -rf $(DOXYGENDIR) $(MAINEXEDIR) $(MAINOBJDIR) $(MAINLIBDIR) $(MAINTSTDIR)
 OTHER_HELP += "distclean : Remove all files from previous builds"
 
 # Prettyfier stuff ==========================================================
 vpath %.pretty $(PRETTYOBJDIR)
 
-pretty: $(addprefix $(PRETTYOBJDIR)/, $(ALL_OBJECTS:.o=.pretty)) $(addprefix $(PRETTYOBJDIR)/, $(INCLUDED_SRC_FILES:.f90=.pretty_included))
-TOOL_HELP += "pretty : Reformat all source files in a pretty way."
+fpretty: $(addprefix $(PRETTYOBJDIR)/, $(ALL_OBJECTS:.o=.pretty)) $(addprefix $(PRETTYOBJDIR)/, $(INCLUDED_SRC_FILES:.f90=.pretty_included))
+TOOL_HELP += "fpretty : Reformat all Fortran source files in a pretty way."
 
-prettyclean:
+fprettyclean:
 	-rm -rf $(PRETTYOBJDIR) $(ALL_PREPRETTY_DIRS)
-TOOL_HELP += "prettyclean : Remove prettify marker files and preprettify directories"
+TOOL_HELP += "fprettyclean : Remove prettify marker files and preprettify directories"
 
 $(PRETTYOBJDIR)/%.pretty: %.F $(DOXIFYOBJDIR)/%.doxified
 	@mkdir -p $(PRETTYOBJDIR)
@@ -379,25 +388,39 @@ $(DOXIFYOBJDIR)/%.doxified: %.cpp
 	@touch $@
 
 # doxygen stuff =============================================================
-doxygen/clean:
-	-rm -rf $(DOXYGENDIR)
-TOOL_HELP += "doxygen/clean : Remove the generated doxygen documentation"
+doxygenclean:
+	-rm -rf $(CP2KHOME)/doxygen
+TOOL_HELP += "doxygenclean : Remove the generated doxygen documentation"
 
-# Automatic source code documentation using Doxygen
-# Prerequisites:
-# - stable doxygen release 1.5.4 (Oct. 27, 2007)
-# - graphviz (2.16.1)
-# - webdot (2.16)
-#
-doxygen: doxygen/clean
-	@mkdir -p $(DOXYGENDIR)
-	@mkdir -p $(DOXYGENDIR)/html
-	@echo "<html><body>Sorry, the Doxygen documentation is currently being updated. Please try again in a few minutes.</body></html>" > $(DOXYGENDIR)/html/index.html
-	cp $(ALL_SRC_FILES) $(DOXYGENDIR)
-	@for i in $(DOXYGENDIR)/*.F ; do mv $${i}  $${i%%.*}.f90; done ;
-	@sed -e "s/#revision#/$(REVISION)/" $(TOOLSRC)/doxify/Doxyfile.template >$(DOXYGENDIR)/Doxyfile
-	cd $(DOXYGENDIR); doxygen ./Doxyfile 2>&1 | tee ./html/doxygen.out
+doxygen: doxygenclean
+	$(TOOLSRC)/doxify/generate_doxygen.sh
 TOOL_HELP += "doxygen : Generate the doxygen documentation"
+
+# Precommit stuff ===========================================================
+pretty: precommit
+TOOL_HELP += "pretty : Alias for precommit."
+
+precommit:
+	$(TOOLSRC)/precommit/precommit.py --allow-modifications
+TOOL_HELP += "precommit : Run precommit checks."
+
+precommitclean:
+	-rm -rf $(PRECOMMITDIR)
+TOOL_HELP += "precommitclean : Remove temporary files from precommit checks."
+
+# pre-commit script for manual execution ====================================
+
+pre-commit:
+	@$(TOOLSRC)/pre-commit-install.sh
+	@$(CP2KHOME)/.pre-commit-env/bin/pre-commit run -a
+
+TOOL_HELP += "pre-commit : Install pre-commit tools, register git hooks and run a full pre-commit check"
+
+pre-commit-clean:
+	-@$(CP2KHOME)/.pre-commit-env/bin/pre-commit uninstall
+	-@$(CP2KHOME)/.pre-commit-env/bin/pre-commit clean
+	-rm -rf $(CP2KHOME)/.pre-commit-env
+TOOL_HELP += "pre-commit-clean : Uninstall git hooks, drop the pre-commit tool cache and remove its environment"
 
 # data stuff ================================================================
 data: data/POTENTIAL

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -68,9 +70,6 @@ CONTAINS
       TYPE(qs_ot_type)                                   :: qs_ot_env
       TYPE(preconditioner_type), POINTER                 :: preconditioner
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_new_preconditioner', &
-         routineP = moduleN//':'//routineN
-
       INTEGER                                            :: ncoef
 
       qs_ot_env%preconditioner => preconditioner
@@ -110,8 +109,7 @@ CONTAINS
       TYPE(qs_ot_type)                                   :: qs_ot_env
       TYPE(dbcsr_type), POINTER                          :: C_NEW, SC, G_OLD, D
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_on_the_fly_localize', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_on_the_fly_localize'
       INTEGER, PARAMETER                                 :: taylor_order = 50
       REAL(KIND=dp), PARAMETER                           :: alpha = 0.1_dp, f2_eps = 0.01_dp
 
@@ -235,7 +233,7 @@ CONTAINS
       TYPE(dbcsr_type)                                   :: C_OLD, C_TMP, C_NEW, P, SC
       LOGICAL, INTENT(IN)                                :: update
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_ref_chol', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ot_ref_chol'
 
       INTEGER                                            :: handle, k, n
 
@@ -276,7 +274,7 @@ CONTAINS
       TYPE(dbcsr_type)                                   :: C_OLD, C_TMP, C_NEW, P, SC
       LOGICAL, INTENT(IN)                                :: update
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_ref_lwdn', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ot_ref_lwdn'
 
       INTEGER                                            :: handle, i, k, n
       REAL(dp), ALLOCATABLE, DIMENSION(:)                :: eig, fun
@@ -339,7 +337,7 @@ CONTAINS
       REAL(dp), INTENT(IN)                               :: norm_in
       LOGICAL, INTENT(IN)                                :: update
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_ref_poly', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ot_ref_poly'
 
       INTEGER                                            :: handle, irefine, k, n
       LOGICAL                                            :: quick_exit
@@ -467,9 +465,6 @@ CONTAINS
       TYPE(qs_ot_type)                                   :: qs_ot_env1
       LOGICAL                                            :: update
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_ref_update', &
-         routineP = moduleN//':'//routineN
-
       update = .FALSE.
       SELECT CASE (qs_ot_env1%settings%ot_method)
       CASE ("CG")
@@ -520,8 +515,7 @@ CONTAINS
                                                             matrix_gx_old, matrix_dx
       TYPE(qs_ot_type)                                   :: qs_ot_env, qs_ot_env1
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_orbitals_ref', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_orbitals_ref'
 
       CHARACTER(LEN=4)                                   :: ortho_irac
       INTEGER                                            :: handle, k, n
@@ -621,7 +615,7 @@ CONTAINS
       INTEGER, INTENT(in)                                :: irac_degree
       REAL(dp), INTENT(in)                               :: eps_irac_filter_matrix
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_refine', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ot_refine'
 
       INTEGER                                            :: handle, k
       REAL(dp)                                           :: occ_in, occ_out, r
@@ -708,8 +702,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: matrix_hc, matrix_x, matrix_sx, matrix_gx
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative_ref', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative_ref'
 
       INTEGER                                            :: handle, k, n
       REAL(dp)                                           :: occ_in, occ_out
@@ -758,7 +751,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: matrix_x, matrix_sx
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_p', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ot_get_p'
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 
       INTEGER                                            :: handle, k, max_iter, n
@@ -806,8 +799,7 @@ CONTAINS
 
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_generate_rotation', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_generate_rotation'
       COMPLEX(KIND=dp), PARAMETER                        :: cone = (1.0_dp, 0.0_dp), &
                                                             czero = (0.0_dp, 0.0_dp)
 
@@ -872,8 +864,7 @@ CONTAINS
    SUBROUTINE qs_ot_rot_mat_derivative(qs_ot_env)
       TYPE(qs_ot_type)                         :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_rot_mat_derivative', &
-                                     routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_rot_mat_derivative'
 
       COMPLEX(KIND=dp), PARAMETER              :: cone = (1.0_dp, 0.0_dp), &
                                                   czero = (0.0_dp, 0.0_dp)
@@ -1026,8 +1017,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: matrix_c, matrix_x
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_orbitals', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_orbitals'
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 
       INTEGER                                            :: handle, k, n
@@ -1082,8 +1072,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: matrix_hc, matrix_x, matrix_sx, matrix_gx
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative'
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 
       INTEGER                                            :: handle, k, n, ortho_k
@@ -1174,8 +1163,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: matrix_hc, matrix_x, matrix_sx, matrix_gx
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative_diag', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative_diag'
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 
       INTEGER                                            :: handle, k, n
@@ -1250,8 +1238,7 @@ CONTAINS
       TYPE(dbcsr_type), POINTER                          :: matrix_hc, matrix_x, matrix_sx, matrix_gx
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative_taylor', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_get_derivative_taylor'
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 
       INTEGER                                            :: handle, i, k, n
@@ -1352,8 +1339,7 @@ CONTAINS
    SUBROUTINE qs_ot_p2m_taylor(qs_ot_env)
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_p2m_taylor', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ot_p2m_taylor'
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 
       INTEGER                                            :: handle, i, k
@@ -1417,7 +1403,7 @@ CONTAINS
 
       TYPE(qs_ot_type)                                   :: qs_ot_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_p2m_diag', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'qs_ot_p2m_diag'
       REAL(KIND=dp), PARAMETER                           :: rone = 1.0_dp, rzero = 0.0_dp
 
       INTEGER                                            :: blk, col, col_offset, col_size, handle, &
@@ -1528,8 +1514,6 @@ CONTAINS
 
       REAL(KIND=dp), INTENT(IN)                          :: xa, ya
       REAL(KIND=dp)                                      :: qs_ot_sincf
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'qs_ot_sincf', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
       REAL(KIND=dp)                                      :: a, b, rs, sf, x, xs, y, ybx, ybxs

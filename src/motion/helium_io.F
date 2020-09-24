@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -109,8 +111,7 @@ CONTAINS
       CHARACTER(LEN=default_path_length)                 :: file_name
       TYPE(cp_para_env_type), POINTER                    :: para_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_read_xyz', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'helium_read_xyz'
 
       CHARACTER(LEN=default_string_length)               :: strtmp
       INTEGER                                            :: frame, handle, istat, j, natom
@@ -192,9 +193,6 @@ CONTAINS
    SUBROUTINE helium_write_setup(helium)
 
       TYPE(helium_solvent_type), POINTER                 :: helium
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_write_setup', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(len=default_string_length)               :: msg_str, my_label, stmp, stmp1, stmp2, &
                                                             unit_str
@@ -447,9 +445,6 @@ CONTAINS
 
       CHARACTER(len=*), INTENT(IN)                       :: line
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_write_line', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(len=default_string_length)               :: my_label
       INTEGER                                            :: unit_nr
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -478,8 +473,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_energy', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_energy'
 
       INTEGER                                            :: handle, iteration, k, m, unit_nr
       LOGICAL                                            :: cepsample, file_is_new, should_output
@@ -596,8 +590,7 @@ CONTAINS
       CHARACTER(len=*), OPTIONAL                         :: fpos
       LOGICAL, OPTIONAL                                  :: avg
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_vector', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_vector'
 
       CHARACTER(len=default_string_length)               :: my_fpos
       INTEGER                                            :: handle, i, irank, msglen, nenv, offset, &
@@ -732,8 +725,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_accepts', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_accepts'
 
       INTEGER                                            :: handle, i, j, unit_nr
       LOGICAL                                            :: file_is_new, should_output
@@ -802,8 +794,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_perm', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'helium_print_perm'
 
       CHARACTER                                          :: left_delim, right_delim
       CHARACTER(len=default_string_length)               :: msg_str, my_middle_name, stmp
@@ -999,8 +990,7 @@ CONTAINS
       TYPE(pint_env_type), POINTER                       :: pint_env
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_action', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_action'
 
       CHARACTER(len=default_string_length)               :: my_middle_name, stmp
       INTEGER                                            :: handle, i, irank, iteration, k, offset, &
@@ -1118,8 +1108,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_coordinates', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_coordinates'
 
       CHARACTER(3)                                       :: resName
       CHARACTER(len=default_string_length)               :: fmt_string, my_middle_name, stmp
@@ -1366,8 +1355,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_rdf', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'helium_print_rdf'
 
       CHARACTER(len=default_string_length)               :: stmp
       INTEGER                                            :: handle, ia, ic, id, itmp, iweight, k, &
@@ -1498,8 +1486,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_rho', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'helium_print_rho'
 
       CHARACTER(len=default_string_length)               :: comment, fname
       INTEGER                                            :: handle, ic, id, itmp, iweight, k, &
@@ -1632,8 +1619,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:, :, :), INTENT(IN), &
          POINTER                                         :: DATA
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_write_cubefile', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_write_cubefile'
 
       INTEGER                                            :: handle, ix, iy, iz, nw
       REAL(KIND=dp)                                      :: delr, inva3
@@ -1692,8 +1678,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_plength', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_plength'
 
       INTEGER                                            :: handle, i, unit_nr
       LOGICAL                                            :: is_new, should_output
@@ -1752,8 +1737,7 @@ CONTAINS
 
       TYPE(helium_solvent_p_type), DIMENSION(:), POINTER :: helium_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_force', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER :: routineN = 'helium_print_force'
 
       CHARACTER(len=default_string_length)               :: msgstr
       INTEGER                                            :: handle, ia, ib, ic, idim, unit_nr

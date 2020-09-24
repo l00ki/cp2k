@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -87,9 +89,6 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: root_section
       INTEGER, INTENT(IN)                                :: n_workers
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'swarm_master_init', &
-         routineP = moduleN//':'//routineN
-
       TYPE(cp_logger_type), POINTER                      :: logger
 
       master%swarm_section => section_vals_get_subs_vals(root_section, "SWARM")
@@ -130,8 +129,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE replay_comlog(master)
       TYPE(swarm_master_type)                            :: master
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'replay_comlog', routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=default_path_length)                 :: filename
       CHARACTER(LEN=default_string_length)               :: command_log
@@ -230,9 +227,6 @@ CONTAINS
       TYPE(swarm_message_type), INTENT(IN)               :: report
       TYPE(swarm_message_type), INTENT(OUT)              :: cmd
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'swarm_master_steer', &
-         routineP = moduleN//':'//routineN
-
       CHARACTER(len=default_string_length)               :: command, status
       INTEGER                                            :: handle, worker_id
       LOGICAL                                            :: should_stop
@@ -323,9 +317,6 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE swarm_master_finalize(master)
       TYPE(swarm_master_type)                            :: master
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'swarm_master_finalize', &
-         routineP = moduleN//':'//routineN
 
       TYPE(cp_logger_type), POINTER                      :: logger
 

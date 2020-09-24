@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -78,9 +80,6 @@ CONTAINS
    SUBROUTINE qs_epr_hyp_calc(qs_env)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
-
-      CHARACTER(LEN=*), PARAMETER :: routineN = 'qs_epr_hyp_calc', &
-         routineP = moduleN//':'//routineN
 
       CHARACTER(LEN=2)                                   :: element_symbol
       INTEGER                                            :: bo(2), group, ia, iat, iatom, idir1, &

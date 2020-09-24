@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -48,8 +50,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: e(:), mu, T, maxocc
       INTEGER, INTENT(IN), OPTIONAL                      :: estate
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: festate
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'Fermi', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: I, Nstate
       REAL(KIND=dp)                                      :: arg, occupation, term1, term2, tmp, &
@@ -121,8 +121,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: mu
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: wk
       REAL(KIND=dp), INTENT(IN)                          :: t, maxocc
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'Fermi2', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: ik, is, nkp, nmo
       REAL(KIND=dp)                                      :: arg, beta, term1, term2, tmp, tmp2, &
@@ -205,8 +203,6 @@ CONTAINS
       REAL(KIND=dp), INTENT(IN)                          :: e(:), N, T, maxocc
       INTEGER, INTENT(IN), OPTIONAL                      :: estate
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: festate
-
-      CHARACTER(len=*), PARAMETER :: routineN = 'FermiFixed', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: iter, my_estate
       REAL(KIND=dp)                                      :: mu_max, mu_min, mu_now, my_festate, &
@@ -291,7 +287,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: wk
       REAL(KIND=dp), INTENT(IN)                          :: t, maxocc
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'Fermikp', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: epsocc = 1.0e-12_dp
 
       INTEGER                                            :: iter
@@ -345,7 +340,6 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), INTENT(IN)            :: wk
       REAL(KIND=dp), INTENT(IN)                          :: t
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'Fermikp2', routineP = moduleN//':'//routineN
       REAL(KIND=dp), PARAMETER                           :: epsocc = 1.0e-12_dp
 
       INTEGER                                            :: iter
@@ -421,8 +415,7 @@ CONTAINS
       INTEGER, INTENT(IN), OPTIONAL                      :: estate
       REAL(KIND=dp), INTENT(IN), OPTIONAL                :: festate
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'FermiFixedDeriv', &
-         routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'FermiFixedDeriv'
 
       INTEGER                                            :: handle, I, my_estate, Nstate
       REAL(KIND=dp)                                      :: h, mux, my_festate

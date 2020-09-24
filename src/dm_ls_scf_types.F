@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -167,7 +169,7 @@ CONTAINS
    SUBROUTINE ls_scf_release(ls_scf_env)
       TYPE(ls_scf_env_type), POINTER                     :: ls_scf_env
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'ls_scf_release', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'ls_scf_release'
 
       INTEGER                                            :: handle, ispin, istore
 

@@ -1,6 +1,8 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright (C) 2000 - 2020  CP2K developers group                                               !
+!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!                                                                                                  !
+!   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
 
 ! **************************************************************************************************
@@ -38,7 +40,7 @@ MODULE cg_optimizer
 
    IMPLICIT NONE
    PRIVATE
-#include "gopt_f77_methods.h"
+#include "gopt_f77_methods.f90"
 
    PUBLIC :: geoopt_cg
    LOGICAL, PRIVATE, PARAMETER :: debug_this_module = .TRUE.
@@ -70,7 +72,7 @@ CONTAINS
       REAL(KIND=dp), DIMENSION(:), POINTER               :: x0
       LOGICAL, INTENT(OUT), OPTIONAL                     :: do_update
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'geoopt_cg', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'geoopt_cg'
 
       INTEGER                                            :: handle, output_unit
       LOGICAL                                            :: my_do_update
@@ -116,7 +118,7 @@ CONTAINS
       TYPE(gopt_f_type), POINTER                         :: gopt_env
       LOGICAL, INTENT(OUT), OPTIONAL                     :: do_update
 
-      CHARACTER(len=*), PARAMETER :: routineN = 'cp_cg_main', routineP = moduleN//':'//routineN
+      CHARACTER(len=*), PARAMETER                        :: routineN = 'cp_cg_main'
 
       CHARACTER(LEN=5)                                   :: wildcard
       INTEGER                                            :: handle, iter_nr, its, max_steep_steps, &
