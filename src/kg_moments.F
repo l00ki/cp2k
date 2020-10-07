@@ -215,11 +215,11 @@ contains
                moments(isubsys, im) = -focc * cell%hmat(im, im) / twopi &
                     * aimag(log(exp(-gaussi * twopi / cell%hmat(im, im) * strace)))
             end do
+            ! local nuclear moments
             do im = 1, nm
                lx = indco(1, im+1)
                ly = indco(2, im+1)
                lz = indco(3, im+1)
-               ! local nuclear moments
                do iatom = first_atoms(isubsys), last_atoms(isubsys)
                   atomic_kind => particles(iatom)%atomic_kind
                   call get_atomic_kind(atomic_kind, kind_number=akind)

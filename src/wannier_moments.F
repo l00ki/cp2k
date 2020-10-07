@@ -316,8 +316,8 @@ contains
                   ly = indco(2, k)
                   lz = indco(3, k)
                   do l = 1, nstates
-                     !r = wrap(wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc, cell)
-                     r = pbc(wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc, cell)
+                     r = wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc
+                     r = pbc(r, cell)
                      zmom = zwfc
                      if (lx /= 0) zmom = zmom * r(1)**lx
                      if (ly /= 0) zmom = zmom * r(2)**ly
@@ -337,7 +337,8 @@ contains
                      call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
                      if (.not. ghost .and. .not. floating) then
                         call get_qs_kind(kinds(akind), core_charge=zeff)
-                        r = pbc(particles(l)%r - rcc, cell)
+                        r = particles(l)%r - rcc
+                        r = pbc(r, cell)
                         zmom = zeff
                         if (lx /= 0) zmom = zmom * r(1)**lx
                         if (ly /= 0) zmom = zmom * r(2)**ly
@@ -356,8 +357,8 @@ contains
                   ly = indco(2, k)
                   lz = indco(3, k)
                   do l = 1, nstates
-                     !r = wrap(wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc, cell)
-                     r = pbc(wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc, cell)
+                     r = wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc
+                     r = pbc(r, cell)
                      zmom = zwfc
                      if (lx /= 0) zmom = zmom * r(1)**lx
                      if (ly /= 0) zmom = zmom * r(2)**ly
@@ -377,7 +378,8 @@ contains
                      call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
                      if (.not. ghost .and. .not. floating) then
                         call get_qs_kind(kinds(akind), core_charge=zeff)
-                        r = pbc(particles(l)%r - rcc, cell)
+                        r = particles(l)%r - rcc
+                        r = pbc(r, cell)
                         zmom = zeff
                         if (lx /= 0) zmom = zmom * r(1)**lx
                         if (ly /= 0) zmom = zmom * r(2)**ly
@@ -411,7 +413,7 @@ contains
                         call cp_cfm_get_element(vecopvec(l)%matrix, k, k, z)
                         zmom = zwfc * cell%hmat(l-1, l-1) / twopi * &
                              aimag(log(exp(-gaussi * twopi / cell%hmat(l-1, l-1) * real(z))))
-                        moments(l, j) = moments(l, j) - zmom
+                        !moments(l, j) = moments(l, j) - zmom
                      end do
                   end do
                end if
@@ -465,9 +467,9 @@ contains
                         !   print *, "DBG| zmom", zmom
                         !end if
                         !moments(isubsys, im) = moments(isubsys, im) + zmom
-                        moments(k, j) = moments(k, j) &! zmom
-                             + 0.5 * zeff * cell%hmat(k-1, k-1) / twopi &
-                             * aimag(log(exp(-gaussi * twopi / cell%hmat(k-1, k-1) * zmom)))
+                        !moments(k, j) = moments(k, j) &! zmom
+                        !     + 0.5 * zeff * cell%hmat(k-1, k-1) / twopi &
+                        !     * aimag(log(exp(-gaussi * twopi / cell%hmat(k-1, k-1) * zmom)))
                      end if
                   end do  ! atoms
                end do
