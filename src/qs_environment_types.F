@@ -1404,7 +1404,7 @@ CONTAINS
    SUBROUTINE qs_env_release(qs_env)
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
-      INTEGER                                            :: i
+      INTEGER                                            :: i, j
 
       IF (ASSOCIATED(qs_env)) THEN
          CPASSERT(qs_env%ref_count > 0)

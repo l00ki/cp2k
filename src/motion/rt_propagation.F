@@ -355,7 +355,7 @@ CONTAINS
             CALL rt_prop_output(qs_env, real_time_propagation, delta_iter=rtp%delta_iter, used_time=used_time)
             CALL rt_write_input_restart(force_env=force_env)
             IF (MODULO(i_step, dft_control%localize_each) == 0) THEN
-               CALL rtp_localize(qs_env, rtp, dft_control%localize_each)
+               CALL rtp_localize(qs_env, rtp)
             END IF
             IF (should_stop) EXIT
          ELSE

@@ -868,11 +868,10 @@ CONTAINS
 !> \par History 03/2020 created [LS]
 !> \author Lukas Schreder
 ! **************************************************************************************************
-   SUBROUTINE rtp_localize(qs_env, rtp, localize_method)
+   SUBROUTINE rtp_localize(qs_env, rtp)
 
      TYPE(qs_environment_type), POINTER, INTENT(IN)  :: qs_env
      TYPE(rt_prop_type), POINTER, INTENT(IN)         :: rtp
-     INTEGER, INTENT(IN)                             :: localize_method
 
      CHARACTER(len=*), PARAMETER :: routineN = "rtp_localize", &
         routineP = moduleN//":"//routineN

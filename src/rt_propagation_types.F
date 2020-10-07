@@ -322,7 +322,7 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE get_rtp(rtp, exp_H_old, exp_H_new, H_last_iter, rho_old, rho_next, rho_new, mos, mos_new, mos_old, mos_next, &
                       S_inv, S_half, S_minus_half, B_mat, C_mat, propagator_matrix, mixing, mixing_factor, &
-                      S_der, dt, nsteps, SinvH, SinvB, admm_mos, states)
+                      S_der, dt, nsteps, SinvH, SinvB, admm_mos)
 
       TYPE(rt_prop_type), POINTER                        :: rtp
       TYPE(dbcsr_p_type), DIMENSION(:), OPTIONAL, &
@@ -344,8 +344,6 @@ CONTAINS
          POINTER                                         :: SinvH, SinvB
       TYPE(cp_fm_p_type), DIMENSION(:), OPTIONAL, &
          POINTER                                         :: admm_mos
-      TYPE(rtp_states_type), DIMENSION(:, :), OPTIONAL, &
-           POINTER                                       :: states
 
       CPASSERT(ASSOCIATED(rtp))
       IF (PRESENT(exp_H_old)) exp_H_old => rtp%exp_H_old

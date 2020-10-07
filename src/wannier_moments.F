@@ -73,6 +73,7 @@ module wannier_moments
                                     set_qs_env
    use qs_kind_types,         only: get_qs_kind, &
                                     qs_kind_type
+   use qs_loc_molecules,      only: wfc_to_molecule
    use qs_loc_types,          only: get_qs_loc_env, &
                                     qs_loc_env_new_type
    use qs_moments,            only: build_local_moment_matrix
@@ -118,11 +119,11 @@ contains
       character(len=default_string_length)  :: iter, name, nameheader
       complex(dp)                           :: z
       integer                               :: akind, handle, i, j, k, l, lx, ly, lz, nao, natoms, &
-           nlocalstates(2), nmo, nmoments, norders, nspins, nstates, nsubsets, unit_nr
+           nlocalstates(2), nmo, nmoments, norders, nspins, nstates, nsubsets, unit_nr!, local_natoms
       integer, allocatable                  :: first_atoms(:), last_atoms(:), nbasis(:)
       logical                               :: do_periodic, do_orbitals, first_time, floating, ghost
       real(dp)                              :: abc(3), eL(3), r(3), rcc(3), zeff, zmom, zwfc
-      real(dp), allocatable                 :: moments(:, :), nuclear_moments(:)
+      real(dp), allocatable                 :: moments(:, :), nuclear_moments(:), local_nuclear_moments(:)
       real(dp), pointer                     :: ref_point(:)
       type(atomic_kind_type), pointer       :: atomic_kind
       type(cell_type), pointer              :: cell
@@ -156,7 +157,8 @@ contains
 
       ! get parameters
       call get_qs_env(qs_env, cell=cell, dft_control=dft_control, matrix_s=matrix_s, &
-           particle_set=particles, qs_kind_set=kinds, wanniercentres=wcs, wannierorigins=wos, para_env=para_env)
+           particle_set=particles, qs_kind_set=kinds, wanniercentres=wcs, wannierorigins=wos, &
+           para_env=para_env)
       if (do_rtp) then
          call get_qs_env(qs_env, rtp=rtp)
       end if
@@ -227,13 +229,42 @@ contains
             current_states => qs_env%persistent_states
             do i = 1, nspins
                do j = 1, nsubsets
-                  if (do_orbitals) then
-                     ! each orbital is its own subset
-                     allocate(current_states(i, j)%states(1))
-                     current_states(i, j)%states(1) = j
-                     nstates = 1
+                  !if (do_orbitals) then
+                  !   ! each orbital is its own subset
+                  !   allocate(current_states(i, j)%states(1))
+                  !   current_states(i, j)%states(1) = j
+                  !   nstates = 1
+                  !else
+                  ! mpi-safe state list
+                  if (associated(molecules(j)%lmi)) then
+                     nlocalstates(1) = molecules(j)%lmi(i)%nstates
                   else
-                     ! mpi-safe state list
+                     nlocalstates(1) = 0
+                  end if
+                  nlocalstates(2) = para_env%mepos
+                  call mp_maxloc(nlocalstates, para_env%group)
+                  k = nlocalstates(1)
+                  if (k == 0) cycle
+                  allocate(current_states(i, j)%states(k))
+                  nstates = k
+                  if (nlocalstates(2) == para_env%mepos) then
+                     current_states(i, j)%states(:) = molecules(j)%lmi(i)%states(:)
+                  else
+                     current_states(i, j)%states(:) = 0
+                  end if
+                  call mp_bcast(current_states(i, j)%states, nlocalstates(2), para_env%group)
+                  !end if
+               end do
+            end do
+         else
+            current_states => qs_env%persistent_states
+            if (.not. do_rtp) then
+               ! remap Wannier states to subsystems to stay consistent between MD steps
+               do i = 1, nspins
+                  call wfc_to_molecule(qs_loc_env, &
+                     qs_loc_env%localized_wfn_control%centers_set(i)%array, &
+                     molecules, i, nspins)
+                  do j = 1, nsubsets
                      if (associated(molecules(j)%lmi)) then
                         nlocalstates(1) = molecules(j)%lmi(i)%nstates
                      else
@@ -243,7 +274,9 @@ contains
                      call mp_maxloc(nlocalstates, para_env%group)
                      k = nlocalstates(1)
                      if (k == 0) cycle
-                     allocate(current_states(i, j)%states(k))
+                     if (.not. associated(current_states(i, j)%states)) then
+                        allocate(current_states(i, j)%states(k))
+                     end if
                      nstates = k
                      if (nlocalstates(2) == para_env%mepos) then
                         current_states(i, j)%states(:) = molecules(j)%lmi(i)%states(:)
@@ -251,19 +284,15 @@ contains
                         current_states(i, j)%states(:) = 0
                      end if
                      call mp_bcast(current_states(i, j)%states, nlocalstates(2), para_env%group)
-                  end if
+                  end do
                end do
-            end do
-         else
-            current_states => qs_env%persistent_states
+            end if
          end if
 
          call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
               ref_point=ref_point)
-         !rcc = wrap(rcc, cell)
-         !rcc = pbc(rcc, cell)
 
-         allocate(moments(nmoments, nsubsets))
+         allocate(moments(nmoments, nsubsets), local_nuclear_moments(nmoments))
          moments = 0.0_dp
          do i = 1, nspins
             if (nspins > 1) print *, "Spin", i, "of", nspins
@@ -277,6 +306,11 @@ contains
             
             do j = 1, nsubsets
                nstates = size(current_states(i, j)%states)
+
+               call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                    ref_point=ref_point)
+
+               ! subsystem electronic dipole, total reference frame
                do k = 2, nmoments
                   lx = indco(1, k)
                   ly = indco(2, k)
@@ -291,7 +325,69 @@ contains
                      moments(k, j) = moments(k, j) - zmom
                   end do
                end do
-               if (do_periodic) then  ! add density correction
+
+               ! subsystem nuclear dipole, total reference frame
+               do k = 2, nmoments
+                  lx = indco(1, k)
+                  ly = indco(2, k)
+                  lz = indco(3, k)
+                  do l = first_atoms(j), last_atoms(j)
+                     atomic_kind => particles(l)%atomic_kind
+                     call get_atomic_kind(atomic_kind, kind_number=akind)
+                     call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
+                     if (.not. ghost .and. .not. floating) then
+                        call get_qs_kind(kinds(akind), core_charge=zeff)
+                        r = pbc(particles(l)%r - rcc, cell)
+                        zmom = zeff
+                        if (lx /= 0) zmom = zmom * r(1)**lx
+                        if (ly /= 0) zmom = zmom * r(2)**ly
+                        if (lz /= 0) zmom = zmom * r(3)**lz
+                        moments(k, j) = moments(k, j) + zmom
+                     end if
+                  end do
+               end do
+
+               call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                    ref_point=ref_point, ifirst=first_atoms(j), ilast=last_atoms(j))
+
+               ! subsystem electronic dipole, local reference frame
+               do k = 2, nmoments
+                  lx = indco(1, k)
+                  ly = indco(2, k)
+                  lz = indco(3, k)
+                  do l = 1, nstates
+                     !r = wrap(wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc, cell)
+                     r = pbc(wcs(i)%centres(:, current_states(i, j)%states(l)) - rcc, cell)
+                     zmom = zwfc
+                     if (lx /= 0) zmom = zmom * r(1)**lx
+                     if (ly /= 0) zmom = zmom * r(2)**ly
+                     if (lz /= 0) zmom = zmom * r(3)**lz
+                     moments(k, j) = moments(k, j) - zmom
+                  end do
+               end do
+
+               ! subsystem nuclear dipole, local reference frame
+               do k = 2, nmoments
+                  lx = indco(1, k)
+                  ly = indco(2, k)
+                  lz = indco(3, k)
+                  do l = first_atoms(j), last_atoms(j)
+                     atomic_kind => particles(l)%atomic_kind
+                     call get_atomic_kind(atomic_kind, kind_number=akind)
+                     call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
+                     if (.not. ghost .and. .not. floating) then
+                        call get_qs_kind(kinds(akind), core_charge=zeff)
+                        r = pbc(particles(l)%r - rcc, cell)
+                        zmom = zeff
+                        if (lx /= 0) zmom = zmom * r(1)**lx
+                        if (ly /= 0) zmom = zmom * r(2)**ly
+                        if (lz /= 0) zmom = zmom * r(3)**lz
+                        moments(k, j) = moments(k, j) + zmom
+                     end if
+                  end do
+               end do
+
+               if (do_periodic) then  ! add local correction
                   do k = 1, nstates
                      call build_local_moment_matrix(qs_env, moments_op, norders, &
                           !ref_point=wrap(wos(i)%centres(:, current_states(i, j)%states(k)), cell))
@@ -319,6 +415,62 @@ contains
                      end do
                   end do
                end if
+               !! subsystem local nuclear dipole
+               !do k = 2, nmoments
+               !   lx = indco(1, k)
+               !   ly = indco(2, k)
+               !   lz = indco(3, k)
+               !   do l = first_atoms(j), last_atoms(j)
+               !      atomic_kind => particles(l)%atomic_kind
+               !      call get_atomic_kind(atomic_kind, kind_number=akind)
+               !      call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
+               !      if (.not. ghost .and. .not. floating) then
+               !         call get_qs_kind(kinds(akind), core_charge=zeff)
+               !         r = pbc(particles(l)%r - rcc, cell)
+               !         zmom = zeff
+               !         if (lx /= 0) zmom = zmom * r(1)**lx
+               !         if (ly /= 0) zmom = zmom * r(2)**ly
+               !         if (lz /= 0) zmom = zmom * r(3)**lz
+               !         moments(k, j) = moments(k, j) + zmom
+               !      end if
+               !   end do
+               !end do
+            end do !
+            call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+                 ref_point=ref_point)
+            !rcc = pbc(rcc, cell)
+            do j = 1, nsubsets
+               do k = 2, nmoments
+                  lx = indco(1, k)
+                  ly = indco(2, k)
+                  lz = indco(3, k)
+                  do l = first_atoms(j), last_atoms(j)
+                     atomic_kind => particles(l)%atomic_kind
+                     call get_atomic_kind(atomic_kind, kind_number=akind)
+                     call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
+                     if (.not. ghost .and. .not. floating) then
+                        call get_qs_kind(kinds(akind), core_charge=zeff)
+                        r = pbc(rcc, particles(l)%r, cell)
+                        zmom = zeff
+                        if (lx /= 0) zmom = zmom * r(1)**lx
+                        if (ly /= 0) zmom = zmom * r(2)**ly
+                        if (lz /= 0) zmom = zmom * r(3)**lz
+                        !if (k == 2) then
+                        !   print *, "DBG| im", im
+                        !   print *, "DBG| iatom", iatom
+                        !   print *, "DBG| r", particles(iatom)%r
+                        !   print *, "DBG| rcc", rcc
+                        !   print *, "DBG| r - rcc", r
+                        !   print *, "DBG| zeff", zeff
+                        !   print *, "DBG| zmom", zmom
+                        !end if
+                        !moments(isubsys, im) = moments(isubsys, im) + zmom
+                        moments(k, j) = moments(k, j) &! zmom
+                             + 0.5 * zeff * cell%hmat(k-1, k-1) / twopi &
+                             * aimag(log(exp(-gaussi * twopi / cell%hmat(k-1, k-1) * zmom)))
+                     end if
+                  end do  ! atoms
+               end do
             end do ! subsets
          end do  ! spins
 

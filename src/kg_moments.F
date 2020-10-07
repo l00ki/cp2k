@@ -199,6 +199,7 @@ contains
 
          ! calculate eigenvalues
          do isubsys = 1, nsubsys
+            ! local electronic moments
             call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
                  ref_point=ref_point, ifirst=first_atoms(isubsys), &
                  ilast=last_atoms(isubsys))
@@ -214,12 +215,76 @@ contains
                moments(isubsys, im) = -focc * cell%hmat(im, im) / twopi &
                     * aimag(log(exp(-gaussi * twopi / cell%hmat(im, im) * strace)))
             end do
+            do im = 1, nm
+               lx = indco(1, im+1)
+               ly = indco(2, im+1)
+               lz = indco(3, im+1)
+               ! local nuclear moments
+               do iatom = first_atoms(isubsys), last_atoms(isubsys)
+                  atomic_kind => particles(iatom)%atomic_kind
+                  call get_atomic_kind(atomic_kind, kind_number=akind)
+                  call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
+                  if (.not. ghost .and. .not. floating) then
+                     call get_qs_kind(kinds(akind), core_charge=zeff)
+                     r = particles(iatom)%r - rcc
+                     r = pbc(r, cell)
+                     zmom = zeff
+                     if (lx /= 0) zmom = zmom * r(1)**lx
+                     if (ly /= 0) zmom = zmom * r(2)**ly
+                     if (lz /= 0) zmom = zmom * r(3)**lz
+                     moments(isubsys, im) = moments(isubsys, im) + zmom
+                     !moments(isubsys, im) = moments(isubsys, im) &! zmom
+                     !     + 0.5 * zeff * cell%hmat(im, im) / twopi &
+                     !     * aimag(log(exp(-gaussi * twopi / cell%hmat(im, im) * zmom)))
+                  end if
+               end do
+            end do
+         end do
+
+         call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, &
+              ref_point=ref_point)
+         !rcc = pbc(rcc, cell)
+         allocate(nuclear_moments(nm))
+         do isubsys = 1, nsubsys
+            nuclear_moments = 0.0_dp
+            do im = 1, nm
+               lx = indco(1, im+1)
+               ly = indco(2, im+1)
+               lz = indco(3, im+1)
+               do iatom = first_atoms(isubsys), last_atoms(isubsys) 
+                  atomic_kind => particles(iatom)%atomic_kind
+                  call get_atomic_kind(atomic_kind, kind_number=akind)
+                  call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
+                  if (.not. ghost .and. .not. floating) then
+                     call get_qs_kind(kinds(akind), core_charge=zeff)
+                     !r = pbc(rcc, particles(iatom)%r, cell)
+                     !rcc = wrap(rcc, cell)
+                     r = particles(iatom)%r - rcc
+                     r = pbc(r, cell)
+                     zmom = zeff
+                     if (lx /= 0) zmom = zmom * r(1)**lx
+                     if (ly /= 0) zmom = zmom * r(2)**ly
+                     if (lz /= 0) zmom = zmom * r(3)**lz
+                     !if (im == 2) then
+                     !   print *, "DBG| im", im
+                     !   print *, "DBG| iatom", iatom
+                     !   print *, "DBG| r", particles(iatom)%r
+                     !   print *, "DBG| rcc", rcc
+                     !   print *, "DBG| r - rcc", r
+                     !   print *, "DBG| zeff", zeff
+                     !   print *, "DBG| zmom", zmom
+                     !end if
+                     moments(isubsys, im) = moments(isubsys, im) + zmom
+                     !moments(isubsys, im) = moments(isubsys, im) &! zmom
+                     !     + 0.5 * zeff * cell%hmat(im, im) / twopi &
+                     !     * aimag(log(exp(-gaussi * twopi / cell%hmat(im, im) * zmom)))
+                  end if
+               end do  ! atoms
+            end do
          end do
 
          ! total nuclear contribution
-         allocate(nuclear_moments(nm))
          nuclear_moments = 0.0_dp
-         !rcc = pbc(rcc, cell)
          do im = 1, nm
             lx = indco(1, im+1)
             ly = indco(2, im+1)
@@ -230,7 +295,6 @@ contains
                call get_qs_kind(kinds(akind), ghost=ghost, floating=floating)
                if (.not. ghost .and. .not. floating) then
                   call get_qs_kind(kinds(akind), core_charge=zeff)
-                  !r = wrap(particles(iatom)%r - rcc, cell)
                   r = pbc(particles(iatom)%r - rcc, cell)
                   zmom = zeff
                   if (lx /= 0) zmom = zmom * r(1)**lx

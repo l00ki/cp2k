@@ -2213,6 +2213,8 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
+      print *, "cardoso_souloumiac"
+
       IF (para_env%num_pe >= 1) THEN
          CALL cardoso_souloumiac_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
                                         vectors, para_env)
@@ -2282,6 +2284,7 @@ CONTAINS
          END DO
       END DO
 
+
       CALL cp_cfm_get_info(c_rmat, nrow_global=nstate)
       tolerance = 1.0e10_dp
       old_spread = 1.0e10_dp
@@ -2298,6 +2301,7 @@ CONTAINS
       DO WHILE (tolerance >= eps_localization .AND. sweeps < max_iter)
          sweeps = sweeps + 1
          t1 = m_walltime()
+         print *, "2304"
          DO jstate = 1, nstate
             DO istate = jstate+1, nstate
                DO idim = 1, dim1*dim2
