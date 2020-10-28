@@ -479,6 +479,31 @@ contains
               deallocate(states)
            end do
         end do
+        call mp_sum(moments, group)
+
+        do isubset = 1, nsubsets
+           ! nuclear moments
+           do imoment = 1, nmoments
+              lx = indco(1, imoment + 1)
+              ly = indco(2, imoment + 1)
+              lz = indco(3, imoment + 1)
+              do iatom = first_atoms(isubset), last_atoms(isubset)
+                 atomic_kind => particles(iatom)%atomic_kind
+                 call get_atomic_kind(atomic_kind, kind_number=akind)
+                 call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
+                 if (.not. ghost .and. .not. floating) then
+                    call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
+                    r = particles(iatom)%r - rccs(:, isubset)
+                    r = pbc(r, cell)
+                    zmom = zeff
+                    if (lx /= 0) zmom = zmom*r(1)**lx
+                    if (ly /= 0) zmom = zmom*r(2)**ly
+                    if (lz /= 0) zmom = zmom*r(3)**lz
+                    moments(imoment, isubset) = moments(imoment, isubset) + zmom
+                 end if
+              end do
+           end do
+        end do
 
         do isubset = 1, nsubsets
            do imoment = 1, nmoments
