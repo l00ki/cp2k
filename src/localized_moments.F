@@ -291,11 +291,11 @@ contains
                                      routineP = moduleN//":"//routineN
 
      character(len=default_string_length)  :: iter, name
-     integer                               :: akind, first_atom, group, handle, i, iatom, &
-          ilocmol, imolkind, imoment, &
-          iproc, ispin, isubset, last_atom, lx, ly, lz, &
+     integer                               :: akind, group, handle, i, iatom, &
+          imoment, &
+          iproc, ispin, isubset, lx, ly, lz, &
           mepos, &
-          nao, natoms, nlocmols, nmo, nmolkinds, nmoments, norders, ns, &
+          nao, nmo, nmolkinds, nmoments, norders, ns, &
           nspins, nstates(2), nsubsets, output_unit
      integer, allocatable                  :: first_atoms(:), last_atoms(:), states(:)
      logical                               :: first_time, floating, ghost
@@ -310,7 +310,6 @@ contains
      type(dbcsr_p_type), pointer           :: matrix_s(:), moments_op(:)
      type(dft_control_type), pointer       :: dft_control
      type(distribution_1d_type), pointer   :: local_molecules
-     type(molecule_kind_type), pointer     :: molkind
      type(particle_type), pointer          :: particles(:)
      type(qs_kind_type), pointer           :: qs_kind_set(:)
      type(wannier_centres_type), pointer   :: wcs(:)
@@ -350,39 +349,39 @@ contains
         call get_qs_loc_env(qs_loc_env, local_molecules=local_molecules)
         nmolkinds = size(local_molecules%n_el)
 
-        ! nuclear moments
-        do imolkind = 1, nmolkinds
-           nlocmols = size(local_molecules%list(imolkind)%array)
-           do ilocmol = 1, nlocmols
-              isubset = local_molecules%list(imolkind)%array(ilocmol)  ! global index
-              molkind => molecules(isubset)%molecule_kind
-              first_atom = first_atoms(isubset)
-              last_atom = last_atoms(isubset)
-              natoms = last_atom - first_atom + 1
-              
-              do imoment = 1, nmoments
-                 lx = indco(1, imoment + 1)
-                 ly = indco(2, imoment + 1)
-                 lz = indco(3, imoment + 1)
-                 do iatom = first_atom, last_atom
-                    atomic_kind => particles(iatom)%atomic_kind
-                    call get_atomic_kind(atomic_kind, kind_number=akind)
-                    call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
-                    if (.not. ghost .and. .not. floating) then
-                       call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
-                       r = particles(iatom)%r - rccs(:, isubset)
-                       r = pbc(r, cell)
-                       zmom = zeff
-                       if (lx /= 0) zmom = zmom*r(1)**lx
-                       if (ly /= 0) zmom = zmom*r(2)**ly
-                       if (lz /= 0) zmom = zmom*r(3)**lz
-                       moments(imoment, isubset) = moments(imoment, isubset) + zmom
-                    end if
-                 end do
-              end do
-           end do
-        end do
-        call mp_sum(moments, group)
+        !! nuclear moments
+        !do imolkind = 1, nmolkinds
+        !   nlocmols = size(local_molecules%list(imolkind)%array)
+        !   do ilocmol = 1, nlocmols
+        !      isubset = local_molecules%list(imolkind)%array(ilocmol)  ! global index
+        !      molkind => molecules(isubset)%molecule_kind
+        !      first_atom = first_atoms(isubset)
+        !      last_atom = last_atoms(isubset)
+        !      natoms = last_atom - first_atom + 1
+        !      
+        !      do imoment = 1, nmoments
+        !         lx = indco(1, imoment + 1)
+        !         ly = indco(2, imoment + 1)
+        !         lz = indco(3, imoment + 1)
+        !         do iatom = first_atom, last_atom
+        !            atomic_kind => particles(iatom)%atomic_kind
+        !            call get_atomic_kind(atomic_kind, kind_number=akind)
+        !            call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
+        !            if (.not. ghost .and. .not. floating) then
+        !               call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
+        !               r = particles(iatom)%r - rccs(:, isubset)
+        !               r = pbc(r, cell)
+        !               zmom = zeff
+        !               if (lx /= 0) zmom = zmom*r(1)**lx
+        !               if (ly /= 0) zmom = zmom*r(2)**ly
+        !               if (lz /= 0) zmom = zmom*r(3)**lz
+        !               moments(imoment, isubset) = moments(imoment, isubset) + zmom
+        !            end if
+        !         end do
+        !      end do
+        !   end do
+        !end do
+        !call mp_sum(moments, group)
 
         ! electronic moments
         do isubset = 1, nsubsets
@@ -412,6 +411,28 @@ contains
            end do
 
            call build_local_moment_matrix(qs_env, moments_op, norders, rccs(:, isubset))
+
+           ! nuclear moments
+           do imoment = 1, nmoments
+              lx = indco(1, imoment + 1)
+              ly = indco(2, imoment + 1)
+              lz = indco(3, imoment + 1)
+              do iatom = first_atoms(isubset), last_atoms(isubset)
+                 atomic_kind => particles(iatom)%atomic_kind
+                 call get_atomic_kind(atomic_kind, kind_number=akind)
+                 call get_qs_kind(qs_kind_set(akind), ghost=ghost, floating=floating)
+                 if (.not. ghost .and. .not. floating) then
+                    call get_qs_kind(qs_kind_set(akind), core_charge=zeff)
+                    r = particles(iatom)%r - rccs(:, isubset)
+                    r = pbc(r, cell)
+                    zmom = zeff
+                    if (lx /= 0) zmom = zmom*r(1)**lx
+                    if (ly /= 0) zmom = zmom*r(2)**ly
+                    if (lz /= 0) zmom = zmom*r(3)**lz
+                    moments(imoment, isubset) = moments(imoment, isubset) + zmom
+                 end if
+              end do
+           end do
 
            do ispin = 1, nspins
               ! get states belonging to this molecule
