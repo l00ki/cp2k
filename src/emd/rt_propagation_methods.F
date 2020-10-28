@@ -1003,13 +1003,6 @@ CONTAINS
            CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, &
                                       wf_r, wf_g, particles, occupied_orbs, occupied_evals, &
                                       marked_states)
-           !IF (localize_method == 0) THEN
-           !   ! don't localize, but run analysis on propagated Wannier functions
-           !   CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, &
-           !                              wf_r, wf_g, particles, occupied_orbs, occupied_evals, &
-           !                              marked_states, do_once=.TRUE.)
-           !END IF
-           
            CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
            
            ! memory cleanup

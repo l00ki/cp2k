@@ -860,28 +860,30 @@ CONTAINS
       CALL keyword_release(keyword)
       CALL section_add_subsection(print_section, subsection)
       CALL section_release(subsection)
-      ! Wannier moments
+      ! localised Wannier moments
       CALL cp_print_key_section_create(subsection, __LOCATION__, name="WANNIER_MOMENTS", &
                                        description="Section controlling the calculation of "// &
-                                                   "multipole moments from Wannier functions.", &
+                                       "Wannier-based electric moments", &
                                        print_level=debug_print_level + 1, filename="__STD_OUT__")
       CALL keyword_create(keyword, __LOCATION__, name="ORDER", &
-                          description="Maximum order of multipole expansion", &
-                          usage="ORDER {integer}", default_i_val=1, type_of_var=integer_t)
+                          description="Maximum order of mulitpoles to be calculated.", &
+                          usage=" ORDER {integer}", default_i_val=1, type_of_var=integer_t)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
-      CALL keyword_create(keyword, __LOCATION__, name="PERIODIC", &
-                          description="Use the Berry phase approach to the electronic dipole moment.", &
-                          default_l_val=.TRUE., lone_keyword_l_val=.TRUE.)
+      !
+      CALL section_add_subsection(print_section, subsection)
+      CALL section_release(subsection)
+      ! localised Wannier centre moments
+      CALL cp_print_key_section_create(subsection, __LOCATION__, name="WC_MOMENTS", &
+                                       description="Section controlling the calculation of "// &
+                                       "Wannier centre-based electric moments", &
+                                       print_level=debug_print_level + 1, filename="__STD_OUT__")
+      CALL keyword_create(keyword, __LOCATION__, name="ORDER", &
+                          description="Maximum order of mulitpoles to be calculated.", &
+                          usage=" ORDER {integer}", default_i_val=1, type_of_var=integer_t)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
-      CALL keyword_create(keyword, __LOCATION__, name="ORBITALS", &
-                          description="Ignore molecules and instead calculate the moment for "// &
-                          "each Wannier orbital. The nuclear dipole is then printed "// &
-                          "as a separate subsystem.", &
-                          default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(subsection, keyword)
-      CALL keyword_release(keyword)
+      !
       CALL section_add_subsection(print_section, subsection)
       CALL section_release(subsection)
       ! Molecular States with wannier

@@ -44,7 +44,7 @@ MODULE qs_loc_states
    USE qs_loc_molecules,                ONLY: wfc_to_molecule
    USE qs_loc_types,                    ONLY: qs_loc_env_new_type
    USE qs_mo_types,                     ONLY: mo_set_p_type
-   USE wannier_moments,                 ONLY: calculate_wannier_moments
+   USE localized_moments,               ONLY: calculate_wannier_moments
    USE wannier_states,                  ONLY: construct_wannier_states
    USE wannier_states_types,            ONLY: wannier_centres_type
 #include "./base/base_uses.f90"
@@ -257,7 +257,7 @@ CONTAINS
       ! print moments of Wannier functions
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
            "WANNIER_MOMENTS"), cp_p_file)) THEN
-         CALL calculate_wannier_moments(qs_env, qs_loc_env, loc_print_section, molecule_set, mos_are_complex)
+         CALL calculate_wannier_moments(qs_env, qs_loc_env, mo_local, loc_print_section, molecule_set)
       END IF
      
       CALL cp_cfm_release(tmp_complex_coeffs)
