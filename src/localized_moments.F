@@ -12,6 +12,11 @@ module localized_moments
                                      get_atomic_kind
    use cell_types,             only: cell_type, &
                                      pbc
+   use cp_cfm_basic_linalg,    only: cp_cfm_schur_product
+   use cp_cfm_types,           only: cp_cfm_create, &
+                                     cP_cfm_release, &
+                                     cp_cfm_type, &
+                                     cp_fm_to_cfm
    use cp_control_types,       only: dft_control_type
    use cp_dbcsr_operations,    only: cp_dbcsr_sm_fm_multiply
    use cp_fm_basic_linalg,     only: cp_fm_schur_product
@@ -59,6 +64,7 @@ module localized_moments
                                      ncoset
    use particle_types,         only: particle_type
    use qs_environment_types,   only: get_qs_env, &
+                                     persistent_states_type, &
                                      qs_environment_type
    use qs_kind_types,          only: get_qs_kind, &
                                      qs_kind_type
@@ -152,7 +158,7 @@ contains
         call qs_rho_get(rho, rho_ao=densmat)
         allocate(moments(nmoments, nsubsets), first_atoms(nsubsets), first_basis(nsubsets), &
              last_atoms(nsubsets), last_basis(nsubsets), &
-             rccs(3, nsubsets), moments_op(nmoments))
+             rccs(3, nsubsets), moments_op(nmoments), nbasis(nsubsets))
         moments = 0._dp
         call get_molecule_set_info(molecules, &
              mol_to_first_atom=first_atoms, mol_to_last_atom=last_atoms, mol_to_nbasis=nbasis)
@@ -170,6 +176,7 @@ contains
            call dbcsr_copy(moments_op(imoment)%matrix, matrix_s(1)%matrix, "moments operator")
            call dbcsr_set(moments_op(imoment)%matrix, 0._dp)
         end do
+        allocate(opmat)
         call dbcsr_copy(opmat, matrix_s(1)%matrix, "operator * densmat")
         nmolkinds = size(local_molecules%n_el)
 
@@ -297,22 +304,27 @@ contains
           mepos, &
           nao, nmo, nmolkinds, nmoments, norders, ns, &
           nspins, nstates(2), nsubsets, output_unit
-     integer, allocatable                  :: first_atoms(:), last_atoms(:), states(:)
-     logical                               :: first_time, floating, ghost
-     real(kind=dp)                         :: m, mtot, r(3), zeff, zmom, zwfc
-     real(kind=dp), allocatable            :: moments(:, :), rccs(:, :)
-     type(atomic_kind_type), pointer       :: atomic_kind
-     type(cell_type), pointer              :: cell
-     type(cp_fm_struct_type), pointer      :: fm_struct
-     type(cp_fm_type), pointer             :: coeffs, momvector, mvector, omvector
-     type(cp_logger_type), pointer         :: logger
-     type(cp_para_env_type), pointer       :: para_env
-     type(dbcsr_p_type), pointer           :: matrix_s(:), moments_op(:)
-     type(dft_control_type), pointer       :: dft_control
-     type(distribution_1d_type), pointer   :: local_molecules
-     type(particle_type), pointer          :: particles(:)
-     type(qs_kind_type), pointer           :: qs_kind_set(:)
-     type(wannier_centres_type), pointer   :: wcs(:)
+     integer, allocatable                   :: first_atoms(:), last_atoms(:)
+     integer, pointer                       :: states(:)
+     logical                                :: do_rtp, first_time, floating, ghost
+     real(kind=dp)                          :: d, m, mtot, r(3), zeff, zmom, zwfc
+     real(kind=dp), allocatable             :: moments(:, :), rccs(:, :)
+     type(atomic_kind_type), pointer        :: atomic_kind
+     type(cell_type), pointer               :: cell
+     type(cp_cfm_type), pointer             :: momvectorc, mvectorc, omvectorc
+     type(cp_fm_struct_type), pointer       :: fm_struct
+     type(cp_fm_type), pointer              :: coeffs, coeffsi, momvector, mvector, &
+                                               mvectori, &
+                                               omvector, omvectori
+     type(cp_logger_type), pointer          :: logger
+     type(cp_para_env_type), pointer        :: para_env
+     type(dbcsr_p_type), pointer            :: matrix_s(:), moments_op(:)
+     type(dft_control_type), pointer        :: dft_control
+     type(distribution_1d_type), pointer    :: local_molecules
+     type(particle_type), pointer           :: particles(:)
+     type(persistent_states_type), pointer  :: persistent_states(:, :)
+     type(qs_kind_type), pointer            :: qs_kind_set(:)
+     type(wannier_centres_type), pointer    :: wcs(:)
 
      call timeset(routineN, handle)
 
@@ -334,6 +346,7 @@ contains
         group = para_env%group
         nspins = dft_control%nspins
         nsubsets = size(molecules)
+        do_rtp = (size(mo_local) == 2 * nspins)  ! check for time-dependent orbitals
         zwfc = 3.0_dp - real(nspins, dp)  ! occupation of Wannier functions (uniform)
         allocate(moments(nmoments, nsubsets), first_atoms(nsubsets), &
              last_atoms(nsubsets), rccs(3, nsubsets), moments_op(nmoments))
@@ -382,6 +395,69 @@ contains
         !   end do
         !end do
         !call mp_sum(moments, group)
+
+        print *, "nsubsets", nsubsets
+
+        ! get the states list
+        persistent_states => qs_env%persistent_states
+        if (do_rtp) then
+           if (.not. associated(persistent_states)) then
+              print *, "persistent_states is not allocated"
+              allocate(persistent_states(nsubsets, nspins))
+              do isubset = 1, nsubsets
+                 do ispin = 1, nspins
+                    ! get states belonging to this molecule
+                    if (associated(molecules(isubset)%lmi)) then
+                       nstates(1) = molecules(isubset)%lmi(ispin)%nstates
+                    else
+                       nstates(1) = 0
+                    end if
+                    nstates(2) = mepos
+                    call mp_maxloc(nstates, group)
+                    if (nstates(1) == 0) cycle
+                    ns = nstates(1)
+                    iproc = nstates(2)
+                    allocate(persistent_states(isubset, ispin)%states(ns))
+                    states => persistent_states(isubset, ispin)%states
+                    if (iproc == mepos) then
+                       states(:) = molecules(isubset)%lmi(ispin)%states(:)
+                    else
+                       states(:) = 0
+                    end if
+                    call mp_bcast(states, iproc, group)
+                    print *, "subset:", isubset, "states:", states
+                 end do
+              end do
+           end if
+        else
+           if (.not. associated(persistent_states)) then
+              allocate(persistent_states(nsubsets, nspins))
+           end if
+           do isubset = 1, nsubsets
+              do ispin = 1, nspins
+                 ! get states belonging to this molecule
+                 if (associated(molecules(isubset)%lmi)) then
+                    nstates(1) = molecules(isubset)%lmi(ispin)%nstates
+                 else
+                    nstates(1) = 0
+                 end if
+                 nstates(2) = mepos
+                 call mp_maxloc(nstates, group)
+                 if (nstates(1) == 0) cycle
+                 ns = nstates(1)
+                 iproc = nstates(2)
+                 allocate(persistent_states(isubset, ispin)%states(ns))
+                 states => persistent_states(isubset, ispin)%states
+                 if (iproc == mepos) then
+                    states(:) = molecules(isubset)%lmi(ispin)%states(:)
+                 else
+                    states(:) = 0
+                 end if
+                 call mp_bcast(states, iproc, group)
+                 print *, "subset:", isubset, "states:", states
+              end do
+           end do
+        end if
 
         ! electronic moments
         do isubset = 1, nsubsets
@@ -435,48 +511,65 @@ contains
            end do
 
            do ispin = 1, nspins
-              ! get states belonging to this molecule
-              if (associated(molecules(isubset)%lmi)) then
-                 nstates(1) = molecules(isubset)%lmi(ispin)%nstates
-              else
-                 nstates(1) = 0
-              end if
-              nstates(2) = mepos
-              call mp_maxloc(nstates, group)
-              if (nstates(1) == 0) cycle
-              ns = nstates(1)
-              iproc = nstates(2)
-              allocate(states(ns))
-              if (iproc == mepos) then
-                 states(:) = molecules(isubset)%lmi(ispin)%states(:)
-              else
-                 states(:) = 0
-              end if
-              call mp_bcast(states, iproc, group)
+              states => persistent_states(isubset, ispin)%states
 
-              coeffs => mo_local(ispin)%matrix
+              if (do_rtp) then
+                 coeffs => mo_local(2*ispin-1)%matrix
+                 coeffsi => mo_local(2*ispin)%matrix
+              else
+                 coeffs => mo_local(ispin)%matrix
+              end if
+                 
               call cp_fm_get_info(coeffs, ncol_global=nmo, nrow_global=nao)
               call cp_fm_struct_create(fm_struct, ncol_global=ns, nrow_global=nao, &
                    para_env=coeffs%matrix_struct%para_env, context=coeffs%matrix_struct%context)
               call cp_fm_create(mvector, fm_struct, name="mvector")
               call cp_fm_create(omvector, fm_struct, name="omvector")
               call cp_fm_create(momvector, fm_struct, name="momvector")
+              if (do_rtp) then
+                 call cp_fm_create(mvectori, fm_struct, name="mvectori")
+                 call cp_cfm_create(mvectorc, fm_struct, name="mvectorc")
+                 call cp_fm_create(omvectori, fm_struct, name="omvectori")
+                 call cp_cfm_create(omvectorc, fm_struct, name="omvectorc")
+                 call cp_cfm_create(momvectorc, fm_struct, name="momvectorc")
+              end if
               call cp_fm_struct_release(fm_struct)
 
               do i = 1, ns
                  call cp_fm_to_fm(coeffs, mvector, 1, states(i), i)
+                 if (do_rtp) then
+                    call cp_fm_to_fm(coeffsi, mvectori, 1, states(i), i)
+                 end if
               end do
 
               do imoment = 1, nmoments
                  call cp_dbcsr_sm_fm_multiply(moments_op(imoment)%matrix, mvector, omvector, ns)
-                 call cp_fm_schur_product(mvector, omvector, momvector)
-                 moments(imoment, isubset) = moments(imoment, isubset) - zwfc * sum(momvector%local_data)
+                 if (do_rtp) then
+                    call cp_dbcsr_sm_fm_multiply(moments_op(imoment)%matrix, mvectori, omvectori, ns)
+                 end if
+                 if (do_rtp) then
+                    call cp_fm_to_cfm(mvector, mvectori, mvectorc)
+                    call cp_fm_to_cfm(omvector, omvectori, omvectorc)
+                    mvectorc%local_data = conjg(mvectorc%local_data)
+                    call cp_cfm_schur_product(mvectorc, omvectorc, momvectorc)
+                    d = real(sum(momvectorc%local_data), dp)
+                 else
+                    call cp_fm_schur_product(mvector, omvector, momvector)
+                    d = sum(momvector%local_data)
+                 end if
+                 !call mp_sum(d, group)
+                 moments(imoment, isubset) = moments(imoment, isubset) - d
               end do
               
               call cp_fm_release(mvector)
               call cp_fm_release(omvector)
               call cp_fm_release(momvector)
-              deallocate(states)
+              if (do_rtp) then
+                 call cp_fm_release(mvectori)
+                 call cp_cfm_release(mvectorc)
+                 call cp_cfm_release(omvectorc)
+                 call cp_cfm_release(momvectorc)
+              end if
            end do
         end do
         call mp_sum(moments, group)
