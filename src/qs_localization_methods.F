@@ -2278,9 +2278,6 @@ CONTAINS
             NULLIFY(c_zij((idim-1)*dim1+jdim)%matrix)
             CALL cp_cfm_create(c_zij((idim-1)*dim1+jdim)%matrix, zij(jdim, idim)%matrix%matrix_struct)
             CALL cp_cfm_to_cfm(zij(jdim, idim)%matrix, c_zij((idim-1)*dim1+jdim)%matrix)
-            !PRINT *, c_zij((idim-1)*dim1+jdim)%matrix%local_data, &
-            !     SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 1), &
-            !     SIZE(c_zij((idim-1)*dim1+jdim)%matrix%local_data, 2)
          END DO
       END DO
 
@@ -2301,7 +2298,6 @@ CONTAINS
       DO WHILE (tolerance >= eps_localization .AND. sweeps < max_iter)
          sweeps = sweeps + 1
          t1 = m_walltime()
-         print *, "2304"
          DO jstate = 1, nstate
             DO istate = jstate+1, nstate
                DO idim = 1, dim1*dim2

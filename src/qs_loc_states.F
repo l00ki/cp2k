@@ -44,7 +44,8 @@ MODULE qs_loc_states
    USE qs_loc_molecules,                ONLY: wfc_to_molecule
    USE qs_loc_types,                    ONLY: qs_loc_env_new_type
    USE qs_mo_types,                     ONLY: mo_set_p_type
-   USE localized_moments,               ONLY: calculate_wannier_moments
+   USE localized_moments,               ONLY: calculate_wannier_moments, &
+                                              calculate_wc_moments
    USE wannier_states,                  ONLY: construct_wannier_states
    USE wannier_states_types,            ONLY: wannier_centres_type
 #include "./base/base_uses.f90"
@@ -152,37 +153,22 @@ CONTAINS
 
             scenter => qs_loc_env%localized_wfn_control%centers_set(ispin)%array
 
-            IF (.NOT. my_do_once) THEN
-               IF (output_unit > 0) WRITE (output_unit, "(/,T2,A)") &
-                    "LOCALIZATION| indirect propagation of Wannier functions"
-               IF (.NOT. mos_are_complex) THEN
-                  !CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, &
-                  !     "mo_local("//cp_to_string(ispin)//")%matrix")
-                  ! purely real coefficients, e.g. from SCF runs
-                  CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
-                                     myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
-                  !CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, &
-                  !     "mo_local("//cp_to_string(ispin)//")%matrix")
-               ELSE
-                  ! complex coefficients, e.g. from RTP runs
-                  CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix%matrix_struct)
-                  CALL cp_fm_to_cfm(mo_local(2*ispin-1)%matrix, mo_local(2*ispin)%matrix, &
-                                    tmp_complex_coeffs)
-                  !CALL cp_cfm_write_formatted(tmp_complex_coeffs, output_unit, &
-                  !     "tmp_complex_coeffs")
-                  CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
-                                     myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
-                  CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
-                       mo_local(2*ispin)%matrix)
-                  !IF (output_unit > 0) PRINT *, tmp_complex_coeffs%local_data
-               END IF
+            IF (output_unit > 0) WRITE (output_unit, "(/,T2,A)") &
+                 "LOCALIZATION| indirect propagation of Wannier functions"
+            IF (.NOT. mos_are_complex) THEN
+               ! purely real coefficients, e.g. from SCF runs
+               !CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, "before")
+               CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
+                                  myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
+               !CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, "after")
             ELSE
-               ! only localize once per iteration, in that case the propagated orbitals are written
-               ! back into QuickStep in rt_propation::run_propagation
-               IF (output_unit > 0) WRITE (output_unit, "(/,T2,A)") &
-                    "LOCALIZATION| direct propagation of Wannier functions"
-               CALL cp_cfm_to_fm(qs_env%mos(ispin)%mo_set%wannier_coeff, &
-                                 mo_local(2*ispin-1)%matrix, &
+               ! complex coefficients, e.g. from RTP runs
+               CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix%matrix_struct)
+               CALL cp_fm_to_cfm(mo_local(2*ispin-1)%matrix, mo_local(2*ispin)%matrix, &
+                                 tmp_complex_coeffs)
+               CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
+                                  myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
+               CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
                                  mo_local(2*ispin)%matrix)
             END IF
 
@@ -251,15 +237,24 @@ CONTAINS
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
                                            "WANNIER_STATES"), cp_p_file) .OR. &
           BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
-                                           "WANNIER_MOMENTS"), cp_p_file)) THEN
+                                           "WANNIER_MOMENTS"), cp_p_file) .OR. &
+          BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+                                           "WC_MOMENTS"), cp_p_file)) THEN
          CALL set_qs_env(qs_env=qs_env, WannierCentres=wc)
       ENDIF
+
       ! print moments of Wannier functions
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
            "WANNIER_MOMENTS"), cp_p_file)) THEN
          CALL calculate_wannier_moments(qs_env, qs_loc_env, mo_local, loc_print_section, molecule_set)
       END IF
      
+      ! print moments of Wannier centres
+      IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
+           "WC_MOMENTS"), cp_p_file)) THEN
+         CALL calculate_wc_moments(qs_env, qs_loc_env, loc_print_section, molecule_set)
+      END IF
+
       CALL cp_cfm_release(tmp_complex_coeffs)
       
       CALL timestop(handle)
