@@ -12,9 +12,14 @@ module localized_moments
                                      get_atomic_kind
    use cell_types,             only: cell_type, &
                                      pbc
-   use cp_cfm_basic_linalg,    only: cp_cfm_schur_product
+   use cp_cfm_basic_linalg,    only: cp_cfm_gemm, &
+                                     cp_cfm_schur_product
    use cp_cfm_types,           only: cp_cfm_create, &
-                                     cP_cfm_release, &
+                                     cp_cfm_get_element, &
+                                     cp_cfm_p_type, &
+                                     cp_cfm_release, &
+                                     cp_cfm_set_all, &
+                                     cp_cfm_to_cfm, &
                                      cp_cfm_type, &
                                      cp_fm_to_cfm
    use cp_control_types,       only: dft_control_type
@@ -289,6 +294,7 @@ contains
                                      routineP = moduleN//":"//routineN
 
      character(len=default_string_length)  :: iter, name
+     complex(kind=dp)                      :: clocd
      integer                               :: akind, group, handle, i, iatom, &
           imoment, imo, &
           iproc, is, ispin, isubset, jatom, lx, ly, lz, &
@@ -305,6 +311,8 @@ contains
      real(kind=dp), pointer                 :: ref_point(:)
      type(atomic_kind_type), pointer        :: atomic_kind
      type(cell_type), pointer               :: cell
+     type(cp_cfm_p_type), pointer           :: cmoments_op_fm(:)
+     type(cp_cfm_type), pointer             :: ccoeffs, cvec, copvec, cvecopvec
      type(cp_fm_p_type), pointer            :: moments_op_fm(:)
      type(cp_fm_struct_type), pointer       :: fm_struct, mstruct, momstruct, opstruct, nmostruct
      type(cp_fm_type), pointer              :: coeffs, momvector, mvector, &
@@ -338,35 +346,45 @@ contains
         mepos = para_env%mepos
         group = para_env%group
         nspins = dft_control%nspins
+        do_rtp = (size(mo_local) == 2 * nspins)
         nsubsets = size(molecules)
         natoms = size(particles)
         do_rtp = (size(mo_local) == 2 * nspins)  ! check for time-dependent orbitals
         zwfc = 3.0_dp - real(nspins, dp)  ! occupation of Wannier functions (uniform)
         allocate(moments(nmoments, nsubsets), first_atoms(nsubsets), &
              last_atoms(nsubsets), rccs(3, nsubsets), moments_op(nmoments), moments_op_fm(nmoments), ref_point(3), &
-             atom_to_mol(natoms), mol_to_nelectrons(nsubsets))
+             cmoments_op_fm(nmoments), atom_to_mol(natoms), mol_to_nelectrons(nsubsets))
         moments = 0.0_dp
         call get_molecule_set_info(molecules, &
              mol_to_first_atom=first_atoms, mol_to_last_atom=last_atoms, atom_to_mol=atom_to_mol, &
              mol_to_nelectrons=mol_to_nelectrons)
         coeffs => mo_local(1)%matrix
+
         call cp_fm_get_info(coeffs, nrow_global=nao, ncol_global=nmo)
-        ! |i>
-        call cp_fm_create(vec, coeffs%matrix_struct)
-        ! A|i>
-        call cp_fm_create(opvec, coeffs%matrix_struct)
-        ! <i|A|i>
         call cp_fm_struct_create(nmostruct, ncol_global=nmo, nrow_global=nmo, &
              para_env=coeffs%matrix_struct%para_env, context=coeffs%matrix_struct%context)
-        call cp_fm_create(vecopvec, nmostruct)
         call cp_fm_struct_create(opstruct, ncol_global=nao, nrow_global=nao, &
              para_env=coeffs%matrix_struct%para_env, context=coeffs%matrix_struct%context)
+        if (do_rtp) then
+           call cp_cfm_create(cvec, coeffs%matrix_struct)
+           call cp_cfm_create(copvec, coeffs%matrix_struct)
+           call cp_cfm_create(cvecopvec, nmostruct)
+           call cp_cfm_create(ccoeffs, coeffs%matrix_struct)
+        else
+           call cp_fm_create(vec, coeffs%matrix_struct)
+           call cp_fm_create(opvec, coeffs%matrix_struct)
+           call cp_fm_create(vecopvec, nmostruct)
+        end if
+        
+
         do imoment = 1, nmoments
            allocate(moments_op(imoment)%matrix)
            call dbcsr_copy(moments_op(imoment)%matrix, matrix_s(1)%matrix, "moments operator")
            call dbcsr_set(moments_op(imoment)%matrix, 0.0_dp)
            call cp_fm_create(moments_op_fm(imoment)%matrix, opstruct)
-           call copy_dbcsr_to_fm(moments_op(imoment)%matrix, moments_op_fm(imoment)%matrix)
+           if (do_rtp) then
+              call cp_cfm_create(cmoments_op_fm(imoment)%matrix, opstruct)
+           end if
         end do
 
         call get_qs_loc_env(qs_loc_env, local_molecules=local_molecules)
@@ -476,36 +494,67 @@ contains
               !if (output_unit > 0) then
               !   print *, states
               !end if
-              coeffs => mo_local(ispin)%matrix
-              
-              call cp_fm_set_all(vec, 0.0_dp)
-              call cp_fm_set_all(opvec, 0.0_dp)
-              call cp_fm_set_all(vecopvec, 0.0_dp)
-              do is = 1, ns
-                 call cp_fm_to_fm(coeffs, vec, 1, states(is), states(is))
-              end do
-              
-              call build_local_moment_matrix(qs_env, moments_op, norders, &
-                   ref_point=pbc(rccs(:, isubset), cell))
-              do imoment = 1, nmoments
-                 call copy_dbcsr_to_fm(moments_op(imoment)%matrix, moments_op_fm(imoment)%matrix)
-              end do
-
-              d = 0.0_dp
-              do imoment = 1, nmoments
-                 call cp_fm_gemm("N", "N", nao, nmo, nao, 1.0_dp, moments_op_fm(imoment)%matrix, &
-                      vec, 0.0_dp, opvec)
-                 call cp_fm_gemm("T", "N", nmo, nmo, nao, 1.0_dp, vec, opvec, 0.0_dp, vecopvec)
+              if (do_rtp) then
+                 call cp_fm_to_cfm(mo_local(2*ispin-1)%matrix, mo_local(2*ispin)%matrix, ccoeffs)
+                 call cp_cfm_set_all(cvec, (0.0_dp, 0.0_dp))
+                 call cp_cfm_set_all(copvec, (0.0_dp, 0.0_dp))
+                 call cp_cfm_set_all(cvecopvec, (0.0_dp, 0.0_dp))
                  do is = 1, ns
-                    call cp_fm_get_element(vecopvec, states(is), states(is), locd)
-                    d(imoment) = d(imoment) + locd
+                    call cp_cfm_to_cfm(ccoeffs, cvec, 1, states(is), states(is))
                  end do
-                 !d(imoment) = sum(vecopvec%local_data)
-                 !call mp_sum(d(imoment), group)
-                 d(imoment) = cell%hmat(imoment, imoment) / twopi * &
-                      aimag(log(exp(-gaussi * twopi / cell%hmat(imoment, imoment) * zwfc * d(imoment))))
-                 moments(imoment, isubset) = moments(imoment, isubset) + d(imoment)
-              end do
+
+                 call build_local_moment_matrix(qs_env, moments_op, norders, &
+                      ref_point=pbc(rccs(:, isubset), cell))
+                 do imoment = 1, nmoments
+                    call copy_dbcsr_to_fm(moments_op(imoment)%matrix, moments_op_fm(imoment)%matrix)
+                    call cp_fm_to_cfm(moments_op_fm(imoment)%matrix, mtarget=cmoments_op_fm(imoment)%matrix)
+                 end do
+
+                 d = 0._dp
+                 do imoment = 1, nmoments
+                    call cp_cfm_gemm("N", "N", nao, nmo, nao, (1._dp, 0._dp), cmoments_op_fm(imoment)%matrix, &
+                         cvec, (0._dp, 0._dp), copvec)
+                    call cp_cfm_gemm("C", "N", nmo, nmo, nao, (1._dp, 0._dp), cvec, copvec, (0._dp, 0._dp), cvecopvec)
+                    do is = 1, ns
+                       call cp_cfm_get_element(cvecopvec, states(is), states(is), clocd)
+                       d(imoment) = d(imoment) + real(clocd)
+                    end do
+                    d(imoment) = cell%hmat(imoment, imoment) / twopi * &
+                         aimag(log(exp(-gaussi * twopi / cell%hmat(imoment, imoment) * zwfc * d(imoment))))
+                    moments(imoment, isubset) = moments(imoment, isubset) + d(imoment)
+                 end do
+              else
+                 coeffs => mo_local(ispin)%matrix
+                 
+                 call cp_fm_set_all(vec, 0.0_dp)
+                 call cp_fm_set_all(opvec, 0.0_dp)
+                 call cp_fm_set_all(vecopvec, 0.0_dp)
+                 do is = 1, ns
+                    call cp_fm_to_fm(coeffs, vec, 1, states(is), states(is))
+                 end do
+                 
+                 call build_local_moment_matrix(qs_env, moments_op, norders, &
+                      ref_point=pbc(rccs(:, isubset), cell))
+                 do imoment = 1, nmoments
+                    call copy_dbcsr_to_fm(moments_op(imoment)%matrix, moments_op_fm(imoment)%matrix)
+                 end do
+
+                 d = 0.0_dp
+                 do imoment = 1, nmoments
+                    call cp_fm_gemm("N", "N", nao, nmo, nao, 1.0_dp, moments_op_fm(imoment)%matrix, &
+                         vec, 0.0_dp, opvec)
+                    call cp_fm_gemm("T", "N", nmo, nmo, nao, 1.0_dp, vec, opvec, 0.0_dp, vecopvec)
+                    do is = 1, ns
+                       call cp_fm_get_element(vecopvec, states(is), states(is), locd)
+                       d(imoment) = d(imoment) + locd
+                    end do
+                    !d(imoment) = sum(vecopvec%local_data)
+                    !call mp_sum(d(imoment), group)
+                    d(imoment) = cell%hmat(imoment, imoment) / twopi * &
+                         aimag(log(exp(-gaussi * twopi / cell%hmat(imoment, imoment) * zwfc * d(imoment))))
+                    moments(imoment, isubset) = moments(imoment, isubset) + d(imoment)
+                 end do
+              end if
               deallocate(persistent_states(isubset, ispin)%states)
            end do
         end do
@@ -530,11 +579,28 @@ contains
         ! cleanup
         do imoment = 1, nmoments
            call dbcsr_release(moments_op(imoment)%matrix)
+           call cp_fm_release(moments_op_fm(imoment)%matrix)
            deallocate(moments_op(imoment)%matrix)
         end do
-        deallocate(moments_op)
-        deallocate(moments, first_atoms, last_atoms, rccs)
+        deallocate(moments_op, moments_op_fm)
+        deallocate(moments, first_atoms, last_atoms, rccs, ref_point, atom_to_mol, mol_to_nelectrons)
 
+        call cp_fm_struct_release(opstruct)
+        call cp_fm_struct_release(nmostruct)
+        if (do_rtp) then
+           do imoment = 1, nmoments
+              call cp_cfm_release(cmoments_op_fm(imoment)%matrix)
+           end do
+           deallocate(cmoments_op_fm)
+           call cp_cfm_release(cvec)
+           call cp_cfm_release(copvec)
+           call cp_cfm_release(cvecopvec)
+           call cp_cfm_release(ccoeffs)
+        else
+           call cp_fm_release(vec)
+           call cp_fm_release(opvec)
+           call cp_fm_release(vecopvec)
+        end if
      end if
   
      call timestop(handle)
@@ -748,9 +814,8 @@ contains
         call cp_print_key_finished_output(output_unit, logger, print_key, "WC_MOMENTS")
 
         ! cleanup
-        deallocate(moments_op)
-        deallocate(moments, first_atoms, last_atoms, rccs)
-
+        deallocate(moments_op, moments_op_fm)
+        deallocate(moments, first_atoms, last_atoms, rccs, ref_point, mol_to_nelectrons, atom_to_mol)
      end if
   
      call timestop(handle)
