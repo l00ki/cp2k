@@ -814,16 +814,10 @@ CONTAINS
                                        zij_fm_set=op_fm_set, &
                                        vectors=moloc_coeff(ispin)%matrix)
             ELSE
-               if (para_env%mepos == 0) then
-                  print *, "before", complex_mo_coeff%local_data
-               end if
                CALL optimize_loc_berry(loc_method, qs_loc_env, op_sm_set, &
                                        para_env, cell, weights, ispin, print_loc_section, &
                                        zij_cfm_set=op_cfm_set, &
                                        complex_vectors=complex_mo_coeff)
-               if (para_env%mepos == 0) then
-                  print *, "after", complex_mo_coeff%local_data
-               end if
             END IF
 
             ! Here we dealloctate op_fm_set

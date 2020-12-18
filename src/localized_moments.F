@@ -442,10 +442,21 @@ contains
         !end if
         
         ! create the subsets -> states list
+        mol_to_nelectrons = 0
         do ispin = 1, nspins
            do isubset = 1, nsubsets
-              allocate(persistent_states(isubset, ispin)%states(mol_to_nelectrons(isubset) / 2))
-              persistent_states(isubset, ispin)%states = 0
+              do imo = 1, nmo
+                 if ((first_atoms(isubset) <= wcs_to_atoms(imo, ispin)) .and. &
+                     (last_atoms(isubset) >= wcs_to_atoms(imo, ispin))) then
+                    mol_to_nelectrons(isubset) = mol_to_nelectrons(isubset) + 1
+                 end if
+              end do
+           end do
+        end do
+
+        do ispin = 1, nspins
+           do isubset = 1, nsubsets
+              allocate(persistent_states(isubset, ispin)%states(mol_to_nelectrons(isubset)))
               nwc = 1
               do imo = 1, nmo
                  if ((first_atoms(isubset) <= wcs_to_atoms(imo, ispin)) .and. &
@@ -717,26 +728,22 @@ contains
         !   end do
         !end do
 
-        ! correct the atoms -> states lists, probably inefficient
+        ! create the subsets -> states list
+        mol_to_nelectrons = 0
         do ispin = 1, nspins
-           do imo = 1, nmo
-              r_min = huge(0.0_dp)
-              jatom = 0
-              do iatom = 1, natoms
-                 if (norm2(pbc(particles(iatom)%r, wcs(ispin)%centres(:, imo), cell)) < r_min) then
-                    jatom = iatom
-                    r_min = norm2(pbc(particles(iatom)%r, wcs(ispin)%centres(:, imo), cell))
+           do isubset = 1, nsubsets
+              do imo = 1, nmo
+                 if ((first_atoms(isubset) <= wcs_to_atoms(imo, ispin)) .and. &
+                     (last_atoms(isubset) >= wcs_to_atoms(imo, ispin))) then
+                    mol_to_nelectrons(isubset) = mol_to_nelectrons(isubset) + 1
                  end if
               end do
-              wcs_to_atoms(imo, ispin) = jatom
            end do
         end do
 
-        ! create the subsets -> states list
         do ispin = 1, nspins
            do isubset = 1, nsubsets
-              allocate(persistent_states(isubset, ispin)%states(mol_to_nelectrons(isubset) / 2))
-              persistent_states(isubset, ispin)%states = 0
+              allocate(persistent_states(isubset, ispin)%states(mol_to_nelectrons(isubset)))
               nwc = 1
               do imo = 1, nmo
                  if ((first_atoms(isubset) <= wcs_to_atoms(imo, ispin)) .and. &

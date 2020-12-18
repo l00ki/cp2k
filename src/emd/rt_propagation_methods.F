@@ -38,7 +38,8 @@ MODULE rt_propagation_methods
                                               cp_fm_p_type,&
                                               cp_fm_release,&
                                               cp_fm_to_fm,&
-                                              cp_fm_type
+                                              cp_fm_type,&
+                                              cp_fm_write_formatted
    USE cp_fm_vect,                      ONLY: cp_fm_vect_dealloc
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_get_default_io_unit,&
@@ -1000,9 +1001,15 @@ CONTAINS
            CALL qs_loc_control_init(qs_loc_env_homo, loc_section, do_homo=do_homo)
            CALL qs_loc_init(qs_env, qs_loc_env_homo, loc_section, homo_localized, do_homo, &
                             do_mo_cubes)
+           !IF (output_unit > 0) THEN
+           !   CALL cp_fm_write_formatted(homo_localized(1)%matrix, output_unit)
+           !END IF
            CALL get_localization_info(qs_env, qs_loc_env_homo, loc_section, homo_localized, &
                                       wf_r, wf_g, particles, occupied_orbs, occupied_evals, &
                                       marked_states)
+           !IF (output_unit > 0) THEN
+           !   CALL cp_fm_write_formatted(homo_localized(1)%matrix, output_unit)
+           !END IF
            CALL loc_dipole(input, dft_control, qs_loc_env_homo, logger, qs_env)
            
            ! memory cleanup
