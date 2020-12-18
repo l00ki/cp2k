@@ -29,7 +29,6 @@ lapack_re = re.compile(
 )
 
 warning_re = re.compile(r".*[Ww]arning: (.*)")
-warning_re_subst = re.compile(r"‘\d+’")  # replace occurrences of '49' with *
 
 IGNORED_WARNINGS = (
     "-Wrealloc-lhs",
@@ -42,7 +41,7 @@ IGNORED_WARNINGS = (
     "defined but not used",
     "Removing call to function",
     "Conversion from",
-    "Non-significant digits in ‘REAL(8)’",
+    "Non-significant digits in 'REAL(8)'",
     "POINTER-valued function appears on right-hand side",
     "style of line directive is a GCC extension",
 )
@@ -82,15 +81,16 @@ def check_warnings(fhandle):
             continue  # we are only looking for warnings
         warning = m.group(1)
 
-        warning = warning_re_subst.sub("*", warning)
+        warning = re.sub(r"[‘’]", "'", warning)  # replace unicode apostrophes
+        warning = re.sub(r"'\d+'", "*", warning)  # replace numbers with *
 
         if any(iw in warning for iw in IGNORED_WARNINGS):
             continue
 
         if "Unused" in warning:
-            if "‘error’" in warning:
+            if "'error'" in warning:
                 continue
-            if "‘routinep’" in warning:
+            if "'routinep'" in warning:
                 continue
             if loc_short == "cp_common_uses.f90":
                 continue
@@ -102,7 +102,7 @@ def check_warnings(fhandle):
         if "called with an implicit interface" in warning:
             parts = warning.split()
             assert parts[0] == "Procedure"
-            routine = parts[1].strip("‘’").upper()
+            routine = parts[1].strip("'").upper()
             if may_call_implicit(loc, routine):
                 continue
             print(
@@ -122,7 +122,7 @@ def may_call_implicit(loc, routine):
 
     pkg = path.dirname(loc)
     manifest_fn = pkg + "/PACKAGE"
-    with open(manifest_fn) as fhandle:
+    with open(manifest_fn, encoding="utf8") as fhandle:
         manifest = ast.literal_eval(fhandle.read())
 
     if "implicit" not in manifest:
@@ -152,5 +152,5 @@ in the cp2k arch-file.
     args = parser.parse_args()
 
     for fn in args.files:
-        with open(fn) as fhandle:
+        with open(fn, encoding="utf8") as fhandle:
             check_warnings(fhandle)

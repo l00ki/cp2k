@@ -17,7 +17,6 @@ Flag __DATA_DIR not mentioned in cp2k_flags()
 Flag __FFTW3_UNALIGNED not mentioned in cp2k_flags()
 Flag __FORCE_USE_FAST_MATH not mentioned in INSTALL.md
 Flag __FORCE_USE_FAST_MATH not mentioned in cp2k_flags()
-Flag __GRID_CORE not mentioned in cp2k_flags()
 Flag __HAS_smm_cnt not mentioned in INSTALL.md
 Flag __HAS_smm_ctn not mentioned in INSTALL.md
 Flag __HAS_smm_ctt not mentioned in INSTALL.md
@@ -45,17 +44,6 @@ base_hooks.F: Found WRITE statement with hardcoded unit in "cp_hint"
 base_hooks.F: Found WRITE statement with hardcoded unit in "cp_warn"
 beta_gamma_psi.F: Found GOTO statement in procedure "bratio"
 bfgs_optimizer.F: Found GOTO statement in procedure "rat_fun_opt"
-call_collocate.f90: Routine COLLOCATE_CORE_0 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_1 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_2 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_3 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_4 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_5 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_6 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_7 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_8 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_9 called with an implicit interface.
-call_collocate.f90: Routine COLLOCATE_CORE_DEFAULT called with an implicit interface.
 cg_test.F: Found WRITE statement with hardcoded unit in "clebsch_gordon_test"
 cp_dbcsr_cholesky.F: Routine PDCOPY called with an implicit interface.
 cp_dbcsr_cholesky.F: Routine PDPOTRF called with an implicit interface.
@@ -109,8 +97,8 @@ eip_silicon.F: Found WRITE statement with hardcoded unit in "eip_bazant_silicon"
 eip_silicon.F: Found WRITE statement with hardcoded unit in "eip_lenosky_silicon"
 eip_silicon.F: Found WRITE statement with hardcoded unit in "subfeniat_b"
 eip_silicon.F: Found WRITE statement with hardcoded unit in "subfeniat_l"
-eri_mme_lattice_summation.F: ‘__var_14_matmul.dim[0].lbound’ is used uninitialized in this function [-Wuninitialized]
-eri_mme_lattice_summation.F: ‘__var_14_matmul.dim[0].ubound’ is used uninitialized in this function [-Wuninitialized]
+eri_mme_lattice_summation.F: '__var_14_matmul.dim[0].lbound' is used uninitialized in this function [-Wuninitialized]
+eri_mme_lattice_summation.F: '__var_14_matmul.dim[0].ubound' is used uninitialized in this function [-Wuninitialized]
 et_coupling_proj.F: Routine INFOG2L called with an implicit interface.
 extended_system_init.F: Found WRITE statement with hardcoded unit in "init_barostat_variables"
 farming_methods.F: Found CLOSE statement in procedure "farming_parse_input"
@@ -130,17 +118,6 @@ graph_methods.F: Found WRITE statement with hardcoded unit in "fes_path"
 graph_utils.F: Found WRITE statement with hardcoded unit in "get_val_res"
 graphcon.F: Found GOTO statement in procedure "all_permutations"
 graphcon.F: Found WRITE statement with hardcoded unit in "reorder_graph"
-grid_integrate.F: Routine INTEGRATE_CORE_0 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_1 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_2 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_3 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_4 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_5 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_6 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_7 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_8 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_9 called with an implicit interface.
-grid_integrate.F: Routine INTEGRATE_CORE_DEFAULT called with an implicit interface.
 hfx_compression_methods.F: Found READ with unchecked STAT in "hfx_decompress_cache"
 hfx_energy_potential.F: Found WRITE statement with hardcoded unit in "print_integrals"
 input_enumeration_types.F: Found WRITE statement with hardcoded unit in "enum_i2c"
@@ -177,13 +154,12 @@ message_passing.f90: Type mismatch between actual argument at (1) and actual arg
 message_passing.f90: Type mismatch between actual argument at (1) and actual argument at (2) (COMPLEX(8)/COMPLEX(4)).
 message_passing.f90: Type mismatch between actual argument at (1) and actual argument at (2) (INTEGER(4)/REAL(8)).
 mltfftsg_tools.F: Found WRITE statement with hardcoded unit in "ctrig"
-mm_collocate_potential.F: Routine COLLOCATE_GF_NPBC called with an implicit interface.
-mm_collocate_potential.F: Routine INTEGRATE_GF_NPBC called with an implicit interface.
 mode_selective.F: Found READ with unchecked STAT in "bfgs_guess"
 mp2.F: Found lossy conversion real_4_r8 without KIND argument in "compute_vec_sigma_x_minus_vxc_gw"
 pao_param_exp.F: Found lossy conversion real_4_r8 without KIND argument in "zheevd_wrapper"
 parallel_rng_types_unittest.F: Found WRITE statement with hardcoded unit in "dump_reload_check"
 parallel_rng_types_unittest.F: Found WRITE statement with hardcoded unit in "parallel_rng_types_test"
+parallel_rng_types_unittest.F: Found WRITE statement with hardcoded unit in "shuffle_check"
 powell.F: Found GOTO statement in procedure "newuob"
 preconditioner_makes.F: Found WRITE statement with hardcoded unit in "make_full_all"
 preconditioner_makes.F: Found WRITE statement with hardcoded unit in "make_full_all_ortho"
@@ -221,7 +197,6 @@ se_core_matrix.F: Found WRITE statement with hardcoded unit in "makeds"
 se_core_matrix.F: Found WRITE statement with hardcoded unit in "makes"
 se_fock_matrix_coulomb.F: Found WRITE statement with hardcoded unit in "build_fock_matrix_coulomb_lr"
 se_fock_matrix_dbg.F: Found WRITE statement with hardcoded unit in "dbg_energy_coulomb_lr"
-semi_empirical_int3_utils.F: Routine EVAL called with an implicit interface.
 semi_empirical_int_debug.F: Found WRITE statement with hardcoded unit in "check_dcore_nucint_ana"
 semi_empirical_int_debug.F: Found WRITE statement with hardcoded unit in "check_dcorecore_ana"
 semi_empirical_int_debug.F: Found WRITE statement with hardcoded unit in "check_drotnuc_ana"
@@ -232,7 +207,6 @@ semi_empirical_int_debug.F: Found WRITE statement with hardcoded unit in "check_
 semi_empirical_int_debug.F: Found WRITE statement with hardcoded unit in "check_value"
 semi_empirical_int_debug.F: Found WRITE statement with hardcoded unit in "rot_2el_2c_first_debug"
 semi_empirical_int_debug.F: Routine CHECK_VALUE called with an implicit interface.
-semi_empirical_int_utils.F: Routine EVAL called with an implicit interface.
 semi_empirical_mpole_methods.F: Found WRITE statement with hardcoded unit in "semi_empirical_mpole_p_setup"
 spherical_harmonics.F: Found WRITE statement with hardcoded unit in "cgc"
 spherical_harmonics.F: Found WRITE statement with hardcoded unit in "get_factor"
@@ -270,3 +244,11 @@ xyz2dcd.F: Found STOP statement in procedure "xyz2dcd"
 xyz2dcd.F: Found WRITE statement with hardcoded unit in "abort_program"
 xyz2dcd.F: Found WRITE statement with hardcoded unit in "print_help"
 xyz2dcd.F: Found WRITE statement with hardcoded unit in "xyz2dcd"
+Flag GRID_DO_COLLOCATE not mentioned in INSTALL.md
+Flag GRID_DO_COLLOCATE not mentioned in cp2k_flags()
+memory_utilities_unittest.F: Found WRITE statement with hardcoded unit in "check_real_rank1_allocated"
+memory_utilities_unittest.F: Found WRITE statement with hardcoded unit in "check_real_rank1_unallocated"
+memory_utilities_unittest.F: Found WRITE statement with hardcoded unit in "check_real_rank2_allocated"
+memory_utilities_unittest.F: Found WRITE statement with hardcoded unit in "check_real_rank2_unallocated"
+memory_utilities_unittest.F: Found WRITE statement with hardcoded unit in "check_string_rank1_allocated"
+memory_utilities_unittest.F: Found WRITE statement with hardcoded unit in "check_string_rank1_unallocated"

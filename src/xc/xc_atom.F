@@ -156,9 +156,9 @@ CONTAINS
          END IF
          !  EXC energy ! is that needed for epr?
          deriv_att => xc_dset_get_derivative(deriv_set, "")
+         exc = 0.0_dp
          IF (ASSOCIATED(deriv_att)) THEN
             CALL xc_derivative_get(deriv_att, deriv_data=deriv_data)
-            exc = 0.0_dp
             DO ir = 1, nr
                DO ia = 1, na
                   exc = exc + deriv_data(ia, ir, 1)*w(ia, ir)
@@ -169,9 +169,9 @@ CONTAINS
       ELSE
 !  EXC energy
          deriv_att => xc_dset_get_derivative(deriv_set, "")
+         exc = 0.0_dp
          IF (ASSOCIATED(deriv_att)) THEN
             CALL xc_derivative_get(deriv_att, deriv_data=deriv_data)
-            exc = 0.0_dp
             DO ir = 1, nr
                DO ia = 1, na
                   exc = exc + deriv_data(ia, ir, 1)*w(ia, ir)
@@ -291,16 +291,23 @@ CONTAINS
             END IF ! lsd
 !  Derivative with respect to tau
             IF (lsd) THEN
-               deriv_att => xc_dset_get_derivative(deriv_set, "(taua)")
+               deriv_att => xc_dset_get_derivative(deriv_set, "(tau_a)")
                IF (ASSOCIATED(deriv_att)) THEN
                   CALL xc_derivative_get(deriv_att, deriv_data=deriv_data)
                   vtau(:, :, 1) = deriv_data(:, :, 1)*w(:, :)*my_adiabatic_rescale_factor
                   NULLIFY (deriv_data)
                END IF
-               deriv_att => xc_dset_get_derivative(deriv_set, "(taub)")
+               deriv_att => xc_dset_get_derivative(deriv_set, "(tau_b)")
                IF (ASSOCIATED(deriv_att)) THEN
                   CALL xc_derivative_get(deriv_att, deriv_data=deriv_data)
                   vtau(:, :, 2) = deriv_data(:, :, 1)*w(:, :)*my_adiabatic_rescale_factor
+                  NULLIFY (deriv_data)
+               END IF
+               deriv_att => xc_dset_get_derivative(deriv_set, "(tau)")
+               IF (ASSOCIATED(deriv_att)) THEN
+                  CALL xc_derivative_get(deriv_att, deriv_data=deriv_data)
+                  vtau(:, :, 1) = vtau(:, :, 1) + deriv_data(:, :, 1)*w(:, :)*my_adiabatic_rescale_factor
+                  vtau(:, :, 2) = vtau(:, :, 2) + deriv_data(:, :, 1)*w(:, :)*my_adiabatic_rescale_factor
                   NULLIFY (deriv_data)
                END IF
             ELSE
@@ -587,10 +594,10 @@ CONTAINS
       TYPE(xc_rho_set_type), POINTER                     :: rho_set
       LOGICAL, INTENT(IN)                                :: lsd
       INTEGER, INTENT(IN)                                :: nspins
-      TYPE(xc_rho_cflags_type), INTENT(in)               :: needs
-      REAL(dp), DIMENSION(:, :), POINTER                 :: rho
-      REAL(dp), DIMENSION(:, :, :, :), POINTER           :: drho
-      REAL(dp), DIMENSION(:, :), POINTER                 :: tau
+      TYPE(xc_rho_cflags_type), INTENT(IN)               :: needs
+      REAL(dp), DIMENSION(:, :), INTENT(IN)              :: rho
+      REAL(dp), DIMENSION(:, :, :, :), INTENT(IN)        :: drho
+      REAL(dp), DIMENSION(:, :), INTENT(IN)              :: tau
       INTEGER, INTENT(IN)                                :: na, ir
 
       REAL(KIND=dp), PARAMETER                           :: f13 = (1.0_dp/3.0_dp)
@@ -824,7 +831,6 @@ CONTAINS
 
       ! tau part
       IF (needs%tau .OR. needs%tau_spin) THEN
-         CPASSERT(ASSOCIATED(tau))
          CPASSERT(SIZE(tau, 2) == my_nspins)
       END IF
       IF (needs%tau) THEN

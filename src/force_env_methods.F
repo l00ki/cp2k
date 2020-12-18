@@ -70,11 +70,10 @@ MODULE force_env_methods
    USE fist_force,                      ONLY: fist_calc_energy_force
    USE force_env_types,                 ONLY: &
         force_env_get, force_env_get_natom, force_env_p_type, force_env_set, force_env_type, &
-        use_eip_force, use_embed, use_fist_force, use_mixed_force, use_prog_name, use_pwdft_force, &
-        use_qmmm, use_qmmmx, use_qs_force
+        use_eip_force, use_embed, use_fist_force, use_mixed_force, use_nnp_force, use_prog_name, &
+        use_pwdft_force, use_qmmm, use_qmmmx, use_qs_force
    USE force_env_utils,                 ONLY: rescale_forces,&
-                                              write_forces,&
-                                              write_stress_tensor
+                                              write_forces
    USE force_fields_util,               ONLY: get_generic_info
    USE fp_methods,                      ONLY: fp_eval
    USE fparser,                         ONLY: EvalErrType,&
@@ -116,6 +115,9 @@ MODULE force_env_methods
    USE molecule_kind_list_types,        ONLY: molecule_kind_list_type
    USE molecule_kind_types,             ONLY: get_molecule_kind,&
                                               molecule_kind_type
+   USE nnp_environment_types,           ONLY: nnp_env_retain,&
+                                              nnp_type
+   USE nnp_force,                       ONLY: nnp_calc_energy_force
    USE optimize_dmfet_potential,        ONLY: build_full_dm,&
                                               check_dmfet,&
                                               prepare_dmfet_opt,&
@@ -163,9 +165,10 @@ MODULE force_env_methods
    USE restraint,                       ONLY: restraint_control
    USE scine_utils,                     ONLY: write_scine
    USE string_utilities,                ONLY: compress
-   USE virial_methods,                  ONLY: write_stress_components
+   USE virial_methods,                  ONLY: write_stress_tensor,&
+                                              write_stress_tensor_components
    USE virial_types,                    ONLY: cp_virial,&
-                                              sym_virial,&
+                                              symmetrize_virial,&
                                               virial_create,&
                                               virial_p_type,&
                                               virial_release,&
@@ -216,10 +219,8 @@ CONTAINS
                                                             nfixed_atoms_total, nkind, &
                                                             output_unit, print_forces, print_grrm, &
                                                             print_scine
-      LOGICAL                                            :: calculate_forces, &
-                                                            calculate_stress_tensor, &
-                                                            energy_consistency, eval_ef, &
-                                                            linres_run, my_skip
+      LOGICAL :: calculate_forces, calculate_stress_tensor, energy_consistency, eval_ef, &
+         linres_run, my_skip, print_components
       REAL(KIND=dp)                                      :: checksum, e_pot, sum_energy, &
                                                             sum_pv_virial, sum_stress_tensor
       REAL(KIND=dp), DIMENSION(3)                        :: grand_total_force, total_force
@@ -289,6 +290,9 @@ CONTAINS
                                          require_consistent_energy_force=require_consistent_energy_force)
          CASE (use_mixed_force)
             CALL mixed_energy_forces(force_env, calculate_forces)
+         CASE (use_nnp_force)
+            CALL nnp_calc_energy_force(force_env%nnp_env, &
+                                       calculate_forces)
          CASE (use_embed)
             CALL embed_energy(force_env)
          CASE default
@@ -303,7 +307,7 @@ CONTAINS
          ELSE
             IF (calculate_forces) THEN
                ! Symmetrize analytical stress tensor
-               CALL sym_virial(virial)
+               CALL symmetrize_virial(virial)
             ELSE
                IF (calculate_stress_tensor) THEN
                   CALL cp_warn(__LOCATION__, "The calculation of the stress tensor "// &
@@ -342,7 +346,7 @@ CONTAINS
       output_unit = cp_print_key_unit_nr(logger, force_env%force_env_section, "PRINT%PROGRAM_RUN_INFO", &
                                          extension=".Log")
       IF (output_unit > 0) THEN
-         WRITE (output_unit, '(/,T2,"ENERGY| Total FORCE_EVAL ( ",A," ) energy (a.u.): ",T55,F26.15,/)') &
+         WRITE (output_unit, '(/,T2,"ENERGY| Total FORCE_EVAL ( ",A," ) energy [a.u.]: ",T55,F26.15)') &
             ADJUSTR(TRIM(use_prog_name(force_env%in_use))), e_pot
       END IF
       CALL cp_print_key_finished_output(output_unit, logger, force_env%force_env_section, &
@@ -392,12 +396,14 @@ CONTAINS
             output_unit = cp_print_key_unit_nr(logger, force_env%force_env_section, "PRINT%STRESS_TENSOR", &
                                                extension=".stress_tensor")
             IF (output_unit > 0) THEN
-               CALL section_vals_val_get(force_env%force_env_section, "PRINT%STRESS_TENSOR%NDIGITS", &
-                                         i_val=ndigits)
-               CALL write_stress_tensor(virial%pv_virial, output_unit, cell, ndigits, virial%pv_numer)
-               IF ((.NOT. virial%pv_numer) .AND. (force_env%in_use == use_qs_force)) THEN
-                  CALL write_stress_components(virial, output_unit)
+               CALL section_vals_val_get(force_env%force_env_section, "PRINT%STRESS_TENSOR%COMPONENTS", &
+                                         l_val=print_components)
+               IF (print_components) THEN
+                  IF ((.NOT. virial%pv_numer) .AND. (force_env%in_use == use_qs_force)) THEN
+                     CALL write_stress_tensor_components(virial, output_unit, cell)
+                  END IF
                END IF
+               CALL write_stress_tensor(virial%pv_virial, output_unit, cell, virial%pv_numer)
             END IF
             CALL cp_print_key_finished_output(output_unit, logger, force_env%force_env_section, &
                                               "PRINT%STRESS_TENSOR")
@@ -553,8 +559,8 @@ CONTAINS
 
       REAL(kind=dp), PARAMETER                           :: default_dx = 0.001_dp
 
-      INTEGER                                            :: i, ip, iq, j, k, natom, ncore, ndigits, &
-                                                            nshell, output_unit
+      INTEGER                                            :: i, ip, iq, j, k, natom, ncore, nshell, &
+                                                            output_unit
       REAL(KIND=dp)                                      :: dx_w
       REAL(KIND=dp), DIMENSION(2)                        :: numer_energy
       REAL(KIND=dp), DIMENSION(3)                        :: s
@@ -653,14 +659,14 @@ CONTAINS
             numer_stress(ip, iq) = 0.5_dp*(numer_energy(1) - numer_energy(2))/dx_w
             IF (output_unit > 0) THEN
                IF (globenv%run_type_id == debug_run) THEN
-                  WRITE (UNIT=output_unit, FMT="(T2,A,T19,A,F7.4,A,T44,A,F7.4,A,T69,A)") &
+                  WRITE (UNIT=output_unit, FMT="(/,T2,A,T19,A,F7.4,A,T44,A,F7.4,A,T69,A)") &
                      "DEBUG|", "E("//ACHAR(119 + ip)//ACHAR(119 + iq)//" +", dx_w, ")", &
                      "E("//ACHAR(119 + ip)//ACHAR(119 + iq)//" -", dx_w, ")", &
                      "f(numerical)"
                   WRITE (UNIT=output_unit, FMT="(T2,A,2(1X,F24.8),1X,F22.8)") &
                      "DEBUG|", numer_energy(1:2), numer_stress(ip, iq)
                ELSE
-                  WRITE (UNIT=output_unit, FMT="(T7,A,F7.4,A,T27,A,F7.4,A,T49,A)") &
+                  WRITE (UNIT=output_unit, FMT="(/,T7,A,F7.4,A,T27,A,F7.4,A,T49,A)") &
                      "E("//ACHAR(119 + ip)//ACHAR(119 + iq)//" +", dx_w, ")", &
                      "E("//ACHAR(119 + ip)//ACHAR(119 + iq)//" -", dx_w, ")", &
                      "f(numerical)"
@@ -700,9 +706,7 @@ CONTAINS
 
       IF (output_unit > 0) THEN
          IF (globenv%run_type_id == debug_run) THEN
-            CALL section_vals_val_get(force_env%force_env_section, "PRINT%STRESS_TENSOR%NDIGITS", &
-                                      i_val=ndigits)
-            CALL write_stress_tensor(virial%pv_virial, output_unit, cell, ndigits, virial%pv_numer)
+            CALL write_stress_tensor(virial%pv_virial, output_unit, cell, virial%pv_numer)
          END IF
          WRITE (output_unit, '(/,A,/)') ' **************************** '// &
             'NUMERICAL STRESS END *****************************'
@@ -743,13 +747,14 @@ CONTAINS
 !> \param force_env_section ...
 !> \param mixed_env ...
 !> \param embed_env ...
+!> \param nnp_env ...
 !> \par History
 !>      04.2003 created [fawzi]
 !> \author fawzi
 ! **************************************************************************************************
    SUBROUTINE force_env_create(force_env, root_section, para_env, globenv, fist_env, &
                                qs_env, meta_env, sub_force_env, qmmm_env, qmmmx_env, eip_env, pwdft_env, force_env_section, &
-                               mixed_env, embed_env)
+                               mixed_env, embed_env, nnp_env)
 
       TYPE(force_env_type), POINTER                      :: force_env
       TYPE(section_vals_type), POINTER                   :: root_section
@@ -767,6 +772,7 @@ CONTAINS
       TYPE(section_vals_type), POINTER                   :: force_env_section
       TYPE(mixed_environment_type), OPTIONAL, POINTER    :: mixed_env
       TYPE(embed_env_type), OPTIONAL, POINTER            :: embed_env
+      TYPE(nnp_type), OPTIONAL, POINTER                  :: nnp_env
 
       ALLOCATE (force_env)
       NULLIFY (force_env%fist_env, force_env%qs_env, &
@@ -774,7 +780,8 @@ CONTAINS
                force_env%meta_env, force_env%sub_force_env, &
                force_env%qmmm_env, force_env%qmmmx_env, force_env%fp_env, &
                force_env%force_env_section, force_env%eip_env, force_env%mixed_env, &
-               force_env%embed_env, force_env%pwdft_env, force_env%root_section)
+               force_env%embed_env, force_env%pwdft_env, force_env%nnp_env, &
+               force_env%root_section)
       last_force_env_id = last_force_env_id + 1
       force_env%id_nr = last_force_env_id
       force_env%ref_count = 1
@@ -848,6 +855,13 @@ CONTAINS
          force_env%in_use = use_embed
          force_env%embed_env => embed_env
          CALL embed_env_retain(embed_env)
+      END IF
+      IF (PRESENT(nnp_env)) THEN
+         CPASSERT(ASSOCIATED(nnp_env))
+         CPASSERT(force_env%in_use == 0)
+         force_env%in_use = use_nnp_force
+         force_env%nnp_env => nnp_env
+         CALL nnp_env_retain(nnp_env)
       END IF
       CPASSERT(force_env%in_use /= 0)
 

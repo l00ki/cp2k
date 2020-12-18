@@ -15,8 +15,6 @@ USER root
 COPY ./install_requirements*.sh ./
 RUN ./install_requirements.sh ${BASE_IMAGE}
 
-ENV LANG en_US.UTF-8
-
 # copy helper scripts
 WORKDIR /opt/cp2k-toolchain
 RUN mkdir scripts
@@ -93,6 +91,8 @@ RUN ./scripts/install_libsmm.sh && \
     rm -rf ./build
 
 COPY ./scripts/install_elpa.sh ./scripts/
+COPY ./scripts/files/elpa-2020.05.001-no-LDFLAGS-for-NVCC-compile.patch \
+     ./scripts/files/
 RUN ./scripts/install_elpa.sh && rm -rf ./build
 
 COPY ./scripts/install_ptscotch.sh \

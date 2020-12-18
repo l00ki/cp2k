@@ -12,13 +12,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "grid_common.h"
 #include "grid_constants.h"
 #include "grid_library.h"
 
-static grid_library_stats **per_thread_stats = NULL;
+static grid_library_globals **per_thread_globals = NULL;
 static bool library_initialized = false;
 static grid_library_config config = {.backend = GRID_BACKEND_AUTO,
-                                     .validate = false};
+                                     .device_id = -1,
+                                     .validate = false,
+                                     .apply_cutoff = false,
+                                     .queue_length = 8192};
 
 /*******************************************************************************
  * \brief Initializes the grid library.
@@ -30,15 +34,15 @@ void grid_library_init() {
     abort();
   }
 
-  per_thread_stats =
-      malloc(sizeof(grid_library_stats *) * omp_get_max_threads());
+  per_thread_globals =
+      malloc(sizeof(grid_library_globals *) * omp_get_max_threads());
 
 // Using parallel regions to ensure memory is allocated near a thread's core.
-#pragma omp parallel default(none) shared(per_thread_stats)
+#pragma omp parallel default(none) shared(per_thread_globals)
   {
     const int ithread = omp_get_thread_num();
-    per_thread_stats[ithread] = malloc(sizeof(grid_library_stats));
-    memset(per_thread_stats[ithread], 0, sizeof(grid_library_stats));
+    per_thread_globals[ithread] = malloc(sizeof(grid_library_globals));
+    memset(per_thread_globals[ithread], 0, sizeof(grid_library_globals));
   }
 
   library_initialized = true;
@@ -55,20 +59,34 @@ void grid_library_finalize() {
   }
 
   for (int i = 0; i < omp_get_max_threads(); i++) {
-    free(per_thread_stats[i]);
+    grid_sphere_cache_free(&per_thread_globals[i]->sphere_cache);
+    free(per_thread_globals[i]);
   }
-  free(per_thread_stats);
-  per_thread_stats = NULL;
+  free(per_thread_globals);
+  per_thread_globals = NULL;
   library_initialized = false;
+}
+
+/*******************************************************************************
+ * \brief Returns a pointer to the thread local sphere cache.
+ * \author Ole Schuett
+ ******************************************************************************/
+grid_sphere_cache *grid_library_get_sphere_cache() {
+  return &per_thread_globals[omp_get_thread_num()]->sphere_cache;
 }
 
 /*******************************************************************************
  * \brief Configures the grid library.
  * \author Ole Schuett
  ******************************************************************************/
-void grid_library_set_config(const int backend, const bool validate) {
+void grid_library_set_config(const enum grid_backend backend,
+                             const int device_id, const bool validate,
+                             const bool apply_cutoff, const int queue_length) {
   config.backend = backend;
+  config.device_id = device_id;
   config.validate = validate;
+  config.apply_cutoff = apply_cutoff;
+  config.queue_length = queue_length;
 }
 
 /*******************************************************************************
@@ -78,25 +96,12 @@ void grid_library_set_config(const int backend, const bool validate) {
 grid_library_config grid_library_get_config() { return config; }
 
 /*******************************************************************************
- * \brief Internal helper for summing two sets of counters.
+ * \brief Increment specified counter, see grid_library.h for details.
  * \author Ole Schuett
  ******************************************************************************/
-static void sum_stats(const grid_library_stats increment,
-                      grid_library_stats *accumulator) {
-  accumulator->ref_collocate_ortho += increment.ref_collocate_ortho;
-  accumulator->ref_collocate_general += increment.ref_collocate_general;
-}
-
-/*******************************************************************************
- * \brief Increment global counters by given values.
- * \author Ole Schuett
- ******************************************************************************/
-void grid_library_gather_stats(const grid_library_stats increment) {
-  if (!library_initialized) {
-    printf("Error: Grid library is not initialized.\n");
-    abort();
-  }
-  sum_stats(increment, per_thread_stats[omp_get_thread_num()]);
+void grid_library_increment_counter(int lp, int kern, int op) {
+  lp = imin(lp, 19);
+  per_thread_globals[omp_get_thread_num()]->counters[lp][kern][op]++;
 }
 
 /*******************************************************************************
@@ -111,6 +116,24 @@ void grid_library_print_stats(void (*mpi_sum_func)(long *, int),
     printf("Error: Grid library is not initialized.\n");
     abort();
   }
+
+  // Sum all counters across threads and mpi ranks.
+  long counters[20][2][2] = {0};
+  double total = 0.0;
+  for (int lp = 0; lp < 20; lp++) {
+    for (int kern = 0; kern < 2; kern++) {
+      for (int op = 0; op < 2; op++) {
+        for (int i = 0; i < omp_get_max_threads(); i++) {
+          counters[lp][kern][op] +=
+              per_thread_globals[i]->counters[lp][kern][op];
+        }
+        mpi_sum_func(&counters[lp][kern][op], mpi_comm);
+        total += counters[lp][kern][op];
+      }
+    }
+  }
+
+  // Print counters.
   print_func("\n", output_unit);
   print_func(" ----------------------------------------------------------------"
              "---------------\n",
@@ -127,27 +150,25 @@ void grid_library_print_stats(void (*mpi_sum_func)(long *, int),
   print_func(" ----------------------------------------------------------------"
              "---------------\n",
              output_unit);
-  print_func(" COUNTER                                                         "
-             "          VALUE\n",
+  print_func(" LP    KERNEL    OPERATION                                     "
+             "COUNT     PERCENT\n",
              output_unit);
 
-  grid_library_stats totals;
-  memset(&totals, 0, sizeof(grid_library_stats));
-
-  for (int i = 0; i < omp_get_max_threads(); i++) {
-    sum_stats(*per_thread_stats[i], &totals);
+  for (int lp = 0; lp < 20; lp++) {
+    for (int kern = 0; kern < 2; kern++) {
+      for (int op = 0; op < 2; op++) {
+        if (counters[lp][kern][op] == 0)
+          continue; // skip empty counters
+        const char *op_str = (op == 1) ? "collocate" : "integrate";
+        const char *kern_str = (kern == 1) ? "ortho" : "general";
+        char buffer[100];
+        double percent = 100.0 * counters[lp][kern][op] / total;
+        snprintf(buffer, sizeof(buffer), " %-5i %-9s %-12s %38li %10.2f%%\n",
+                 lp, kern_str, op_str, counters[lp][kern][op], percent);
+        print_func(buffer, output_unit);
+      }
+    }
   }
-
-  char buffer[100];
-  mpi_sum_func(&totals.ref_collocate_ortho, mpi_comm);
-  snprintf(buffer, sizeof(buffer), " %-58s %20li\n", "ref_collocate_ortho",
-           totals.ref_collocate_ortho);
-  print_func(buffer, output_unit);
-
-  mpi_sum_func(&totals.ref_collocate_general, mpi_comm);
-  snprintf(buffer, sizeof(buffer), " %-58s %20li\n", "ref_collocate_general",
-           totals.ref_collocate_general);
-  print_func(buffer, output_unit);
 
   print_func(" ----------------------------------------------------------------"
              "---------------\n",

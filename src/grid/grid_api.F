@@ -14,18 +14,7 @@ MODULE grid_api
         C_ASSOCIATED, C_BOOL, C_CHAR, C_DOUBLE, C_FUNLOC, C_FUNPTR, C_F_POINTER, C_INT, C_LOC, &
         C_LONG, C_NULL_CHAR, C_NULL_PTR, C_PTR
    USE cell_types,                      ONLY: cell_type
-   USE cp_log_handling,                 ONLY: cp_logger_get_default_io_unit
    USE cube_utils,                      ONLY: cube_info_type
-   USE grid_collocate_legacy,           ONLY: &
-        GRID_FUNC_AB, GRID_FUNC_ADBmDAB_X, GRID_FUNC_ADBmDAB_Y, GRID_FUNC_ADBmDAB_Z, &
-        GRID_FUNC_ARDBmDARB_XX, GRID_FUNC_ARDBmDARB_XY, GRID_FUNC_ARDBmDARB_XZ, &
-        GRID_FUNC_ARDBmDARB_YX, GRID_FUNC_ARDBmDARB_YY, GRID_FUNC_ARDBmDARB_YZ, &
-        GRID_FUNC_ARDBmDARB_ZX, GRID_FUNC_ARDBmDARB_ZY, GRID_FUNC_ARDBmDARB_ZZ, &
-        GRID_FUNC_DABpADB_X, GRID_FUNC_DABpADB_Y, GRID_FUNC_DABpADB_Z, GRID_FUNC_DADB, &
-        GRID_FUNC_DX, GRID_FUNC_DXDX, GRID_FUNC_DXDY, GRID_FUNC_DY, GRID_FUNC_DYDY, &
-        GRID_FUNC_DYDZ, GRID_FUNC_DZ, GRID_FUNC_DZDX, GRID_FUNC_DZDZ, &
-        collocate_pgf_product_legacy => collocate_pgf_product
-   USE grid_integrate,                  ONLY: integrate_pgf_product
    USE kinds,                           ONLY: dp
    USE message_passing,                 ONLY: mp_sum
    USE realspace_grid_types,            ONLY: realspace_grid_p_type,&
@@ -38,45 +27,51 @@ MODULE grid_api
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'grid_api'
 
-   LOGICAL, PARAMETER, PRIVATE :: validate_collocate = .FALSE.
-
-   PUBLIC :: GRID_FUNC_AB
-   PUBLIC :: GRID_FUNC_DADB
-   PUBLIC :: GRID_FUNC_ADBmDAB_X
-   PUBLIC :: GRID_FUNC_ADBmDAB_Y
-   PUBLIC :: GRID_FUNC_ADBmDAB_Z
-   PUBLIC :: GRID_FUNC_ARDBmDARB_XX
-   PUBLIC :: GRID_FUNC_ARDBmDARB_XY
-   PUBLIC :: GRID_FUNC_ARDBmDARB_XZ
-   PUBLIC :: GRID_FUNC_ARDBmDARB_YX
-   PUBLIC :: GRID_FUNC_ARDBmDARB_YY
-   PUBLIC :: GRID_FUNC_ARDBmDARB_YZ
-   PUBLIC :: GRID_FUNC_ARDBmDARB_ZX
-   PUBLIC :: GRID_FUNC_ARDBmDARB_ZY
-   PUBLIC :: GRID_FUNC_ARDBmDARB_ZZ
-   PUBLIC :: GRID_FUNC_DABpADB_X
-   PUBLIC :: GRID_FUNC_DABpADB_Y
-   PUBLIC :: GRID_FUNC_DABpADB_Z
-   PUBLIC :: GRID_FUNC_DX
-   PUBLIC :: GRID_FUNC_DY
-   PUBLIC :: GRID_FUNC_DZ
-   PUBLIC :: GRID_FUNC_DXDY
-   PUBLIC :: GRID_FUNC_DYDZ
-   PUBLIC :: GRID_FUNC_DZDX
-   PUBLIC :: GRID_FUNC_DXDX
-   PUBLIC :: GRID_FUNC_DYDY
-   PUBLIC :: GRID_FUNC_DZDZ
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_AB = 100
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DADB = 200
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ADBmDAB_X = 301
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ADBmDAB_Y = 302
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ADBmDAB_Z = 303
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_XX = 411
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_XY = 412
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_XZ = 413
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_YX = 421
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_YY = 422
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_YZ = 423
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_ZX = 431
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_ZY = 432
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_ARDBmDARB_ZZ = 433
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DABpADB_X = 501
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DABpADB_Y = 502
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DABpADB_Z = 503
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DX = 601
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DY = 602
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DZ = 603
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DXDY = 701
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DYDZ = 702
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DZDX = 703
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DXDX = 801
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DYDY = 802
+   INTEGER, PARAMETER, PUBLIC :: GRID_FUNC_DZDZ = 803
 
    INTEGER, PARAMETER, PUBLIC :: GRID_BACKEND_AUTO = 10
    INTEGER, PARAMETER, PUBLIC :: GRID_BACKEND_REF = 11
    INTEGER, PARAMETER, PUBLIC :: GRID_BACKEND_CPU = 12
+   INTEGER, PARAMETER, PUBLIC :: GRID_BACKEND_GPU = 13
+   INTEGER, PARAMETER, PUBLIC :: GRID_BACKEND_HYBRID = 14
 
    PUBLIC :: grid_library_init, grid_library_finalize
    PUBLIC :: grid_library_set_config, grid_library_print_stats
    PUBLIC :: collocate_pgf_product, integrate_pgf_product
+   PUBLIC :: grid_buffer_type, grid_create_buffer, grid_free_buffer
    PUBLIC :: grid_basis_set_type, grid_create_basis_set, grid_free_basis_set
    PUBLIC :: grid_task_list_type, grid_create_task_list, grid_free_task_list
-   PUBLIC :: grid_collocate_task_list
+   PUBLIC :: grid_collocate_task_list, grid_integrate_task_list
+
+   TYPE grid_buffer_type
+      REAL(KIND=dp), DIMENSION(:), POINTER :: host_buffer => Null()
+      TYPE(C_PTR), PRIVATE :: c_ptr = C_NULL_PTR
+   END TYPE grid_buffer_type
 
    TYPE grid_basis_set_type
       PRIVATE
@@ -137,22 +132,20 @@ CONTAINS
       LOGICAL, OPTIONAL                                  :: use_subpatch
       INTEGER, INTENT(IN), OPTIONAL                      :: subpatch_pattern
 
-      INTEGER                                            :: border_mask, i, iw, j, k, my_pos
+      INTEGER                                            :: border_mask
       INTEGER, DIMENSION(3), TARGET                      :: border_width, npts_global, npts_local, &
                                                             shift_local
-      INTEGER, SAVE                                      :: counter = 0
       LOGICAL(KIND=C_BOOL)                               :: orthorhombic
-      REAL(KIND=dp)                                      :: diff, ref_value, rel_diff, tolerance
-      REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: grid, grid_before
+      REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: grid
       INTERFACE
-         SUBROUTINE grid_collocate_pgf_product_c(orthorhombic, &
-                                                 border_mask, func, &
-                                                 la_max, la_min, lb_max, lb_min, &
-                                                 zeta, zetb, rscale, dh, dh_inv, ra, rab, &
-                                                 npts_global, npts_local, shift_local, border_width, &
-                                                 radius, o1, o2, n1, n2, pab, &
-                                                 grid) &
-            BIND(C, name="grid_collocate_pgf_product")
+         SUBROUTINE grid_ref_collocate_pgf_product_c(orthorhombic, &
+                                                     border_mask, func, &
+                                                     la_max, la_min, lb_max, lb_min, &
+                                                     zeta, zetb, rscale, dh, dh_inv, ra, rab, &
+                                                     npts_global, npts_local, shift_local, border_width, &
+                                                     radius, o1, o2, n1, n2, pab, &
+                                                     grid) &
+            BIND(C, name="grid_ref_collocate_pgf_product")
             IMPORT :: C_PTR, C_INT, C_DOUBLE, C_BOOL
             LOGICAL(KIND=C_BOOL), VALUE               :: orthorhombic
             INTEGER(KIND=C_INT), VALUE                :: border_mask
@@ -179,7 +172,7 @@ CONTAINS
             INTEGER(KIND=C_INT), VALUE                :: n2
             TYPE(C_PTR), VALUE                        :: pab
             TYPE(C_PTR), VALUE                        :: grid
-         END SUBROUTINE grid_collocate_pgf_product_c
+         END SUBROUTINE grid_ref_collocate_pgf_product_c
       END INTERFACE
 
       !TODO remove unused dummy arguments
@@ -204,15 +197,7 @@ CONTAINS
                                  shift_local=shift_local, &
                                  border_width=border_width)
 
-      IF (validate_collocate) THEN
-         ALLOCATE (grid(SIZE(rsgrid%r, 1), SIZE(rsgrid%r, 2), SIZE(rsgrid%r, 3)))
-         ALLOCATE (grid_before(SIZE(rsgrid%r, 1), SIZE(rsgrid%r, 2), SIZE(rsgrid%r, 3)))
-         grid_before = rsgrid%r ! copy
-         grid = 0.0_dp
-         rsgrid%r = 0.0_dp
-      ELSE
-         grid(1:, 1:, 1:) => rsgrid%r(:, :, :)  ! pointer assignment
-      ENDIF
+      grid(1:, 1:, 1:) => rsgrid%r(:, :, :)  ! pointer assignment
 
 #if __GNUC__ >= 9
       CPASSERT(IS_CONTIGUOUS(rsgrid%desc%dh))
@@ -227,77 +212,284 @@ CONTAINS
       CPASSERT(IS_CONTIGUOUS(grid))
 #endif
 
-      CALL grid_collocate_pgf_product_c(orthorhombic=orthorhombic, &
-                                        border_mask=border_mask, &
-                                        func=ga_gb_function, &
-                                        la_max=la_max, &
-                                        la_min=la_min, &
-                                        lb_max=lb_max, &
-                                        lb_min=lb_min, &
-                                        zeta=zeta, &
-                                        zetb=zetb, &
-                                        rscale=scale, &
-                                        dh=C_LOC(rsgrid%desc%dh(1, 1)), &
-                                        dh_inv=C_LOC(rsgrid%desc%dh_inv(1, 1)), &
-                                        ra=C_LOC(ra(1)), &
-                                        rab=C_LOC(rab(1)), &
-                                        npts_global=C_LOC(npts_global(1)), &
-                                        npts_local=C_LOC(npts_local(1)), &
-                                        shift_local=C_LOC(shift_local(1)), &
-                                        border_width=C_LOC(border_width(1)), &
-                                        radius=radius, &
-                                        o1=o1, &
-                                        o2=o2, &
-                                        n1=SIZE(pab, 1), &
-                                        n2=SIZE(pab, 2), &
-                                        pab=C_LOC(pab(1, 1)), &
-                                        grid=C_LOC(grid(1, 1, 1)))
+      ! For collocating single pgf products there is only the reference implementation.
 
-      IF (validate_collocate) THEN
-         CALL collocate_pgf_product_legacy(la_max, zeta, la_min, &
-                                           lb_max, zetb, lb_min, &
-                                           ra, rab, scale, pab, o1, o2, &
-                                           rsgrid, cell, cube_info, &
-                                           ga_gb_function, radius, &
-                                           use_subpatch, subpatch_pattern)
-         IF (orthorhombic .AND. border_mask == 0) THEN
-            tolerance = 6e-14
-         ELSE
-            tolerance = 2e-10
-         END IF
-         counter = counter + 1
-         my_pos = rsgrid%desc%my_pos
-         DO i = 1, SIZE(rsgrid%r, 1)
-         DO j = 1, SIZE(rsgrid%r, 2)
-         DO k = 1, SIZE(rsgrid%r, 3)
-            ref_value = rsgrid%r(i - 1 + LBOUND(rsgrid%r, 1), j - 1 + LBOUND(rsgrid%r, 2), k - 1 + LBOUND(rsgrid%r, 3))
-            diff = ABS(grid(i, j, k) - ref_value)
-            rel_diff = diff/MAX(1.0_dp, ABS(ref_value))
-            !IF ((ref_value==0.0_dp) .NEQV. (grid(i, j, k)==0.0_dp)) THEN
-            IF (rel_diff > tolerance) THEN
-               iw = cp_logger_get_default_io_unit()
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "diff: ", diff
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "rel. diff: ", rel_diff
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "value:", grid(i, j, k), "ref_value:", ref_value
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "ijk:", i - 1, j - 1, k - 1
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "npts_global:", npts_global
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "npts_local:", npts_local
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "shift_local:", shift_local
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "orthorhombic:", orthorhombic
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "ga_gb_function:", ga_gb_function
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "border_mask:", border_mask
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "border_width:", border_width
-               WRITE (iw, *) "counter: ", counter, "my_pos: ", my_pos, "distributed:", rsgrid%desc%distributed
-               CPABORT("Collocate validation failed.")
-            END IF
-         ENDDO
-         ENDDO
-         ENDDO
-         rsgrid%r = rsgrid%r + grid_before
-         DEALLOCATE (grid, grid_before)
-      ENDIF
+      CALL grid_ref_collocate_pgf_product_c(orthorhombic=orthorhombic, &
+                                            border_mask=border_mask, &
+                                            func=ga_gb_function, &
+                                            la_max=la_max, &
+                                            la_min=la_min, &
+                                            lb_max=lb_max, &
+                                            lb_min=lb_min, &
+                                            zeta=zeta, &
+                                            zetb=zetb, &
+                                            rscale=scale, &
+                                            dh=C_LOC(rsgrid%desc%dh(1, 1)), &
+                                            dh_inv=C_LOC(rsgrid%desc%dh_inv(1, 1)), &
+                                            ra=C_LOC(ra(1)), &
+                                            rab=C_LOC(rab(1)), &
+                                            npts_global=C_LOC(npts_global(1)), &
+                                            npts_local=C_LOC(npts_local(1)), &
+                                            shift_local=C_LOC(shift_local(1)), &
+                                            border_width=C_LOC(border_width(1)), &
+                                            radius=radius, &
+                                            o1=o1, &
+                                            o2=o2, &
+                                            n1=SIZE(pab, 1), &
+                                            n2=SIZE(pab, 2), &
+                                            pab=C_LOC(pab(1, 1)), &
+                                            grid=C_LOC(grid(1, 1, 1)))
 
    END SUBROUTINE collocate_pgf_product
+
+! **************************************************************************************************
+!> \brief low level function to compute matrix elements of primitive gaussian functions
+!> \param la_max ...
+!> \param zeta ...
+!> \param la_min ...
+!> \param lb_max ...
+!> \param zetb ...
+!> \param lb_min ...
+!> \param ra ...
+!> \param rab ...
+!> \param rsgrid ...
+!> \param cell ...
+!> \param cube_info ...
+!> \param hab ...
+!> \param pab ...
+!> \param o1 ...
+!> \param o2 ...
+!> \param radius ...
+!> \param calculate_forces ...
+!> \param force_a ...
+!> \param force_b ...
+!> \param compute_tau ...
+!> \param use_virial ...
+!> \param my_virial_a ...
+!> \param my_virial_b ...
+!> \param hdab ...
+!> \param a_hdab ...
+!> \param use_subpatch ...
+!> \param subpatch_pattern ...
+! **************************************************************************************************
+   SUBROUTINE integrate_pgf_product(la_max, zeta, la_min, &
+                                    lb_max, zetb, lb_min, &
+                                    ra, rab, rsgrid, cell, &
+                                    cube_info, hab, pab, o1, o2, &
+                                    radius, &
+                                    calculate_forces, force_a, force_b, &
+                                    compute_tau, &
+                                    use_virial, my_virial_a, &
+                                    my_virial_b, hdab, a_hdab, use_subpatch, subpatch_pattern)
+
+      INTEGER, INTENT(IN)                                :: la_max
+      REAL(KIND=dp), INTENT(IN)                          :: zeta
+      INTEGER, INTENT(IN)                                :: la_min, lb_max
+      REAL(KIND=dp), INTENT(IN)                          :: zetb
+      INTEGER, INTENT(IN)                                :: lb_min
+      REAL(KIND=dp), DIMENSION(3), INTENT(IN), TARGET    :: ra, rab
+      TYPE(realspace_grid_type), POINTER                 :: rsgrid
+      TYPE(cell_type), POINTER                           :: cell
+      TYPE(cube_info_type), INTENT(IN)                   :: cube_info
+      REAL(KIND=dp), DIMENSION(:, :), POINTER            :: hab
+      REAL(KIND=dp), DIMENSION(:, :), OPTIONAL, POINTER  :: pab
+      INTEGER, INTENT(IN)                                :: o1, o2
+      REAL(KIND=dp), INTENT(IN)                          :: radius
+      LOGICAL, INTENT(IN)                                :: calculate_forces
+      REAL(KIND=dp), DIMENSION(3), INTENT(INOUT), &
+         OPTIONAL                                        :: force_a, force_b
+      LOGICAL, INTENT(IN), OPTIONAL                      :: compute_tau, use_virial
+      REAL(KIND=dp), DIMENSION(3, 3), OPTIONAL           :: my_virial_a, my_virial_b
+      REAL(KIND=dp), DIMENSION(:, :, :), OPTIONAL, &
+         POINTER                                         :: hdab
+      REAL(KIND=dp), DIMENSION(:, :, :, :), OPTIONAL, &
+         POINTER                                         :: a_hdab
+      LOGICAL, OPTIONAL                                  :: use_subpatch
+      INTEGER, INTENT(IN), OPTIONAL                      :: subpatch_pattern
+
+      INTEGER                                            :: border_mask
+      INTEGER, DIMENSION(3), TARGET                      :: border_width, npts_global, npts_local, &
+                                                            shift_local
+      LOGICAL                                            :: my_use_virial
+      LOGICAL(KIND=C_BOOL)                               :: my_compute_tau, orthorhombic
+      REAL(KIND=dp), DIMENSION(3, 2), TARGET             :: forces
+      REAL(KIND=dp), DIMENSION(3, 3, 2), TARGET          :: virials
+      REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: grid
+      TYPE(C_PTR)                                        :: a_hdab_cptr, forces_cptr, hdab_cptr, &
+                                                            pab_cptr, virials_cptr
+      INTERFACE
+         SUBROUTINE grid_ref_integrate_pgf_product_c(orthorhombic, compute_tau, &
+                                                     border_mask, &
+                                                     la_max, la_min, lb_max, lb_min, &
+                                                     zeta, zetb, dh, dh_inv, ra, rab, &
+                                                     npts_global, npts_local, shift_local, border_width, &
+                                                     radius, o1, o2, n1, n2, grid, hab, pab, &
+                                                     forces, virials, hdab, a_hdab) &
+            BIND(C, name="grid_ref_integrate_pgf_product")
+            IMPORT :: C_PTR, C_INT, C_DOUBLE, C_BOOL
+            LOGICAL(KIND=C_BOOL), VALUE               :: orthorhombic
+            LOGICAL(KIND=C_BOOL), VALUE               :: compute_tau
+            INTEGER(KIND=C_INT), VALUE                :: border_mask
+            INTEGER(KIND=C_INT), VALUE                :: la_max
+            INTEGER(KIND=C_INT), VALUE                :: la_min
+            INTEGER(KIND=C_INT), VALUE                :: lb_max
+            INTEGER(KIND=C_INT), VALUE                :: lb_min
+            REAL(KIND=C_DOUBLE), VALUE                :: zeta
+            REAL(KIND=C_DOUBLE), VALUE                :: zetb
+            TYPE(C_PTR), VALUE                        :: dh
+            TYPE(C_PTR), VALUE                        :: dh_inv
+            TYPE(C_PTR), VALUE                        :: ra
+            TYPE(C_PTR), VALUE                        :: rab
+            TYPE(C_PTR), VALUE                        :: npts_global
+            TYPE(C_PTR), VALUE                        :: npts_local
+            TYPE(C_PTR), VALUE                        :: shift_local
+            TYPE(C_PTR), VALUE                        :: border_width
+            REAL(KIND=C_DOUBLE), VALUE                :: radius
+            INTEGER(KIND=C_INT), VALUE                :: o1
+            INTEGER(KIND=C_INT), VALUE                :: o2
+            INTEGER(KIND=C_INT), VALUE                :: n1
+            INTEGER(KIND=C_INT), VALUE                :: n2
+            TYPE(C_PTR), VALUE                        :: grid
+            TYPE(C_PTR), VALUE                        :: hab
+            TYPE(C_PTR), VALUE                        :: pab
+            TYPE(C_PTR), VALUE                        :: forces
+            TYPE(C_PTR), VALUE                        :: virials
+            TYPE(C_PTR), VALUE                        :: hdab
+            TYPE(C_PTR), VALUE                        :: a_hdab
+         END SUBROUTINE grid_ref_integrate_pgf_product_c
+      END INTERFACE
+
+      MARK_USED(cube_info)
+      MARK_USED(cell)
+
+      IF (radius == 0.0_dp) THEN
+         RETURN
+      ENDIF
+
+      border_mask = 0
+      IF (PRESENT(use_subpatch)) THEN
+         IF (use_subpatch) THEN
+            CPASSERT(PRESENT(subpatch_pattern))
+            border_mask = IAND(63, NOT(subpatch_pattern))  ! invert last 6 bits
+         END IF
+      END IF
+
+      ! When true then 0.5 * (nabla x_a).(v(r) nabla x_b) is computed.
+      IF (PRESENT(compute_tau)) THEN
+         my_compute_tau = LOGICAL(compute_tau, C_BOOL)
+      ELSE
+         my_compute_tau = .FALSE.
+      ENDIF
+
+      IF (PRESENT(use_virial)) THEN
+         my_use_virial = use_virial
+      ELSE
+         my_use_virial = .FALSE.
+      ENDIF
+
+      IF (calculate_forces) THEN
+         CPASSERT(PRESENT(pab))
+         pab_cptr = C_LOC(pab(1, 1))
+         forces(:, :) = 0.0_dp
+         forces_cptr = C_LOC(forces(1, 1))
+      ELSE
+         pab_cptr = C_NULL_PTR
+         forces_cptr = C_NULL_PTR
+      ENDIF
+
+      IF (calculate_forces .AND. my_use_virial) THEN
+         virials(:, :, :) = 0.0_dp
+         virials_cptr = C_LOC(virials(1, 1, 1))
+      ELSE
+         virials_cptr = C_NULL_PTR
+      ENDIF
+
+      IF (calculate_forces .AND. PRESENT(hdab)) THEN
+         hdab(:, :, :) = 0.0_dp
+         hdab_cptr = C_LOC(hdab(1, 1, 1))
+      ELSE
+         hdab_cptr = C_NULL_PTR
+      ENDIF
+
+      IF (calculate_forces .AND. my_use_virial .AND. PRESENT(a_hdab)) THEN
+         a_hdab_cptr = C_LOC(a_hdab(1, 1, 1, 1))
+      ELSE
+         a_hdab_cptr = C_NULL_PTR
+      ENDIF
+
+      orthorhombic = LOGICAL(rsgrid%desc%orthorhombic, C_BOOL)
+
+      CALL get_rsgrid_properties(rsgrid, npts_global=npts_global, &
+                                 npts_local=npts_local, &
+                                 shift_local=shift_local, &
+                                 border_width=border_width)
+
+      grid(1:, 1:, 1:) => rsgrid%r(:, :, :)  ! pointer assignment
+
+#if __GNUC__ >= 9
+      CPASSERT(IS_CONTIGUOUS(rsgrid%desc%dh))
+      CPASSERT(IS_CONTIGUOUS(rsgrid%desc%dh_inv))
+      CPASSERT(IS_CONTIGUOUS(ra))
+      CPASSERT(IS_CONTIGUOUS(rab))
+      CPASSERT(IS_CONTIGUOUS(npts_global))
+      CPASSERT(IS_CONTIGUOUS(npts_local))
+      CPASSERT(IS_CONTIGUOUS(shift_local))
+      CPASSERT(IS_CONTIGUOUS(border_width))
+      CPASSERT(IS_CONTIGUOUS(grid))
+      CPASSERT(IS_CONTIGUOUS(hab))
+      CPASSERT(IS_CONTIGUOUS(forces))
+      CPASSERT(IS_CONTIGUOUS(virials))
+      IF (PRESENT(pab)) THEN
+         CPASSERT(IS_CONTIGUOUS(pab))
+      ENDIF
+      IF (PRESENT(hdab)) THEN
+         CPASSERT(IS_CONTIGUOUS(hdab))
+      ENDIF
+      IF (PRESENT(a_hdab)) THEN
+         CPASSERT(IS_CONTIGUOUS(a_hdab))
+      ENDIF
+#endif
+
+      CALL grid_ref_integrate_pgf_product_c(orthorhombic=orthorhombic, &
+                                            compute_tau=my_compute_tau, &
+                                            border_mask=border_mask, &
+                                            la_max=la_max, &
+                                            la_min=la_min, &
+                                            lb_max=lb_max, &
+                                            lb_min=lb_min, &
+                                            zeta=zeta, &
+                                            zetb=zetb, &
+                                            dh=C_LOC(rsgrid%desc%dh(1, 1)), &
+                                            dh_inv=C_LOC(rsgrid%desc%dh_inv(1, 1)), &
+                                            ra=C_LOC(ra(1)), &
+                                            rab=C_LOC(rab(1)), &
+                                            npts_global=C_LOC(npts_global(1)), &
+                                            npts_local=C_LOC(npts_local(1)), &
+                                            shift_local=C_LOC(shift_local(1)), &
+                                            border_width=C_LOC(border_width(1)), &
+                                            radius=radius, &
+                                            o1=o1, &
+                                            o2=o2, &
+                                            n1=SIZE(hab, 1), &
+                                            n2=SIZE(hab, 2), &
+                                            grid=C_LOC(grid(1, 1, 1)), &
+                                            hab=C_LOC(hab(1, 1)), &
+                                            pab=pab_cptr, &
+                                            forces=forces_cptr, &
+                                            virials=virials_cptr, &
+                                            hdab=hdab_cptr, &
+                                            a_hdab=a_hdab_cptr)
+
+      IF (PRESENT(force_a) .AND. C_ASSOCIATED(forces_cptr)) &
+         force_a = force_a + forces(:, 1)
+      IF (PRESENT(force_b) .AND. C_ASSOCIATED(forces_cptr)) &
+         force_b = force_b + forces(:, 2)
+      IF (PRESENT(my_virial_a) .AND. C_ASSOCIATED(virials_cptr)) &
+         my_virial_a = my_virial_a + virials(:, :, 1)
+      IF (PRESENT(my_virial_b) .AND. C_ASSOCIATED(virials_cptr)) &
+         my_virial_b = my_virial_b + virials(:, :, 2)
+
+   END SUBROUTINE integrate_pgf_product
 
 ! **************************************************************************************************
 !> \brief Helper routines for getting rsgrid properties and asserting underlying assumptions.
@@ -355,6 +547,80 @@ CONTAINS
          ENDIF
       ENDDO
    END SUBROUTINE get_rsgrid_properties
+
+! **************************************************************************************************
+!> \brief Allocates a buffer of given length, ie. number of elements.
+!> \param length ...
+!> \param buffer ...
+!> \author Ole Schuett
+! **************************************************************************************************
+   SUBROUTINE grid_create_buffer(length, buffer)
+      INTEGER, INTENT(IN)                                :: length
+      TYPE(grid_buffer_type), INTENT(INOUT)              :: buffer
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'grid_create_buffer'
+
+      INTEGER                                            :: handle
+      TYPE(C_PTR)                                        :: host_buffer_c
+      INTERFACE
+         SUBROUTINE grid_create_buffer_c(length, buffer) &
+            BIND(C, name="grid_create_buffer")
+            IMPORT :: C_PTR, C_INT
+            INTEGER(KIND=C_INT), VALUE                :: length
+            TYPE(C_PTR)                               :: buffer
+         END SUBROUTINE grid_create_buffer_c
+      END INTERFACE
+      INTERFACE
+
+         FUNCTION grid_buffer_get_host_pointer_c(buffer) &
+            BIND(C, name="grid_buffer_get_host_pointer")
+            IMPORT :: C_PTR
+            TYPE(C_PTR), VALUE                        :: buffer
+            TYPE(C_PTR)                               :: grid_buffer_get_host_pointer_c
+         END FUNCTION grid_buffer_get_host_pointer_c
+      END INTERFACE
+
+      CALL timeset(routineN, handle)
+
+      CALL grid_create_buffer_C(length=length, buffer=buffer%c_ptr)
+      CPASSERT(C_ASSOCIATED(buffer%c_ptr))
+
+      host_buffer_c = grid_buffer_get_host_pointer_c(buffer%c_ptr)
+      CPASSERT(C_ASSOCIATED(host_buffer_c) .OR. length == 0)
+      CALL C_F_POINTER(host_buffer_c, buffer%host_buffer, shape=(/length/))
+
+      CALL timestop(handle)
+   END SUBROUTINE grid_create_buffer
+
+! **************************************************************************************************
+!> \brief Deallocates given buffer.
+!> \param buffer ...
+!> \author Ole Schuett
+! **************************************************************************************************
+   SUBROUTINE grid_free_buffer(buffer)
+      TYPE(grid_buffer_type), INTENT(INOUT)              :: buffer
+
+      CHARACTER(LEN=*), PARAMETER                        :: routineN = 'grid_free_buffer'
+
+      INTEGER                                            :: handle
+      INTERFACE
+         SUBROUTINE grid_free_buffer_c(buffer) &
+            BIND(C, name="grid_free_buffer")
+            IMPORT :: C_PTR
+            TYPE(C_PTR), VALUE                        :: buffer
+         END SUBROUTINE grid_free_buffer_c
+      END INTERFACE
+
+      CALL timeset(routineN, handle)
+
+      CPASSERT(C_ASSOCIATED(buffer%c_ptr))
+
+      CALL grid_free_buffer_c(buffer%c_ptr)
+
+      buffer%c_ptr = C_NULL_PTR
+
+      CALL timestop(handle)
+   END SUBROUTINE grid_free_buffer
 
 ! **************************************************************************************************
 !> \brief Allocates a basis set which can be passed to grid_create_task_list.
@@ -510,7 +776,6 @@ CONTAINS
 !> \param natoms ...
 !> \param nkinds ...
 !> \param nblocks ...
-!> \param buffer_size ...
 !> \param block_offsets ...
 !> \param atom_positions ...
 !> \param atom_kinds ...
@@ -526,19 +791,17 @@ CONTAINS
 !> \param block_num_list ...
 !> \param radius_list ...
 !> \param rab_list ...
-!> \param blocks_buffer ...
 !> \param task_list ...
 !> \author Ole Schuett
 ! **************************************************************************************************
-   SUBROUTINE grid_create_task_list(ntasks, nlevels, natoms, nkinds, nblocks, buffer_size, &
+   SUBROUTINE grid_create_task_list(ntasks, nlevels, natoms, nkinds, nblocks, &
                                     block_offsets, atom_positions, atom_kinds, basis_sets, &
                                     level_list, iatom_list, jatom_list, &
                                     iset_list, jset_list, ipgf_list, jpgf_list, &
                                     border_mask_list, block_num_list, &
-                                    radius_list, rab_list, blocks_buffer, task_list)
+                                    radius_list, rab_list, task_list)
 
-      INTEGER, INTENT(IN)                                :: ntasks, nlevels, natoms, nkinds, &
-                                                            nblocks, buffer_size
+      INTEGER, INTENT(IN)                                :: ntasks, nlevels, natoms, nkinds, nblocks
       INTEGER, DIMENSION(:), INTENT(IN), TARGET          :: block_offsets
       REAL(KIND=dp), DIMENSION(:, :), INTENT(IN), TARGET :: atom_positions
       INTEGER, DIMENSION(:), INTENT(IN), TARGET          :: atom_kinds
@@ -550,21 +813,22 @@ CONTAINS
                                                             block_num_list
       REAL(KIND=dp), DIMENSION(:), INTENT(IN), TARGET    :: radius_list
       REAL(KIND=dp), DIMENSION(:, :), INTENT(IN), TARGET :: rab_list
-      REAL(KIND=dp), DIMENSION(:), INTENT(OUT), POINTER  :: blocks_buffer
       TYPE(grid_task_list_type), INTENT(INOUT)           :: task_list
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'grid_create_task_list'
 
       INTEGER                                            :: handle, ikind
-      TYPE(C_PTR)                                        :: blocks_buffer_c
+      TYPE(C_PTR) :: block_num_list_c, block_offsets_c, border_mask_list_c, iatom_list_c, &
+         ipgf_list_c, iset_list_c, jatom_list_c, jpgf_list_c, jset_list_c, level_list_c, &
+         rab_list_c, radius_list_c
       TYPE(C_PTR), ALLOCATABLE, DIMENSION(:), TARGET     :: basis_sets_c
       INTERFACE
-         SUBROUTINE grid_create_task_list_c(ntasks, nlevels, natoms, nkinds, nblocks, buffer_size, &
+         SUBROUTINE grid_create_task_list_c(ntasks, nlevels, natoms, nkinds, nblocks, &
                                             block_offsets, atom_positions, atom_kinds, basis_sets, &
                                             level_list, iatom_list, jatom_list, &
                                             iset_list, jset_list, ipgf_list, jpgf_list, &
                                             border_mask_list, block_num_list, &
-                                            radius_list, rab_list, blocks_buffer, task_list) &
+                                            radius_list, rab_list, task_list) &
             BIND(C, name="grid_create_task_list")
             IMPORT :: C_PTR, C_INT
             INTEGER(KIND=C_INT), VALUE                :: ntasks
@@ -572,7 +836,6 @@ CONTAINS
             INTEGER(KIND=C_INT), VALUE                :: natoms
             INTEGER(KIND=C_INT), VALUE                :: nkinds
             INTEGER(KIND=C_INT), VALUE                :: nblocks
-            INTEGER(KIND=C_INT), VALUE                :: buffer_size
             TYPE(C_PTR), VALUE                        :: block_offsets
             TYPE(C_PTR), VALUE                        :: atom_positions
             TYPE(C_PTR), VALUE                        :: atom_kinds
@@ -588,7 +851,6 @@ CONTAINS
             TYPE(C_PTR), VALUE                        :: block_num_list
             TYPE(C_PTR), VALUE                        :: radius_list
             TYPE(C_PTR), VALUE                        :: rab_list
-            TYPE(C_PTR)                               :: blocks_buffer
             TYPE(C_PTR)                               :: task_list
          END SUBROUTINE grid_create_task_list_c
       END INTERFACE
@@ -634,44 +896,59 @@ CONTAINS
       CPASSERT(IS_CONTIGUOUS(rab_list))
 #endif
 
-      !If task_list%c_ptr is already allocated, then its memory will be reused or freed.
-      blocks_buffer_c = C_NULL_PTR
-      IF (ntasks == 0) THEN
-         CALL grid_create_task_list_c(0, nlevels, 0, 0, 0, 0, C_NULL_PTR, C_NULL_PTR, C_NULL_PTR, &
-                                      C_NULL_PTR, C_NULL_PTR, C_NULL_PTR, C_NULL_PTR, C_NULL_PTR, &
-                                      C_NULL_PTR, C_NULL_PTR, C_NULL_PTR, C_NULL_PTR, C_NULL_PTR, &
-                                      C_NULL_PTR, C_NULL_PTR, &
-                                      blocks_buffer=blocks_buffer_c, &
-                                      task_list=task_list%c_ptr)
+      IF (ntasks > 0) THEN
+         block_offsets_c = C_LOC(block_offsets(1))
+         level_list_c = C_LOC(level_list(1))
+         iatom_list_c = C_LOC(iatom_list(1))
+         jatom_list_c = C_LOC(jatom_list(1))
+         iset_list_c = C_LOC(iset_list(1))
+         jset_list_c = C_LOC(jset_list(1))
+         ipgf_list_c = C_LOC(ipgf_list(1))
+         jpgf_list_c = C_LOC(jpgf_list(1))
+         border_mask_list_c = C_LOC(border_mask_list(1))
+         block_num_list_c = C_LOC(block_num_list(1))
+         radius_list_c = C_LOC(radius_list(1))
+         rab_list_c = C_LOC(rab_list(1, 1))
       ELSE
-         CALL grid_create_task_list_c(ntasks=ntasks, &
-                                      nlevels=nlevels, &
-                                      natoms=natoms, &
-                                      nkinds=nkinds, &
-                                      nblocks=nblocks, &
-                                      buffer_size=buffer_size, &
-                                      block_offsets=C_LOC(block_offsets(1)), &
-                                      atom_positions=C_LOC(atom_positions(1, 1)), &
-                                      atom_kinds=C_LOC(atom_kinds(1)), &
-                                      basis_sets=C_LOC(basis_sets_c(1)), &
-                                      level_list=C_LOC(level_list(1)), &
-                                      iatom_list=C_LOC(iatom_list(1)), &
-                                      jatom_list=C_LOC(jatom_list(1)), &
-                                      iset_list=C_LOC(iset_list(1)), &
-                                      jset_list=C_LOC(jset_list(1)), &
-                                      ipgf_list=C_LOC(ipgf_list(1)), &
-                                      jpgf_list=C_LOC(jpgf_list(1)), &
-                                      border_mask_list=C_LOC(border_mask_list(1)), &
-                                      block_num_list=C_LOC(block_num_list(1)), &
-                                      radius_list=C_LOC(radius_list(1)), &
-                                      rab_list=C_LOC(rab_list(1, 1)), &
-                                      blocks_buffer=blocks_buffer_c, &
-                                      task_list=task_list%c_ptr)
-         CPASSERT(C_ASSOCIATED(blocks_buffer_c))
+         ! Without tasks the lists are empty and there is no first element to call C_LOC on.
+         block_offsets_c = C_NULL_PTR
+         level_list_c = C_NULL_PTR
+         iatom_list_c = C_NULL_PTR
+         jatom_list_c = C_NULL_PTR
+         iset_list_c = C_NULL_PTR
+         jset_list_c = C_NULL_PTR
+         ipgf_list_c = C_NULL_PTR
+         jpgf_list_c = C_NULL_PTR
+         border_mask_list_c = C_NULL_PTR
+         block_num_list_c = C_NULL_PTR
+         radius_list_c = C_NULL_PTR
+         rab_list_c = C_NULL_PTR
       ENDIF
 
+      !If task_list%c_ptr is already allocated, then its memory will be reused or freed.
+      CALL grid_create_task_list_c(ntasks=ntasks, &
+                                   nlevels=nlevels, &
+                                   natoms=natoms, &
+                                   nkinds=nkinds, &
+                                   nblocks=nblocks, &
+                                   block_offsets=block_offsets_c, &
+                                   atom_positions=C_LOC(atom_positions(1, 1)), &
+                                   atom_kinds=C_LOC(atom_kinds(1)), &
+                                   basis_sets=C_LOC(basis_sets_c(1)), &
+                                   level_list=level_list_c, &
+                                   iatom_list=iatom_list_c, &
+                                   jatom_list=jatom_list_c, &
+                                   iset_list=iset_list_c, &
+                                   jset_list=jset_list_c, &
+                                   ipgf_list=ipgf_list_c, &
+                                   jpgf_list=jpgf_list_c, &
+                                   border_mask_list=border_mask_list_c, &
+                                   block_num_list=block_num_list_c, &
+                                   radius_list=radius_list_c, &
+                                   rab_list=rab_list_c, &
+                                   task_list=task_list%c_ptr)
+
       CPASSERT(C_ASSOCIATED(task_list%c_ptr))
-      CALL C_F_POINTER(blocks_buffer_c, blocks_buffer, shape=(/buffer_size/))
 
       CALL timestop(handle)
    END SUBROUTINE grid_create_task_list
@@ -710,12 +987,14 @@ CONTAINS
 !> \brief Collocate all tasks of in given list onto given grids.
 !> \param task_list ...
 !> \param ga_gb_function ...
+!> \param pab_blocks ...
 !> \param rs_grids ...
 !> \author Ole Schuett
 ! **************************************************************************************************
-   SUBROUTINE grid_collocate_task_list(task_list, ga_gb_function, rs_grids)
+   SUBROUTINE grid_collocate_task_list(task_list, ga_gb_function, pab_blocks, rs_grids)
       TYPE(grid_task_list_type), INTENT(IN)              :: task_list
       INTEGER, INTENT(IN)                                :: ga_gb_function
+      TYPE(grid_buffer_type), INTENT(IN)                 :: pab_blocks
       TYPE(realspace_grid_p_type), DIMENSION(:), POINTER :: rs_grids
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'grid_collocate_task_list'
@@ -732,7 +1011,7 @@ CONTAINS
       INTERFACE
          SUBROUTINE grid_collocate_task_list_c(task_list, orthorhombic, func, nlevels, &
                                                npts_global, npts_local, shift_local, &
-                                               border_width, dh, dh_inv, grid) &
+                                               border_width, dh, dh_inv, pab_blocks, grid) &
             BIND(C, name="grid_collocate_task_list")
             IMPORT :: C_PTR, C_INT, C_BOOL
             TYPE(C_PTR), VALUE                        :: task_list
@@ -745,6 +1024,7 @@ CONTAINS
             TYPE(C_PTR), VALUE                        :: border_width
             TYPE(C_PTR), VALUE                        :: dh
             TYPE(C_PTR), VALUE                        :: dh_inv
+            TYPE(C_PTR), VALUE                        :: pab_blocks
             TYPE(C_PTR), VALUE                        :: grid
          END SUBROUTINE grid_collocate_task_list_c
       END INTERFACE
@@ -788,6 +1068,7 @@ CONTAINS
 #endif
 
       CPASSERT(C_ASSOCIATED(task_list%c_ptr))
+      CPASSERT(C_ASSOCIATED(pab_blocks%c_ptr))
 
       CALL grid_collocate_task_list_c(task_list=task_list%c_ptr, &
                                       orthorhombic=orthorhombic, &
@@ -799,10 +1080,153 @@ CONTAINS
                                       border_width=C_LOC(border_width(1, 1)), &
                                       dh=C_LOC(dh(1, 1, 1)), &
                                       dh_inv=C_LOC(dh_inv(1, 1, 1)), &
+                                      pab_blocks=pab_blocks%c_ptr, &
                                       grid=C_LOC(grid_pointers(1)))
 
       CALL timestop(handle)
    END SUBROUTINE grid_collocate_task_list
+
+! **************************************************************************************************
+!> \brief Integrate all tasks of in given list from given grids.
+!> \param task_list ...
+!> \param compute_tau ...
+!> \param calculate_forces ...
+!> \param calculate_virial ...
+!> \param pab_blocks ...
+!> \param rs_grids ...
+!> \param hab_blocks ...
+!> \param forces ...
+!> \param virial ...
+!> \author Ole Schuett
+! **************************************************************************************************
+   SUBROUTINE grid_integrate_task_list(task_list, compute_tau, calculate_forces, calculate_virial, &
+                                       pab_blocks, rs_grids, hab_blocks, forces, virial)
+      TYPE(grid_task_list_type), INTENT(IN)              :: task_list
+      LOGICAL, INTENT(IN)                                :: compute_tau, calculate_forces, &
+                                                            calculate_virial
+      TYPE(grid_buffer_type), INTENT(IN)                 :: pab_blocks
+      TYPE(realspace_grid_p_type), DIMENSION(:), POINTER :: rs_grids
+      TYPE(grid_buffer_type), INTENT(INOUT)              :: hab_blocks
+      REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT), &
+         TARGET                                          :: forces
+      REAL(KIND=dp), DIMENSION(3, 3), INTENT(INOUT), &
+         TARGET                                          :: virial
+
+      CHARACTER(LEN=*), PARAMETER :: routineN = 'grid_integrate_task_list'
+
+      INTEGER                                            :: handle, ilevel, nlevels
+      INTEGER, ALLOCATABLE, DIMENSION(:, :), TARGET      :: border_width, npts_global, npts_local, &
+                                                            shift_local
+      LOGICAL(KIND=C_BOOL)                               :: orthorhombic
+      REAL(KIND=dp), ALLOCATABLE, DIMENSION(:, :, :), &
+         TARGET                                          :: dh, dh_inv
+      REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: grid
+      TYPE(C_PTR)                                        :: forces_c, virial_c
+      TYPE(C_PTR), ALLOCATABLE, DIMENSION(:), TARGET     :: grid_pointers
+      TYPE(realspace_grid_type), POINTER                 :: rsgrid
+      INTERFACE
+         SUBROUTINE grid_integrate_task_list_c(task_list, orthorhombic, compute_tau, natoms, &
+                                               nlevels, npts_global, npts_local, shift_local, &
+                                               border_width, dh, dh_inv, &
+                                               pab_blocks, grid, hab_blocks, forces, virial) &
+            BIND(C, name="grid_integrate_task_list")
+            IMPORT :: C_PTR, C_INT, C_BOOL
+            TYPE(C_PTR), VALUE                        :: task_list
+            LOGICAL(KIND=C_BOOL), VALUE               :: orthorhombic
+            LOGICAL(KIND=C_BOOL), VALUE               :: compute_tau
+            INTEGER(KIND=C_INT), VALUE                :: natoms
+            INTEGER(KIND=C_INT), VALUE                :: nlevels
+            TYPE(C_PTR), VALUE                        :: npts_global
+            TYPE(C_PTR), VALUE                        :: npts_local
+            TYPE(C_PTR), VALUE                        :: shift_local
+            TYPE(C_PTR), VALUE                        :: border_width
+            TYPE(C_PTR), VALUE                        :: dh
+            TYPE(C_PTR), VALUE                        :: dh_inv
+            TYPE(C_PTR), VALUE                        :: pab_blocks
+            TYPE(C_PTR), VALUE                        :: grid
+            TYPE(C_PTR), VALUE                        :: hab_blocks
+            TYPE(C_PTR), VALUE                        :: forces
+            TYPE(C_PTR), VALUE                        :: virial
+         END SUBROUTINE grid_integrate_task_list_c
+      END INTERFACE
+
+      CALL timeset(routineN, handle)
+
+      nlevels = SIZE(rs_grids)
+      CPASSERT(nlevels > 0)
+      orthorhombic = LOGICAL(rs_grids(1)%rs_grid%desc%orthorhombic, C_BOOL)
+
+      ALLOCATE (grid_pointers(nlevels))
+      ALLOCATE (npts_global(3, nlevels), npts_local(3, nlevels))
+      ALLOCATE (shift_local(3, nlevels), border_width(3, nlevels))
+      ALLOCATE (dh(3, 3, nlevels), dh_inv(3, 3, nlevels))
+      DO ilevel = 1, nlevels
+         rsgrid => rs_grids(ilevel)%rs_grid
+         CALL get_rsgrid_properties(rsgrid=rsgrid, &
+                                    npts_global=npts_global(:, ilevel), &
+                                    npts_local=npts_local(:, ilevel), &
+                                    shift_local=shift_local(:, ilevel), &
+                                    border_width=border_width(:, ilevel))
+         CPASSERT(rsgrid%desc%orthorhombic .EQV. orthorhombic)  ! should be the same for all levels
+         dh(:, :, ilevel) = rsgrid%desc%dh(:, :)
+         dh_inv(:, :, ilevel) = rsgrid%desc%dh_inv(:, :)
+         grid(1:, 1:, 1:) => rsgrid%r(:, :, :)  ! ensure lower bounds are (1,1,1)
+         grid_pointers(ilevel) = C_LOC(grid(1, 1, 1))
+      END DO
+
+      IF (calculate_forces) THEN
+         forces_c = C_LOC(forces(1, 1))
+      ELSE
+         forces_c = C_NULL_PTR
+      ENDIF
+
+      IF (calculate_virial) THEN
+         virial_c = C_LOC(virial(1, 1))
+      ELSE
+         virial_c = C_NULL_PTR
+      ENDIF
+
+#if __GNUC__ >= 9
+      CPASSERT(IS_CONTIGUOUS(npts_global))
+      CPASSERT(IS_CONTIGUOUS(npts_local))
+      CPASSERT(IS_CONTIGUOUS(shift_local))
+      CPASSERT(IS_CONTIGUOUS(border_width))
+      CPASSERT(IS_CONTIGUOUS(dh))
+      CPASSERT(IS_CONTIGUOUS(dh_inv))
+      CPASSERT(IS_CONTIGUOUS(grid_pointers))
+      CPASSERT(IS_CONTIGUOUS(forces))
+      CPASSERT(IS_CONTIGUOUS(virial))
+      DO ilevel = 1, nlevels
+         grid(1:, 1:, 1:) => rs_grids(ilevel)%rs_grid%r(:, :, :)
+         CPASSERT(IS_CONTIGUOUS(grid))
+      END DO
+#endif
+
+      CPASSERT(SIZE(forces, 1) == 3)
+      CPASSERT(C_ASSOCIATED(task_list%c_ptr))
+      CPASSERT(C_ASSOCIATED(hab_blocks%c_ptr))
+      CPASSERT(C_ASSOCIATED(pab_blocks%c_ptr) .OR. .NOT. calculate_forces)
+      CPASSERT(C_ASSOCIATED(pab_blocks%c_ptr) .OR. .NOT. calculate_virial)
+
+      CALL grid_integrate_task_list_c(task_list=task_list%c_ptr, &
+                                      orthorhombic=orthorhombic, &
+                                      compute_tau=LOGICAL(compute_tau, C_BOOL), &
+                                      natoms=SIZE(forces, 2), &
+                                      nlevels=nlevels, &
+                                      npts_global=C_LOC(npts_global(1, 1)), &
+                                      npts_local=C_LOC(npts_local(1, 1)), &
+                                      shift_local=C_LOC(shift_local(1, 1)), &
+                                      border_width=C_LOC(border_width(1, 1)), &
+                                      dh=C_LOC(dh(1, 1, 1)), &
+                                      dh_inv=C_LOC(dh_inv(1, 1, 1)), &
+                                      pab_blocks=pab_blocks%c_ptr, &
+                                      grid=C_LOC(grid_pointers(1)), &
+                                      hab_blocks=hab_blocks%c_ptr, &
+                                      forces=forces_c, &
+                                      virial=virial_c)
+
+      CALL timestop(handle)
+   END SUBROUTINE grid_integrate_task_list
 
 ! **************************************************************************************************
 !> \brief Initialize grid library
@@ -834,27 +1258,37 @@ CONTAINS
 
 ! **************************************************************************************************
 !> \brief Configures the grid library
-!> \param backend ...
-!> \param validate ...
+!> \param backend : backend to be used for collocate/integrate, possible values are REF, CPU, GPU, HYBRID
+!> \param device_id : GPU id returned by dbcsr
+!> \param validate : if set to true, compare the results of all backend to the reference backend
+!> \param apply_cutoff : apply a spherical cutoff before collocating or integrating. Only relevant for CPU and HYBRID backends
+!> \param queue_length : queue length for the hybrid backend
 !> \author Ole Schuett
 ! **************************************************************************************************
-   SUBROUTINE grid_library_set_config(backend, validate)
-      INTEGER, INTENT(IN)                                :: backend
-      LOGICAL, INTENT(IN)                                :: validate
+   SUBROUTINE grid_library_set_config(backend, device_id, validate, apply_cutoff, queue_length)
+      INTEGER, INTENT(IN)                                :: backend, device_id
+      LOGICAL, INTENT(IN)                                :: validate, apply_cutoff
+      INTEGER, INTENT(IN)                                :: queue_length
 
       INTERFACE
-         SUBROUTINE grid_library_set_config_c(backend, validate) &
+         SUBROUTINE grid_library_set_config_c(backend, device_id, validate, apply_cutoff, queue_length) &
             BIND(C, name="grid_library_set_config")
             IMPORT :: C_INT, C_BOOL
             INTEGER(KIND=C_INT), VALUE                :: backend
+            INTEGER(KIND=C_INT), VALUE                :: device_id
             LOGICAL(KIND=C_BOOL), VALUE               :: validate
+            LOGICAL(KIND=C_BOOL), VALUE               :: apply_cutoff
+            INTEGER(KIND=C_INT), VALUE                :: queue_length
          END SUBROUTINE grid_library_set_config_c
       END INTERFACE
 
-      CALL grid_library_set_config_c(backend=backend, validate=LOGICAL(validate, C_BOOL))
+      CALL grid_library_set_config_c(backend=backend, &
+                                     device_id=device_id, &
+                                     validate=LOGICAL(validate, C_BOOL), &
+                                     apply_cutoff=LOGICAL(apply_cutoff, C_BOOL), &
+                                     queue_length=queue_length)
 
    END SUBROUTINE grid_library_set_config
-
 ! **************************************************************************************************
 !> \brief Print grid library statistics
 !> \param mpi_comm ...

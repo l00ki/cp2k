@@ -836,7 +836,8 @@ CONTAINS
       CALL keyword_create(keyword, __LOCATION__, name="", &
                           variants=(/"SELF_ENERGY"/), &
                           description="If true, print the self-energy for all levels for real energy "// &
-                          "together with the straight line to see the quasiparticle energy as intersection.", &
+                          "together with the straight line to see the quasiparticle energy as intersection. "// &
+                          "In addition, prints the self-energy for imaginary frequencies together with the Pade fit.", &
                           usage="SELF_ENERGY TRUE", &
                           default_l_val=.FALSE., &
                           lone_keyword_l_val=.TRUE.)
@@ -1091,6 +1092,16 @@ CONTAINS
          "Default should be kept.", &
          type_of_var=real_t, &
          default_r_val=10.0_dp)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create( &
+         keyword, __LOCATION__, &
+         name="EPS_STORAGE_SCALING", &
+         variants=(/"EPS_STORAGE"/), &
+         description="Scaling factor to scale EPS_FILTER. Storage threshold for compression "// &
+         "will be EPS_FILTER*EPS_STORAGE_SCALING.", &
+         default_r_val=1.0E-3_dp)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 

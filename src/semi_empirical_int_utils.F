@@ -37,6 +37,53 @@ MODULE semi_empirical_int_utils
    PUBLIC ::   ijkl_sp, ijkl_d, rotmat, rot_2el_2c_first, store_2el_2c_diag, &
              d_ijkl_sp, d_ijkl_d
 
+   ABSTRACT INTERFACE
+! **************************************************************************************************
+!> \brief ...
+!> \param r ...
+!> \param l1_i ...
+!> \param l2_i ...
+!> \param m1_i ...
+!> \param m2_i ...
+!> \param da_i ...
+!> \param db_i ...
+!> \param add0 ...
+!> \param fact_screen ...
+!> \return ...
+! **************************************************************************************************
+      FUNCTION eval_func_sp(r, l1_i, l2_i, m1_i, m2_i, da_i, db_i, add0, fact_screen) RESULT(charg)
+         USE kinds, ONLY: dp
+      REAL(KIND=dp), INTENT(IN)                          :: r
+      INTEGER, INTENT(IN)                                :: l1_i, l2_i, m1_i, m2_i
+      REAL(KIND=dp), INTENT(IN)                          :: da_i, db_i, add0, fact_screen
+      REAL(KIND=dp)                                      :: charg
+
+      END FUNCTION eval_func_sp
+   END INTERFACE
+
+   ABSTRACT INTERFACE
+! **************************************************************************************************
+!> \brief ...
+!> \param r ...
+!> \param l1_i ...
+!> \param l2_i ...
+!> \param m ...
+!> \param da_i ...
+!> \param db_i ...
+!> \param add0 ...
+!> \param fact_screen ...
+!> \return ...
+! **************************************************************************************************
+      FUNCTION eval_func_d(r, l1_i, l2_i, m, da_i, db_i, add0, fact_screen) RESULT(charg)
+         USE kinds, ONLY: dp
+      REAL(KIND=dp), INTENT(IN)                          :: r
+      INTEGER, INTENT(IN)                                :: l1_i, l2_i, m
+      REAL(KIND=dp), INTENT(IN)                          :: da_i, db_i, add0, fact_screen
+      REAL(KIND=dp)                                      :: charg
+
+      END FUNCTION eval_func_d
+   END INTERFACE
+
 CONTAINS
 
 ! **************************************************************************************************
@@ -82,7 +129,7 @@ CONTAINS
       IF ((.NOT. se_int_control%pc_coulomb_int) .AND. (itype /= do_method_pchg)) THEN
          ! Handle the 1/r^3 term, this term is ALWAYS false for KDSO-D integrals
          IF (se_int_control%shortrange .AND. se_int_control%do_ewald_r3) THEN
-            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, &
+            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, r, &
                                    itype, charg_int_3)
          END IF
       END IF
@@ -156,7 +203,7 @@ CONTAINS
       IF ((.NOT. se_int_control%pc_coulomb_int) .AND. (itype /= do_method_pchg)) THEN
          ! Handle the 1/r^3 term, this term is ALWAYS false for KDSO-D integrals
          IF (se_int_control%shortrange .AND. se_int_control%do_ewald_r3) THEN
-            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, &
+            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, r, &
                                    itype, dcharg_int_3)
          END IF
       END IF
@@ -201,7 +248,9 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: iscreen
       LOGICAL, INTENT(IN)                                :: shortrange, pc_coulomb_int
       INTEGER, INTENT(IN)                                :: max_multipole, itype
-      REAL(KIND=dp)                                      :: eval, res
+
+      PROCEDURE(eval_func_sp)                               :: eval
+      REAL(KIND=dp)                                      :: res
 
       INTEGER                                            :: ccc, l1, l1max, l1min, l2, l2max, l2min, &
                                                             lij, lkl, lmin, m
@@ -969,7 +1018,7 @@ CONTAINS
       IF ((.NOT. se_int_control%pc_coulomb_int) .AND. (itype /= do_method_pchg)) THEN
          ! Handle the 1/r^3 term, this term is ALWAYS false for KDSO-D integrals
          IF (se_int_control%shortrange .AND. se_int_control%do_ewald_r3) THEN
-            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, &
+            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, r, &
                                    itype, charg_int_3)
          END IF
       END IF
@@ -1049,7 +1098,7 @@ CONTAINS
       IF ((.NOT. se_int_control%pc_coulomb_int) .AND. (itype /= do_method_pchg)) THEN
          ! Handle the 1/r^3 term, this term is ALWAYS false for KDSO-D integrals
          IF (se_int_control%shortrange .AND. se_int_control%do_ewald_r3) THEN
-            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, &
+            res = res - ijkl_low_3(sepi, sepj, ij, kl, li, lj, lk, ll, ic, r, &
                                    itype, dcharg_int_3)
          END IF
       END IF
@@ -1099,7 +1148,9 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: iscreen
       LOGICAL, INTENT(IN)                                :: shortrange, pc_coulomb_int
       INTEGER, INTENT(IN)                                :: max_multipole, itype
-      REAL(KIND=dp)                                      :: eval, res
+
+      PROCEDURE(eval_func_d)                               :: eval
+      REAL(KIND=dp)                                      :: res
 
       INTEGER                                            :: l1, l1max, l1min, l2, l2max, l2min, lij, &
                                                             lkl, lmin, m, mm

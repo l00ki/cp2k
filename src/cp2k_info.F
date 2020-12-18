@@ -273,6 +273,17 @@ CONTAINS
 #if defined __CHECK_DIAG
       flags = TRIM(flags)//" check_diag"
 #endif
+#if defined __LIBVORI
+      flags = TRIM(flags)//" libvori"
+      flags = TRIM(flags)//" libbqb"
+#endif
+#if defined __LIBMAXWELL
+      flags = TRIM(flags)//" libmaxwell"
+#endif
+
+#if defined __GRID_CUDA
+      flags = TRIM(flags)//" grid_cuda"
+#endif
 
    END FUNCTION cp2k_flags
 

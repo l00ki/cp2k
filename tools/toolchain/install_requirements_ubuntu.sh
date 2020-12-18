@@ -16,12 +16,12 @@ apt-get install -qq --no-install-recommends \
     autogen                                 \
     automake                                \
     autotools-dev                           \
+    bzip2                                   \
     ca-certificates                         \
     g++                                     \
     git                                     \
     less                                    \
     libtool                                 \
-    locales                                 \
     make                                    \
     nano                                    \
     patch                                   \
@@ -36,5 +36,4 @@ apt-get install -qq --no-install-recommends \
 
 rm -rf /var/lib/apt/lists/*
 
-# generate a unicode-enabled locale, see https://hub.docker.com/_/ubuntu?tab=description
-localedef -i C -c -f UTF-8 -A /usr/share/locale/locale.alias C.UTF-8
+#EOF

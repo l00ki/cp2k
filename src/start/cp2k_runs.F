@@ -47,6 +47,7 @@ MODULE cp2k_runs
                                               dbcsr_init_lib,&
                                               dbcsr_print_config,&
                                               dbcsr_print_statistics
+   USE dbcsr_config,                    ONLY: get_accdrv_active_device_id
    USE environment,                     ONLY: cp2k_finalize,&
                                               cp2k_init,&
                                               cp2k_read,&
@@ -79,8 +80,8 @@ MODULE cp2k_runs
                                               grid_library_set_config
    USE input_constants,                 ONLY: &
         bsse_run, cell_opt_run, debug_run, do_atom, do_band, do_cp2k, do_embed, do_farming, &
-        do_fist, do_mixed, do_opt_basis, do_optimize_input, do_qmmm, do_qs, do_sirius, do_swarm, &
-        do_tamc, do_test, do_tree_mc, do_tree_mc_ana, driver_run, ehrenfest, &
+        do_fist, do_mixed, do_nnp, do_opt_basis, do_optimize_input, do_qmmm, do_qs, do_sirius, &
+        do_swarm, do_tamc, do_test, do_tree_mc, do_tree_mc_ana, driver_run, ehrenfest, &
         electronic_spectra_run, energy_force_run, energy_run, geo_opt_run, linear_response_run, &
         mol_dyn_run, mon_car_run, negf_run, none_run, pint_run, real_time_propagation, &
         tree_mc_run, vib_anal
@@ -177,11 +178,11 @@ CONTAINS
       CHARACTER(len=default_path_length), &
          DIMENSION(:, :), INTENT(IN)                     :: initial_variables
 
-      INTEGER                                            :: f_env_handle, grid_backend, ierr, &
-                                                            iter_level, method_name_id, &
-                                                            new_env_id, prog_name_id, run_type_id
+      INTEGER :: f_env_handle, grid_backend, grid_queue_length, ierr, iter_level, method_name_id, &
+         new_env_id, prog_name_id, run_type_id
       INTEGER(KIND=int_8)                                :: m_memory_max_mpi
-      LOGICAL                                            :: echo_input, grid_validate, I_was_ionode
+      LOGICAL                                            :: echo_input, grid_apply_cutoff, &
+                                                            grid_validate, I_was_ionode
       TYPE(cp_logger_type), POINTER                      :: logger, sublogger
       TYPE(cp_para_env_type), POINTER                    :: para_env
       TYPE(dft_control_type), POINTER                    :: dft_control
@@ -253,7 +254,13 @@ CONTAINS
       ! Configure the grid library.
       CALL section_vals_val_get(root_section, "GLOBAL%GRID%BACKEND", i_val=grid_backend)
       CALL section_vals_val_get(root_section, "GLOBAL%GRID%VALIDATE", l_val=grid_validate)
-      CALL grid_library_set_config(backend=grid_backend, validate=grid_validate)
+      CALL section_vals_val_get(root_section, "GLOBAL%GRID%APPLY_CUTOFF", l_val=grid_apply_cutoff)
+      CALL section_vals_val_get(root_section, "GLOBAL%GRID%QUEUE_LENGTH", i_val=grid_queue_length)
+      CALL grid_library_set_config(backend=grid_backend, &
+                                   device_id=get_accdrv_active_device_id(), &
+                                   validate=grid_validate, &
+                                   apply_cutoff=grid_apply_cutoff, &
+                                   queue_length=grid_queue_length)
 
       SELECT CASE (prog_name_id)
       CASE (do_atom)
@@ -318,6 +325,7 @@ CONTAINS
              method_name_id /= do_sirius .AND. &
              method_name_id /= do_qmmm .AND. &
              method_name_id /= do_mixed .AND. &
+             method_name_id /= do_nnp .AND. &
              method_name_id /= do_embed .AND. &
              method_name_id /= do_fist) &
             CPABORT("Energy/Force run not available for all methods ")

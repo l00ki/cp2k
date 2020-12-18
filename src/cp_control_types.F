@@ -16,6 +16,8 @@ MODULE cp_control_types
    USE kinds,                           ONLY: default_path_length,&
                                               default_string_length,&
                                               dp
+   USE pair_potential_types,            ONLY: pair_potential_p_release,&
+                                              pair_potential_p_type
    USE qs_cdft_types,                   ONLY: cdft_control_create,&
                                               cdft_control_release,&
                                               cdft_control_type
@@ -113,6 +115,7 @@ MODULE cp_control_types
       REAL(KIND=dp)                        :: kxr, kx2
       !
       LOGICAL                              :: xb_interaction
+      LOGICAL                              :: do_nonbonded
       LOGICAL                              :: coulomb_interaction
       LOGICAL                              :: tb3_interaction
       LOGICAL                              :: check_atomic_charges
@@ -124,6 +127,8 @@ MODULE cp_control_types
       INTEGER, DIMENSION(:, :), POINTER    :: kab_types
       INTEGER                              :: kab_nval
       REAL, DIMENSION(:), POINTER          :: kab_vals
+      !
+      TYPE(pair_potential_p_type), POINTER :: nonbonded
    END TYPE xtb_control_type
 
 ! **************************************************************************************************
@@ -262,6 +267,25 @@ MODULE cp_control_types
       TYPE(admm_block_type), DIMENSION(:), &
          ALLOCATABLE                       :: blocks
    END TYPE admm_control_type
+
+! **************************************************************************************************
+! \brief Parameters for external potential
+! **************************************************************************************************
+   TYPE expot_control_type
+      LOGICAL                              :: read_from_cube
+      LOGICAL                              :: maxwell_solver
+      LOGICAL                              :: static
+      REAL(KIND=dp)                        :: scaling_factor
+   END TYPE expot_control_type
+
+! **************************************************************************************************
+! \brief Parameters useful for Maxwell equation evaluation of external potential
+! **************************************************************************************************
+   TYPE maxwell_control_type
+      LOGICAL                              :: log_test
+      INTEGER                              :: int_test
+      REAL(KIND=dp)                        :: real_test
+   END TYPE maxwell_control_type
 
 ! **************************************************************************************************
 ! \brief Control parameters for a QUICKSTEP and KIM-GORDON calculation ***
@@ -484,6 +508,8 @@ MODULE cp_control_types
       TYPE(tddfpt_control_type), POINTER   :: tddfpt_control
       TYPE(tddfpt2_control_type), POINTER  :: tddfpt2_control
       TYPE(xas_control_type), POINTER      :: xas_control
+      TYPE(expot_control_type), POINTER    :: expot_control
+      TYPE(maxwell_control_type), POINTER  :: maxwell_control
       TYPE(efield_p_type), POINTER, &
          DIMENSION(:)                      :: efield_fields
       INTEGER                              :: nspins, &
@@ -558,6 +584,8 @@ MODULE cp_control_types
              semi_empirical_control_type, &
              s2_restraint_type, &
              admm_control_type, &
+             maxwell_control_type, &
+             expot_control_type, &
              rtp_control_type, &
              sccs_control_type, &
              stda_control_type
@@ -569,6 +597,8 @@ MODULE cp_control_types
              dft_control_create, &
              tddfpt_control_create, &
              admm_control_create, &
+             maxwell_control_create, &
+             expot_control_create, &
              ddapc_control_create, &
              sccs_control_create
 
@@ -767,6 +797,8 @@ CONTAINS
       NULLIFY (dft_control%efield_fields)
       NULLIFY (dft_control%period_efield)
       NULLIFY (dft_control%admm_control)
+      NULLIFY (dft_control%expot_control)
+      NULLIFY (dft_control%maxwell_control)
       NULLIFY (dft_control%rtp_control)
       NULLIFY (dft_control%sccs_control)
       dft_control%do_sccs = .FALSE.
@@ -810,6 +842,8 @@ CONTAINS
             CALL tddfpt2_control_release(dft_control%tddfpt2_control)
             CALL xas_control_release(dft_control%xas_control)
             CALL admm_control_release(dft_control%admm_control)
+            CALL expot_control_release(dft_control%expot_control)
+            CALL maxwell_control_release(dft_control%maxwell_control)
             CALL efield_fields_release(dft_control%efield_fields)
             CALL sccs_control_release(dft_control%sccs_control)
             IF (ASSOCIATED(dft_control%period_efield)) THEN
@@ -1053,6 +1087,7 @@ CONTAINS
       NULLIFY (xtb_control%kab_param)
       NULLIFY (xtb_control%kab_vals)
       NULLIFY (xtb_control%kab_types)
+      NULLIFY (xtb_control%nonbonded)
 
    END SUBROUTINE xtb_control_create
 
@@ -1072,6 +1107,9 @@ CONTAINS
          END IF
          IF (ASSOCIATED(xtb_control%kab_types)) THEN
             DEALLOCATE (xtb_control%kab_types)
+         END IF
+         IF (ASSOCIATED(xtb_control%nonbonded)) THEN
+            CALL pair_potential_p_release(xtb_control%nonbonded)
          END IF
          DEALLOCATE (xtb_control)
       END IF
@@ -1178,5 +1216,59 @@ CONTAINS
       END IF
 
    END SUBROUTINE sccs_control_release
+
+! **************************************************************************************************
+!> \brief ...
+!> \param expot_control ...
+! **************************************************************************************************
+   SUBROUTINE expot_control_create(expot_control)
+      TYPE(expot_control_type), POINTER                  :: expot_control
+
+      CPASSERT(.NOT. ASSOCIATED(expot_control))
+      ALLOCATE (expot_control)
+      expot_control%read_from_cube = .FALSE.
+      expot_control%maxwell_solver = .FALSE.
+      expot_control%static = .TRUE.
+      expot_control%scaling_factor = 1.0_dp
+
+   END SUBROUTINE expot_control_create
+
+! **************************************************************************************************
+!> \brief ...
+!> \param expot_control ...
+! **************************************************************************************************
+   SUBROUTINE expot_control_release(expot_control)
+      TYPE(expot_control_type), POINTER                  :: expot_control
+
+      IF (ASSOCIATED(expot_control)) THEN
+         DEALLOCATE (expot_control)
+      END IF
+
+   END SUBROUTINE expot_control_release
+
+! **************************************************************************************************
+!> \brief ...
+!> \param maxwell_control ...
+! **************************************************************************************************
+   SUBROUTINE maxwell_control_create(maxwell_control)
+      TYPE(maxwell_control_type), POINTER                :: maxwell_control
+
+      CPASSERT(.NOT. ASSOCIATED(maxwell_control))
+      ALLOCATE (maxwell_control)
+
+   END SUBROUTINE maxwell_control_create
+
+! **************************************************************************************************
+!> \brief ...
+!> \param maxwell_control ...
+! **************************************************************************************************
+   SUBROUTINE maxwell_control_release(maxwell_control)
+      TYPE(maxwell_control_type), POINTER                :: maxwell_control
+
+      IF (ASSOCIATED(maxwell_control)) THEN
+         DEALLOCATE (maxwell_control)
+      END IF
+
+   END SUBROUTINE maxwell_control_release
 
 END MODULE cp_control_types

@@ -2,12 +2,11 @@
 
 # author: Ole Schuett
 
-if grep -q "Ubuntu" /etc/os-release ; then
+if grep -q -e "Ubuntu" -e "Debian" /etc/os-release ; then
     echo -n "Installing Ubuntu packages... "
     apt-get update -qq
     apt-get install -qq --no-install-recommends \
         ca-certificates                         \
-        locales                                 \
         git                                     \
         less                                    \
         nano                                    \
@@ -15,7 +14,6 @@ if grep -q "Ubuntu" /etc/os-release ; then
         rsync                                   \
         wget
     rm -rf /var/lib/apt/lists/*
-    locale-gen "en_US.UTF-8"
     echo "done."
 
 elif grep -q "Fedora" /etc/os-release ; then

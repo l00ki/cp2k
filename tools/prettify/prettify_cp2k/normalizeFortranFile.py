@@ -46,7 +46,7 @@ VAR_RE = re.compile(
     rf"""
 \s*(?P<var>{VALID_NAME})
 \s*(?P<rest>(:?\((?P<param>{NESTED_PAREN_1TO3_CONTENTS})\))?
-\s*(?:=\s*(?P<value>(?:
+\s*(?:(?P<assignment>=>?)\s*(?P<value>(?:
 {NOT_PUNC_COMMA}+|
 {BRAC_OPEN}(?:{NOT_PUNC}|{BRAC_OPEN}{NOT_PUNC}*{BRAC_CLOSE}|{QUOTED})*{BRAC_CLOSE}|
 {QUOTED})+))?)?
@@ -312,7 +312,7 @@ def parseRoutine(inFile, logger):
         m = INCLUDE_RE.match(lines[0])
         if m:
             try:
-                subF = open(m.group("file"), "r")
+                subF = open(m.group("file"), "r", encoding="utf8")
                 subStream = InputStream(subF)
                 while True:
                     (subjline, _, sublines) = subStream.nextFortranLine()
@@ -402,7 +402,7 @@ def parseRoutine(inFile, logger):
                     if m2.group("param"):
                         var += "(" + m2.group("param") + ")"
                     if m2.group("value"):
-                        var += " = "
+                        var += " {} ".format(m2["assignment"])
                         var += m2.group("value")
                     decl["vars"].append(var)
                     str = str[m2.span()[1] :]
@@ -476,7 +476,7 @@ def parseRoutine(inFile, logger):
         m = INCLUDE_RE.match(lines[0])
         if m:
             try:
-                subF = open(m.group("file"), "r")
+                subF = open(m.group("file"), "r", encoding="utf8")
                 subStream = InputStream(subF)
                 while True:
                     (subjline, _, sublines) = subStream.nextFortranLine()
@@ -1291,7 +1291,7 @@ def rewriteFortranFile(
             inc_fn = COMMON_USES_RE.match(modulesDict["commonUses"]).group(1)
             inc_absfn = os.path.join(os.path.dirname(orig_filename), inc_fn)
             try:
-                with open(inc_absfn, "r") as fhandle:
+                with open(inc_absfn, "r", encoding="utf8") as fhandle:
                     implicitUsesRaw = parseUse(fhandle)
                 implicitUses = prepareImplicitUses(implicitUsesRaw["modules"])
             except:

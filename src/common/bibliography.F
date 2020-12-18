@@ -89,7 +89,9 @@ MODULE bibliography
                             Grimme2017, Kondov2007, Clabaut2020, &
                             Ren2011, Ren2013, Cohen2000, Rogers2002, Filippetti2000, Paziani2006, &
                             Toulouse2004, Limpanuparb2011, Martin2003, Yin2017, Goerigk2017, &
-                            Wilhelm2016a, Wilhelm2016b, Wilhelm2017, Wilhelm2018, Lass2018, cp2kqs2020
+                            Wilhelm2016a, Wilhelm2016b, Wilhelm2017, Wilhelm2018, Lass2018, cp2kqs2020, &
+                            Behler2007, Behler2011, Schran2020a, Schran2020b, &
+                            Rycroft2009, Thomas2015, Brehm2018, Brehm2020, Shigeta2001
 
 CONTAINS
 
@@ -3736,6 +3738,57 @@ CONTAINS
                          "ER "), &
                          DOI="10.1002/9781118670712.ch8")
 
+      CALL add_reference(key=Schran2020a, ISI_record=s2a( &
+                         "PT J", &
+                         "AU Schran, C", &
+                         "   Behler, J", &
+                         "   Marx, D", &
+                         "TI Automated Fitting of Neural Network Potentials", &
+                         "   at Coupled Cluster Accuracy: Protonated Water Clusters", &
+                         "   as Testing Ground", &
+                         "SO Journal of Chemical Theory and Computation", &
+                         "PY 2020", &
+                         "VL 16", &
+                         "IS 1", &
+                         "ER"), &
+                         DOI="10.1021/acs.jctc.9b00805")
+
+      CALL add_reference(key=Schran2020b, ISI_record=s2a( &
+                         "PT J", &
+                         "AU Schran, C", &
+                         "   Brezina, K", &
+                         "   Marsalek, O", &
+                         "TI Committee neural network potentials control", &
+                         "   generalization errors and enable active learning", &
+                         "SO JOURNAL OF CHEMICAL PHYSICS", &
+                         "PY 2020", &
+                         "VL 153", &
+                         "IS 10", &
+                         "ER"), &
+                         DOI="10.1063/5.0016004")
+
+      CALL add_reference(key=Behler2007, ISI_record=s2a( &
+                         "AU Behler, J", &
+                         "   Parrinello, M", &
+                         "TI Generalized neural-network representation of high-dimensional potential-energy surfaces", &
+                         "SO PHYSICAL REVIEW LETTERS", &
+                         "PY 2007", &
+                         "VL 98", &
+                         "IS 14", &
+                         "AR 146401", &
+                         "ER"), &
+                         DOI="10.1103/PhysRevLett.98.146401")
+
+      CALL add_reference(key=Behler2011, ISI_record=s2a( &
+                         "AU Behler, J", &
+                         "TI Atom-centered symmetry functions for constructing high-dimensional neural network potentials ", &
+                         "SO JOURNAL OF CHEMICAL PHYSICS", &
+                         "PY 2011", &
+                         "VL 134", &
+                         "IS 7", &
+                         "ER"), &
+                         DOI="10.1063/1.3553717")
+
       CALL add_reference(key=Lu2004, ISI_record=s2a( &
                          "PT J", &
                          "AU Lu, WC", &
@@ -4539,6 +4592,101 @@ CONTAINS
                          "PB American Institute of Physics", &
                          "ER"), &
                          DOI="10.1063/5.0007045")
+
+      CALL add_reference(key=Rycroft2009, ISI_record=s2a( &
+                         "TY JOUR", &
+                         "PT J", &
+                         "AU Rycroft, Chris H", &
+                         "TI VORO++: A three-dimensional Voronoi cell library in C++", &
+                         "SO Chaos: An Interdisciplinary Journal of Nonlinear Science", &
+                         "JF Chaos: An Interdisciplinary Journal of Nonlinear Science", &
+                         "JO Chaos", &
+                         "SN 1054-1500", &
+                         "IS 4", &
+                         "PY 2009", &
+                         "VL 19", &
+                         "SP 041111", &
+                         "DI 10.1063/1.3215722", &
+                         "PB American Institute of Physics", &
+                         "ER"), &
+                         DOI="10.1063/1.3215722")
+
+      CALL add_reference(key=Thomas2015, ISI_record=s2a( &
+                         "TY JOUR", &
+                         "PT J", &
+                         "AU Thomas, Martin", &
+                         "   Brehm, Martin", &
+                         "   Kirchner, Barbara", &
+                         "TI Voronoi dipole moments for the simulation of bulk phase vibrational", &
+                         "   spectra", &
+                         "SO Physical Chemistry Chemical Physics", &
+                         "JF Physical Chemistry Chemical Physics", &
+                         "JO Phys. Chem. Chem. Phys.", &
+                         "SN 1463-9076", &
+                         "IS 5", &
+                         "PY 2015", &
+                         "VL 17", &
+                         "SP 3207", &
+                         "EP 3213", &
+                         "DI 10.1039/C4CP05272B", &
+                         "PB The Royal Society of Chemistry", &
+                         "ER"), &
+                         DOI="10.1039/C4CP05272B")
+
+      CALL add_reference(key=Brehm2018, ISI_record=s2a( &
+                         "TY JOUR", &
+                         "PT J", &
+                         "AU Brehm, Martin", &
+                         "   Thomas, Martin", &
+                         "TI An Efficient Lossless Compression Algorithm for Trajectories of Atom", &
+                         "   Positions and Volumetric Data", &
+                         "SO Journal of Chemical Information and Modeling", &
+                         "JF Journal of Chemical Information and Modeling", &
+                         "JO J. Chem. Inf. Model.", &
+                         "SN 1549-9596", &
+                         "IS 10", &
+                         "PY 2018", &
+                         "VL 58", &
+                         "SP 2092", &
+                         "EP 2107", &
+                         "DI 10.1021/acs.jcim.8b00501", &
+                         "PB American Chemical Society", &
+                         "ER"), &
+                         DOI="10.1021/acs.jcim.8b00501")
+
+      CALL add_reference(key=Brehm2020, ISI_record=s2a( &
+                         "TY JOUR", &
+                         "PT J", &
+                         "AU Brehm, Martin", &
+                         "   Thomas, Martin", &
+                         "   Gehrke, Sascha", &
+                         "   Kirchner, Barbara", &
+                         "TI TRAVIS - A free analyzer for trajectories from molecular simulation", &
+                         "SO The Journal of Chemical Physics", &
+                         "JF The Journal of Chemical Physics", &
+                         "JO J. Chem. Phys.", &
+                         "SN 0021-9606", &
+                         "IS 16", &
+                         "PY 2020", &
+                         "VL 152", &
+                         "SP 164105", &
+                         "DI 10.1063/5.0005078", &
+                         "PB American Institute of Physics", &
+                         "ER"), &
+                         DOI="10.1063/5.0005078")
+
+      CALL add_reference(key=Shigeta2001, ISI_record=s2a( &
+                         "AU Y. Shigeta", &
+                         "   A. M. Ferreira", &
+                         "   V. G. Zakrzewski", &
+                         "   J. V. Ortiz", &
+                         "TI Electron propagator calculations with Kohn–Sham reference states", &
+                         "SO International Journal of Quantum Chemistry", &
+                         "PY 2001", &
+                         "VL 85", &
+                         "IS 4-5", &
+                         "ER"), &
+                         DOI="10.1002/qua.1543")
 
    END SUBROUTINE add_all_references
 

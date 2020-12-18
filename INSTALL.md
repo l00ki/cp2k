@@ -11,9 +11,7 @@ For more details on downloading CP2K, see <https://www.cp2k.org/download>.
 
 The most convenient way to install pre-requisites is by using the [toolchain script](./tools/toolchain/install_cp2k_toolchain.sh).
 
-For a complete introduction to the toolchain script,
-see the [README for users](./tools/toolchain/README_FOR_USERS.md)
-or the [README for developers](./tools/toolchain/README_FOR_DEVELOPERS.md).
+For a complete introduction to the toolchain script, see the [README](./tools/toolchain/README.md).
 
 The basic steps are:
 
@@ -189,6 +187,7 @@ version of CP2K (ssmp or psmp), the FFTW3 threading library libfftw3_threads
 - Use `-D__CUDA_PROFILING` to turn on Nvidia Tools Extensions.
   It requires to link `-lnvToolsExt`.
 - Link to a blas/scalapack library that accelerates large DGEMMs (e.g. libsci_acc)
+- Use the `-D__GRID_CUDA` to compile the GPU and HYBRID backends for the grid library.
 
 ### 2k. libxc (optional, wider choice of xc functionals)
 
@@ -303,6 +302,24 @@ SIRIUS is a domain specific library for electronic structure calculations.
   needed to use the library in cp2k, excepted during linking time where the
   library should be placed in front of the scalapack library.
 - see <https://github.com/eth-cscs/COSMA> for more information.
+
+### 2t. LibVori (Voronoi Integration for Electrostatic Properties from Electron Density)
+
+- LibVori is a library which enables to compute electrostatic properties
+  (charge, dipole vector, quadrupole tensor, ...) via integration of the total
+  electron density in the Voronoi cell of each atom.
+- Add `-D__LIBVORI` to DFLAGS to enable support for LibVori.
+- see <https://brehm-research.de/voronoi> for more information.
+- LibVori also enables support for the BQB file format for compressed trajectories,
+  please see <https://brehm-research.de/bqb.php> for more information as well as
+  the `bqbtool` to inspect BQB files.
+
+### 2u. LibMaxwell (External Maxwell Solver)
+
+- LibMaxwell is a library to solve the time-dependent Maxwell equations
+  and use the resulting electric field in MD runs or real-time propagation.
+- Add `-D__LIBMAXWELL` to DFLAGS to enable support for LibMaxwell.
+- see <https://brehm-research.de> for more information.
 
 ## 3. Compile
 

@@ -222,6 +222,8 @@ The --with-PKG options follow the rules:
                           Default = install
   --with-cosma            Enable cosma as a replacement for scalapack matrix multiplication
                           Default = install
+  --with-libvori          Enable libvori for the Voronoi integration (and the BQB compressed trajectory format)
+                          Default = install
 
 FURTHER INSTRUCTIONS
 
@@ -258,7 +260,8 @@ tool_list="gcc cmake valgrind"
 mpi_list="mpich openmpi intelmpi"
 math_list="mkl acml openblas reflapack"
 lib_list="fftw libint libxc libsmm libxsmm cosma scalapack elpa plumed \
-          spfft ptscotch superlu pexsi quip gsl spglib hdf5 libvdwxc sirius"
+          spfft ptscotch superlu pexsi quip gsl spglib hdf5 libvdwxc sirius
+          libvori"
 package_list="$tool_list $mpi_list $math_list $lib_list"
 # ------------------------------------------------------------------------
 
@@ -296,13 +299,14 @@ with_reflapack=__DONTUSE__
 
 # sirius is activated by default
 with_sirius="__INSTALL__"
-with_gsl="__INSTALL__"
+with_gsl="__DONTUSE__"
 with_spglib="__INSTALL__"
-with_hdf5="__INSTALL__"
+with_hdf5="__DONTUSE__"
 with_elpa="__INSTALL__"
-with_libvdwxc="__INSTALL__"
-with_spfft=__INSTALL__
-with_cosma=__INSTALL__
+with_libvdwxc="__DONTUSE__"
+with_spfft="__DONTUSE__"
+with_cosma="__INSTALL__"
+with_libvori="__INSTALL__"
 # for MPI, we try to detect system MPI variant
 with_openmpi=__SYSTEM__
 with_mpich=__SYSTEM__
@@ -608,6 +612,9 @@ while [ $# -ge 1 ] ; do
         --with-cosma*)
             with_cosma=$(read_with $1)
             ;;
+        --with-libvori*)
+            with_libvori=$(read_with $1)
+            ;;
         --help*)
             show_help
             exit 0
@@ -723,37 +730,21 @@ else
     fi
 fi
 
-# spg library requires cmake.
-if [ "$with_spglib" = "__INSTALL__" ] ; then
+# spglib and libvori require cmake.
+if [ "$with_spglib" = "__INSTALL__" ] || [ "$with_libvori" = "__INSTALL__" ] ; then
     [ "$with_cmake" = "__DONTUSE__" ] && with_cmake="__INSTALL__"
 fi
 
 # SIRIUS dependencies. Remove the gsl library from the dependencies if SIRIUS is not activated
 if [ "$with_sirius" = "__INSTALL__" ] ; then
-    if [ "$with_spfft" = "__DONTUSE__" ] ; then
-        report_error "For SIRIUS to work you need a working spfft library use --with-spfft option to specify if you wish to install the library or specify its location."
-        exit 1
-    fi
-    if [ "$with_gsl" = "__DONTUSE__" ] ; then
-        report_error "For SIRIUS to work you need a working gsl library use --with-gsl option to specify if you wish to install the library or specify its location."
-        exit 1
-    fi
-    if [ "$with_libxc" = "__DONTUSE__" ] ; then
-        report_error "For SIRIUS to work you need a working libxc library use --with-libxc option to specify if you wish to install the library or specify its location."
-        exit 1
-    fi
-    if [ "$with_fftw" = "__DONTUSE__" ] ; then
-        report_error "For SIRIUS to work you need a working fftw library use --with-fftw option to specify if you wish to install the library or specify its location."
-        exit 1
-    fi
-    if [ "$with_spglib" = "__DONTUSE__" ] ; then
-        report_error "For SIRIUS to work you need a working spglib library use --with-spglib option to specify if you wish to install the library or specify its location."
-        exit 1
-    fi
-    if [ "$with_hdf5" = "__DONTUSE__" ] ; then
-        report_error "For SIRIUS to work you need a working hdf5 library use --with-hdf5 option to specify if you wish to install the library or specify its location."
-        exit 1
-    fi
+    [ "$with_spfft" = "__DONTUSE__" ] && with_spfft="__INSTALL__"
+    [ "$with_gsl" = "__DONTUSE__" ] && with_gsl="__INSTALL__"
+    [ "$with_libxc" = "__DONTUSE__" ] && with_libxc="__INSTALL__"
+    [ "$with_fftw" = "__DONTUSE__" ] && with_fftw="__INSTALL__"
+    [ "$with_spglib" = "__DONTUSE__" ] && with_spglib="__INSTALL__"
+    [ "$with_hdf5" = "__DONTUSE__" ] && with_hdf5="__INSTALL__"
+    [ "$with_libvdwxc" = "__DONTUSE__" ] && with_libvdwxc="__INSTALL__"
+    [ "$with_cosma" = "__DONTUSE__" ] && with_cosma="__INSTALL__"
 fi
 
 # ------------------------------------------------------------------------
@@ -895,8 +886,7 @@ case $GPUVER in
         "--gpu-ver currently only supports K20X, K40, K80, P100, V100 as options"
 esac
 
-# write toolchain environment
-export -p > "${INSTALLDIR}"/toolchain.env
+write_toolchain_env "${INSTALLDIR}"
 
 # write toolchain config
 echo "tool_list=\"${tool_list}\"" > "${INSTALLDIR}"/toolchain.conf
@@ -939,6 +929,7 @@ else
     ./scripts/install_hdf5.sh
     ./scripts/install_libvdwxc.sh
     ./scripts/install_sirius.sh
+    ./scripts/install_libvori.sh
     ./scripts/generate_arch_files.sh
 fi
 

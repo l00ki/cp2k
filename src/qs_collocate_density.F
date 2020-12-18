@@ -109,9 +109,9 @@ MODULE qs_collocate_density
                                               rs_pw_transfer
    USE rs_pw_interface,                 ONLY: density_rs2pw,&
                                               density_rs2pw_basic
-   USE task_list_methods,               ONLY: rs_copy_matrix,&
+   USE task_list_methods,               ONLY: rs_copy_to_buffer,&
                                               rs_distribute_matrix,&
-                                              rs_scatter_matrix
+                                              rs_scatter_matrices
    USE task_list_types,                 ONLY: atom_pair_type,&
                                               task_list_type,&
                                               task_type
@@ -1511,11 +1511,8 @@ CONTAINS
       CALL pw_env_get(pw_env, rs_grids=rs_rho)
       nlevels = SIZE(rs_rho)
       group = rs_rho(1)%rs_grid%desc%group
-
-      ! Zero all grids.
       DO ilevel = 1, nlevels
          CALL rs_grid_retain(rs_rho(ilevel)%rs_grid)
-         CALL rs_grid_zero(rs_rho(ilevel)%rs_grid)
       END DO
 
       ! Check if any of the grids is distributed.
@@ -1540,15 +1537,16 @@ CONTAINS
 
       ! Distribute matrix blocks.
       IF (any_distributed) THEN
-         CALL rs_scatter_matrix(task_list, group, matrix_images)
+         CALL rs_scatter_matrices(matrix_images, task_list%pab_buffer, task_list, group)
       ELSE
-         CALL rs_copy_matrix(task_list, matrix_images)
+         CALL rs_copy_to_buffer(matrix_images, task_list%pab_buffer, task_list)
       ENDIF
       DEALLOCATE (matrix_images)
 
       ! Map all tasks onto the grids
       CALL grid_collocate_task_list(task_list=task_list%grid_task_list, &
                                     ga_gb_function=ga_gb_function, &
+                                    pab_blocks=task_list%pab_buffer, &
                                     rs_grids=rs_rho)
 
       ! Merge realspace multi-grids into single planewave grid.

@@ -53,13 +53,14 @@ MODULE xas_tdp_methods
                                               debug_print_level
    USE cp_para_types,                   ONLY: cp_para_env_type
    USE dbcsr_api,                       ONLY: &
-        dbcsr_add_on_diag, dbcsr_copy, dbcsr_create, dbcsr_finalize, dbcsr_get_info, &
-        dbcsr_multiply, dbcsr_p_type, dbcsr_set, dbcsr_type_no_symmetry
+        dbcsr_add_on_diag, dbcsr_copy, dbcsr_create, dbcsr_filter, dbcsr_finalize, dbcsr_get_info, &
+        dbcsr_get_occupation, dbcsr_multiply, dbcsr_p_type, dbcsr_set, dbcsr_type_no_symmetry
    USE input_constants,                 ONLY: &
-        do_loc_none, do_potential_coulomb, do_potential_id, do_potential_short, &
-        do_potential_truncated, op_loc_berry, state_loc_list, tddfpt_singlet, tddfpt_spin_cons, &
-        tddfpt_spin_flip, tddfpt_triplet, xas_1s_type, xas_2p_type, xas_2s_type, xas_dip_len, &
-        xas_dip_vel, xas_not_excited, xas_tdp_by_index, xas_tdp_by_kind
+        do_admm_purify_cauchy_subspace, do_admm_purify_mo_diag, do_admm_purify_none, do_loc_none, &
+        do_potential_coulomb, do_potential_id, do_potential_short, do_potential_truncated, &
+        op_loc_berry, state_loc_list, tddfpt_singlet, tddfpt_spin_cons, tddfpt_spin_flip, &
+        tddfpt_triplet, xas_1s_type, xas_2p_type, xas_2s_type, xas_dip_len, xas_dip_vel, &
+        xas_not_excited, xas_tdp_by_index, xas_tdp_by_kind
    USE input_cp2k_dft,                  ONLY: create_localize_section
    USE input_section_types,             ONLY: section_release,&
                                               section_type,&
@@ -76,6 +77,8 @@ MODULE xas_tdp_methods
    USE mathlib,                         ONLY: get_diag
    USE memory_utilities,                ONLY: reallocate
    USE message_passing,                 ONLY: mp_bcast
+   USE parallel_rng_types,              ONLY: UNIFORM,&
+                                              rng_stream_type
    USE particle_methods,                ONLY: get_particle_set
    USE particle_types,                  ONLY: particle_type
    USE periodic_table,                  ONLY: ptable
@@ -112,12 +115,15 @@ MODULE xas_tdp_methods
    USE qs_rho_types,                    ONLY: qs_rho_get,&
                                               qs_rho_type
    USE qs_scf_types,                    ONLY: ot_method_nr
-   USE util,                            ONLY: locate,&
+   USE util,                            ONLY: get_limit,&
+                                              locate,&
                                               sort_unique
    USE xas_methods,                     ONLY: calc_stogto_overlap
    USE xas_tdp_atom,                    ONLY: init_xas_atom_env,&
                                               integrate_fxc_atoms,&
                                               integrate_soc_atoms
+   USE xas_tdp_correction,              ONLY: GW2X_shift,&
+                                              get_soc_splitting
    USE xas_tdp_integrals,               ONLY: compute_ri_3c_coulomb,&
                                               compute_ri_3c_exchange,&
                                               compute_ri_coulomb2_int,&
@@ -222,10 +228,11 @@ CONTAINS
       TYPE(qs_environment_type), POINTER                 :: qs_env
 
       CHARACTER(LEN=default_string_length)               :: kind_name
-      INTEGER                                            :: current_state_index, iat, iatom, ikind, &
-                                                            ispin, istate, output_unit, tmp_index
+      INTEGER :: batch_size, bo(2), current_state_index, iat, iatom, ibatch, ikind, ispin, istate, &
+         nbatch, nex_atom, output_unit, tmp_index
+      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: batch_atoms, ex_atoms_of_kind
       INTEGER, DIMENSION(:), POINTER                     :: atoms_of_kind
-      LOGICAL                                            :: do_os
+      LOGICAL                                            :: do_os, end_of_batch, unique
       TYPE(admm_type), POINTER                           :: admm_env
       TYPE(atomic_kind_type), DIMENSION(:), POINTER      :: atomic_kind_set
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_ks
@@ -301,8 +308,9 @@ CONTAINS
       IF (xas_tdp_control%check_only) CALL print_checks(xas_tdp_env, xas_tdp_control, qs_env)
 
 !  If not simply exact exchange, setup a xas_atom_env and compute the xc integrals on the atomic grids
-!  Also needed if SOC is included. Done before looping on atoms as it's all done at once
-      IF ((xas_tdp_control%do_xc .OR. xas_tdp_control%do_soc) .AND. .NOT. xas_tdp_control%check_only) THEN
+!  Also needed if SOC is included or XPS GW2X(). Done before looping on atoms as it's all done at once
+      IF ((xas_tdp_control%do_xc .OR. xas_tdp_control%do_soc .OR. xas_tdp_control%do_gw2x) &
+          .AND. .NOT. xas_tdp_control%check_only) THEN
 
          IF (output_unit > 0 .AND. xas_tdp_control%do_xc) THEN
             WRITE (UNIT=output_unit, FMT="(/,T3,A,I4,A)") &
@@ -314,11 +322,11 @@ CONTAINS
          CALL init_xas_atom_env(xas_atom_env, xas_tdp_env, xas_tdp_control, qs_env)
          do_os = xas_tdp_control%do_uks .OR. xas_tdp_control%do_roks
 
-         IF (xas_tdp_control%do_xc) THEN
+         IF (xas_tdp_control%do_xc .AND. (.NOT. xas_tdp_control%xps_only)) THEN
             CALL integrate_fxc_atoms(xas_tdp_env%ri_fxc, xas_atom_env, xas_tdp_control, qs_env)
          END IF
 
-         IF (xas_tdp_control%do_soc) THEN
+         IF (xas_tdp_control%do_soc .OR. xas_tdp_control%do_gw2x) THEN
             CALL integrate_soc_atoms(xas_tdp_env%orb_soc, xas_atom_env, qs_env)
          END IF
 
@@ -326,7 +334,7 @@ CONTAINS
       END IF
 
 !  Compute the 3-center Coulomb integrals for the whole system
-      IF ((.NOT. xas_tdp_control%check_only) .AND. &
+      IF ((.NOT. (xas_tdp_control%check_only .OR. xas_tdp_control%xps_only)) .AND. &
           (xas_tdp_control%do_xc .OR. xas_tdp_control%do_coulomb)) THEN
          IF (output_unit > 0) THEN
             WRITE (UNIT=output_unit, FMT="(/,T3,A,I4,A)") &
@@ -345,132 +353,164 @@ CONTAINS
       DO ikind = 1, SIZE(atomic_kind_set)
 
          IF (xas_tdp_control%check_only) EXIT
+         IF (.NOT. ANY(xas_tdp_env%ex_kind_indices == ikind)) CYCLE
 
          CALL get_atomic_kind(atomic_kind=atomic_kind_set(ikind), name=kind_name, &
                               atom_list=atoms_of_kind)
 
-         IF (.NOT. ANY(xas_tdp_env%ex_kind_indices == ikind)) CYCLE
          ! compute the RI coulomb2 inverse for this kind, and RI exchange2 if needed
          CALL compute_ri_coulomb2_int(ikind, xas_tdp_env, xas_tdp_control, qs_env)
          IF (xas_tdp_control%do_hfx) THEN
             CALL compute_ri_exchange2_int(ikind, xas_tdp_env, xas_tdp_control, qs_env)
          END IF
 
-!        Loop over atoms of kind
-         DO iat = 1, SIZE(atoms_of_kind)
-            iatom = atoms_of_kind(iat)
+         !Randomly distribute excited atoms of current kinds into batches for optimal load balance
+         !of RI 3c exchange integrals. Take batch sizes of 2 to avoid taxing memory too much, while
+         !greatly improving load balance
+         batch_size = 2
+         CALL get_ri_3c_batches(ex_atoms_of_kind, nbatch, batch_size, atoms_of_kind, xas_tdp_env)
+         nex_atom = SIZE(ex_atoms_of_kind)
 
-            IF (.NOT. ANY(xas_tdp_env%ex_atom_indices == iatom)) CYCLE
-            tmp_index = locate(xas_tdp_env%ex_atom_indices, iatom)
+         !Loop over batches
+         DO ibatch = 1, nbatch
 
-            !if dipole in length rep, compute the dipole in the AO basis for this atom
-            !if quadrupole is required, compute it there too (in length rep)
-            IF (xas_tdp_control%dipole_form == xas_dip_len .OR. xas_tdp_control%do_quad) THEN
-               CALL compute_lenrep_multipole(iatom, xas_tdp_env, xas_tdp_control, qs_env)
-            END IF
+            bo = get_limit(nex_atom, nbatch, ibatch - 1)
+            batch_size = bo(2) - bo(1) + 1
+            ALLOCATE (batch_atoms(batch_size))
+            iatom = 0
+            DO iat = bo(1), bo(2)
+               iatom = iatom + 1
+               batch_atoms(iatom) = ex_atoms_of_kind(iat)
+            END DO
+            CALL sort_unique(batch_atoms, unique)
 
-            !compute the three center RI exchange integrals if so required
+            !compute RI 3c exchange integrals on batch, if so required
             IF (xas_tdp_control%do_hfx) THEN
                IF (output_unit > 0) THEN
-                  WRITE (UNIT=output_unit, FMT="(/,T3,A,I4,A1,A)") &
-                     "# Computing the RI 3-center Exchange integrals for excited atom (idx/kind): ", &
-                     iatom, "/", TRIM(kind_name)
+                  WRITE (UNIT=output_unit, FMT="(/,T3,A,I4,A,I4,A,I1,A,A)") &
+                     "# Computing the RI 3-center Exchange integrals for batch ", ibatch, "(/", nbatch, ") of ", &
+                     batch_size, " atoms of kind: ", TRIM(kind_name)
                   CALL m_flush(output_unit)
                END IF
-               CALL compute_ri_3c_exchange(iatom, xas_tdp_env, xas_tdp_control, qs_env)
+               CALL compute_ri_3c_exchange(batch_atoms, xas_tdp_env, xas_tdp_control, qs_env)
             END IF
 
-!           Loop over states of excited atom of kind
-            DO istate = 1, SIZE(xas_tdp_env%state_types, 1)
+!           Loop over atoms of batch
+            DO iat = 1, batch_size
+               iatom = batch_atoms(iat)
 
-               IF (xas_tdp_env%state_types(istate, tmp_index) == xas_not_excited) CYCLE
+               tmp_index = locate(xas_tdp_env%ex_atom_indices, iatom)
 
-               current_state => xas_tdp_env%donor_states(current_state_index)
-               CALL set_donor_state(current_state, at_index=iatom, &
-                                    at_symbol=kind_name, kind_index=ikind, &
-                                    state_type=xas_tdp_env%state_types(istate, tmp_index))
-
-!              Initial write for the donor state of interest
-               IF (output_unit > 0) THEN
-                  WRITE (UNIT=output_unit, FMT="(/,T3,A,A2,A,I4,A,A,/)") &
-                     "# Start of calculations for donor state of type ", &
-                     xas_tdp_env%state_type_char(current_state%state_type), " for atom", &
-                     current_state%at_index, " of kind ", TRIM(current_state%at_symbol)
-                  CALL m_flush(output_unit)
+               !if dipole in length rep, compute the dipole in the AO basis for this atom
+               !if quadrupole is required, compute it there too (in length rep)
+               IF (xas_tdp_control%dipole_form == xas_dip_len .OR. xas_tdp_control%do_quad) THEN
+                  CALL compute_lenrep_multipole(iatom, xas_tdp_env, xas_tdp_control, qs_env)
                END IF
 
-!              Assign best fitting MO(s) to current core donnor state
-               CALL assign_mos_to_donor_state(current_state, xas_tdp_env, xas_tdp_control, qs_env)
+!              Loop over states of excited atom of kind
+               DO istate = 1, SIZE(xas_tdp_env%state_types, 1)
 
-!              Perform MO restricted Mulliken pop analysis for verification
-               CALL perform_mulliken_on_donor_state(current_state, qs_env)
+                  IF (xas_tdp_env%state_types(istate, tmp_index) == xas_not_excited) CYCLE
 
-!              Do main calculations here
-               CALL setup_xas_tdp_prob(current_state, qs_env, xas_tdp_env, xas_tdp_control)
+                  current_state => xas_tdp_env%donor_states(current_state_index)
+                  CALL set_donor_state(current_state, at_index=iatom, &
+                                       at_symbol=kind_name, kind_index=ikind, &
+                                       state_type=xas_tdp_env%state_types(istate, tmp_index))
 
-               IF (xas_tdp_control%do_spin_cons) THEN
-                  CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
-                                          ex_type=tddfpt_spin_cons)
-                  CALL compute_dipole_fosc(current_state, xas_tdp_control, xas_tdp_env)
-                  IF (xas_tdp_control%do_quad) CALL compute_quadrupole_fosc(current_state, &
-                                                                            xas_tdp_control, xas_tdp_env)
-                  CALL xas_tdp_post(tddfpt_spin_cons, current_state, xas_tdp_env, &
-                                    xas_tdp_section, qs_env)
-                  CALL write_donor_state_restart(tddfpt_spin_cons, current_state, xas_tdp_section)
-               END IF
-
-               IF (xas_tdp_control%do_spin_flip) THEN
-                  CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
-                                          ex_type=tddfpt_spin_flip)
-                  !no dipole in spin-flip (spin-forbidden)
-                  CALL xas_tdp_post(tddfpt_spin_flip, current_state, xas_tdp_env, &
-                                    xas_tdp_section, qs_env)
-                  CALL write_donor_state_restart(tddfpt_spin_flip, current_state, xas_tdp_section)
-               END IF
-
-               IF (xas_tdp_control%do_singlet) THEN
-                  CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
-                                          ex_type=tddfpt_singlet)
-                  CALL compute_dipole_fosc(current_state, xas_tdp_control, xas_tdp_env)
-                  IF (xas_tdp_control%do_quad) CALL compute_quadrupole_fosc(current_state, &
-                                                                            xas_tdp_control, xas_tdp_env)
-                  CALL xas_tdp_post(tddfpt_singlet, current_state, xas_tdp_env, &
-                                    xas_tdp_section, qs_env)
-                  CALL write_donor_state_restart(tddfpt_singlet, current_state, xas_tdp_section)
-               END IF
-
-               IF (xas_tdp_control%do_triplet) THEN
-                  CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
-                                          ex_type=tddfpt_triplet)
-                  !no dipole for triplets by construction
-                  CALL xas_tdp_post(tddfpt_triplet, current_state, xas_tdp_env, &
-                                    xas_tdp_section, qs_env)
-                  CALL write_donor_state_restart(tddfpt_triplet, current_state, xas_tdp_section)
-               END IF
-
-!              Include the SOC if required
-               IF (xas_tdp_control%do_soc) THEN
-                  IF (xas_tdp_control%do_singlet .AND. xas_tdp_control%do_triplet) THEN
-                     CALL include_rcs_soc(current_state, xas_tdp_env, xas_tdp_control, qs_env)
+!                 Initial write for the donor state of interest
+                  IF (output_unit > 0) THEN
+                     WRITE (UNIT=output_unit, FMT="(/,T3,A,A2,A,I4,A,A,/)") &
+                        "# Start of calculations for donor state of type ", &
+                        xas_tdp_env%state_type_char(current_state%state_type), " for atom", &
+                        current_state%at_index, " of kind ", TRIM(current_state%at_symbol)
+                     CALL m_flush(output_unit)
                   END IF
-                  IF (xas_tdp_control%do_spin_cons .AND. xas_tdp_control%do_spin_flip) THEN
-                     CALL include_os_soc(current_state, xas_tdp_env, xas_tdp_control, qs_env)
+
+!                 Assign best fitting MO(s) to current core donnor state
+                  CALL assign_mos_to_donor_state(current_state, xas_tdp_env, xas_tdp_control, qs_env)
+
+!                 Perform MO restricted Mulliken pop analysis for verification
+                  CALL perform_mulliken_on_donor_state(current_state, qs_env)
+
+!                 GW2X correction
+                  IF (xas_tdp_control%do_gw2x) THEN
+                     CALL GW2X_shift(current_state, xas_tdp_env, xas_tdp_control, qs_env)
                   END IF
-               END IF
 
-!              Print the requested properties
-               CALL print_xas_tdp_to_file(current_state, xas_tdp_env, xas_tdp_control, xas_tdp_section)
+!                 Do main XAS calculations here
+                  IF (.NOT. xas_tdp_control%xps_only) THEN
+                     CALL setup_xas_tdp_prob(current_state, qs_env, xas_tdp_env, xas_tdp_control)
 
-!              Free some unneeded attributes of current_state
-               CALL free_ds_memory(current_state)
+                     IF (xas_tdp_control%do_spin_cons) THEN
+                        CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
+                                                ex_type=tddfpt_spin_cons)
+                        CALL compute_dipole_fosc(current_state, xas_tdp_control, xas_tdp_env)
+                        IF (xas_tdp_control%do_quad) CALL compute_quadrupole_fosc(current_state, &
+                                                                                  xas_tdp_control, xas_tdp_env)
+                        CALL xas_tdp_post(tddfpt_spin_cons, current_state, xas_tdp_env, &
+                                          xas_tdp_section, qs_env)
+                        CALL write_donor_state_restart(tddfpt_spin_cons, current_state, xas_tdp_section)
+                     END IF
 
-               current_state_index = current_state_index + 1
-               NULLIFY (current_state)
+                     IF (xas_tdp_control%do_spin_flip) THEN
+                        CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
+                                                ex_type=tddfpt_spin_flip)
+                        !no dipole in spin-flip (spin-forbidden)
+                        CALL xas_tdp_post(tddfpt_spin_flip, current_state, xas_tdp_env, &
+                                          xas_tdp_section, qs_env)
+                        CALL write_donor_state_restart(tddfpt_spin_flip, current_state, xas_tdp_section)
+                     END IF
 
-            END DO ! state type
+                     IF (xas_tdp_control%do_singlet) THEN
+                        CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
+                                                ex_type=tddfpt_singlet)
+                        CALL compute_dipole_fosc(current_state, xas_tdp_control, xas_tdp_env)
+                        IF (xas_tdp_control%do_quad) CALL compute_quadrupole_fosc(current_state, &
+                                                                                  xas_tdp_control, xas_tdp_env)
+                        CALL xas_tdp_post(tddfpt_singlet, current_state, xas_tdp_env, &
+                                          xas_tdp_section, qs_env)
+                        CALL write_donor_state_restart(tddfpt_singlet, current_state, xas_tdp_section)
+                     END IF
 
-            CALL free_exat_memory(xas_tdp_env, iatom)
-         END DO ! atom of kind
+                     IF (xas_tdp_control%do_triplet) THEN
+                        CALL solve_xas_tdp_prob(current_state, xas_tdp_control, xas_tdp_env, qs_env, &
+                                                ex_type=tddfpt_triplet)
+                        !no dipole for triplets by construction
+                        CALL xas_tdp_post(tddfpt_triplet, current_state, xas_tdp_env, &
+                                          xas_tdp_section, qs_env)
+                        CALL write_donor_state_restart(tddfpt_triplet, current_state, xas_tdp_section)
+                     END IF
+
+!                    Include the SOC if required, only for 2p donor stataes
+                     IF (xas_tdp_control%do_soc .AND. current_state%state_type == xas_2p_type) THEN
+                        IF (xas_tdp_control%do_singlet .AND. xas_tdp_control%do_triplet) THEN
+                           CALL include_rcs_soc(current_state, xas_tdp_env, xas_tdp_control, qs_env)
+                        END IF
+                        IF (xas_tdp_control%do_spin_cons .AND. xas_tdp_control%do_spin_flip) THEN
+                           CALL include_os_soc(current_state, xas_tdp_env, xas_tdp_control, qs_env)
+                        END IF
+                     END IF
+
+!                    Print the requested properties
+                     CALL print_xas_tdp_to_file(current_state, xas_tdp_env, xas_tdp_control, xas_tdp_section)
+                  END IF !xps_only
+                  IF (xas_tdp_control%do_gw2x) CALL print_xps(current_state, xas_tdp_env, xas_tdp_control, qs_env)
+
+!                 Free some unneeded attributes of current_state
+                  CALL free_ds_memory(current_state)
+
+                  current_state_index = current_state_index + 1
+                  NULLIFY (current_state)
+
+               END DO ! state type
+
+               end_of_batch = .FALSE.
+               IF (iat == batch_size) end_of_batch = .TRUE.
+               CALL free_exat_memory(xas_tdp_env, iatom, end_of_batch)
+            END DO ! atom of batch
+            DEALLOCATE (batch_atoms)
+         END DO !ibatch
+         DEALLOCATE (ex_atoms_of_kind)
       END DO ! kind
 
 !  Return to ususal KS matrix
@@ -803,7 +843,7 @@ CONTAINS
       END IF
 
 !  Allocate SOC in AO basis matrices
-      IF (xas_tdp_control%do_soc) THEN
+      IF (xas_tdp_control%do_soc .OR. xas_tdp_control%do_gw2x) THEN
          ALLOCATE (xas_tdp_env%orb_soc(3))
          DO i = 1, 3
             ALLOCATE (xas_tdp_env%orb_soc(i)%matrix)
@@ -811,25 +851,74 @@ CONTAINS
       END IF
 
 !  Check that everything is allowed
-      CALL safety_check(xas_tdp_control)
+      CALL safety_check(xas_tdp_control, qs_env)
 
 !  Initialize libint for the 3-center integrals
       CALL cp_libint_static_init()
 
-!  Compute LUMOs as guess for OT solver
-      IF (xas_tdp_control%do_ot) THEN
+!  Compute LUMOs as guess for OT solver and/or for GW2X correction
+      IF (xas_tdp_control%do_ot .OR. xas_tdp_control%do_gw2x) THEN
          CALL make_lumo_guess(xas_tdp_env, xas_tdp_control, qs_env)
       END IF
 
    END SUBROUTINE xas_tdp_init
 
 ! **************************************************************************************************
+!> \brief splits the excited atoms of a kind into batches for RI 3c integrals load balance
+!> \param ex_atoms_of_kind the excited atoms for the current kind, randomly shuffled
+!> \param nbatch number of batches to loop over
+!> \param batch_size standard size of a batch
+!> \param atoms_of_kind number of atoms for the current kind (excited or not)
+!> \param xas_tdp_env ...
+! **************************************************************************************************
+   SUBROUTINE get_ri_3c_batches(ex_atoms_of_kind, nbatch, batch_size, atoms_of_kind, xas_tdp_env)
+
+      INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT)  :: ex_atoms_of_kind
+      INTEGER, INTENT(OUT)                               :: nbatch
+      INTEGER, INTENT(IN)                                :: batch_size
+      INTEGER, DIMENSION(:), INTENT(IN)                  :: atoms_of_kind
+      TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
+
+      INTEGER                                            :: iat, iatom, nex_atom
+      TYPE(rng_stream_type), ALLOCATABLE                 :: rng_stream
+
+      !Get the atoms from atoms_of_kind that are excited
+      nex_atom = 0
+      DO iat = 1, SIZE(atoms_of_kind)
+         iatom = atoms_of_kind(iat)
+         IF (.NOT. ANY(xas_tdp_env%ex_atom_indices == iatom)) CYCLE
+         nex_atom = nex_atom + 1
+      END DO
+
+      ALLOCATE (ex_atoms_of_kind(nex_atom))
+      nex_atom = 0
+      DO iat = 1, SIZE(atoms_of_kind)
+         iatom = atoms_of_kind(iat)
+         IF (.NOT. ANY(xas_tdp_env%ex_atom_indices == iatom)) CYCLE
+         nex_atom = nex_atom + 1
+         ex_atoms_of_kind(nex_atom) = iatom
+      END DO
+
+      !We shuffle those atoms to spread them
+      rng_stream = rng_stream_type(name="uniform_rng", distribution_type=UNIFORM)
+      CALL rng_stream%shuffle(ex_atoms_of_kind(1:nex_atom))
+
+      nbatch = nex_atom/batch_size
+      IF (nbatch*batch_size .NE. nex_atom) nbatch = nbatch + 1
+
+   END SUBROUTINE get_ri_3c_batches
+
+! **************************************************************************************************
 !> \brief Checks for forbidden keywords combinations
 !> \param xas_tdp_control ...
+!> \param qs_env ...
 ! **************************************************************************************************
-   SUBROUTINE safety_check(xas_tdp_control)
+   SUBROUTINE safety_check(xas_tdp_control, qs_env)
 
       TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
+      TYPE(qs_environment_type), POINTER                 :: qs_env
+
+      TYPE(dft_control_type), POINTER                    :: dft_control
 
       !PB only available without exact exchange
       IF (xas_tdp_control%is_periodic .AND. xas_tdp_control%do_hfx &
@@ -870,11 +959,6 @@ CONTAINS
          END IF
       END IF
 
-      !Look for eigenvalues within energy range and SOC not compatible
-      IF (xas_tdp_control%e_range .GT. 0.0_dp .AND. xas_tdp_control%do_soc) THEN
-         CPABORT("Use N_EXCITED instead of ENERGY_RANGE for SOC calculations")
-      END IF
-
       !TDA, full-TDDFT and diagonalization
       IF (.NOT. xas_tdp_control%tamm_dancoff) THEN
 
@@ -885,7 +969,28 @@ CONTAINS
          IF (xas_tdp_control%do_ot) THEN
             CPABORT("OT diagonalization only available within the Tamm-Dancoff approximation")
          END IF
+      END IF
 
+      !GW2X, need hfx kernel and LOCALIZE
+      IF (xas_tdp_control%do_gw2x) THEN
+         IF (.NOT. xas_tdp_control%do_hfx) THEN
+            CPABORT("GW2x requires the definition of the EXACT_EXCHANGE kernel")
+         END IF
+         IF (.NOT. xas_tdp_control%do_loc) THEN
+            CPABORT("GW2X requires the LOCALIZE keyword in DONOR_STATES")
+         END IF
+      END IF
+
+      !Only allow ADMM schemes that correct for eigenvalues
+      CALL get_qs_env(qs_env, dft_control=dft_control)
+      IF (dft_control%do_admm) THEN
+         IF ((.NOT. qs_env%admm_env%purification_method == do_admm_purify_none) .AND. &
+             (.NOT. qs_env%admm_env%purification_method == do_admm_purify_cauchy_subspace) .AND. &
+             (.NOT. qs_env%admm_env%purification_method == do_admm_purify_mo_diag)) THEN
+
+            CPABORT("XAS_TDP only compatible with ADMM purification NONE, CAUCHY_SUBSPACE and MO_DIAG")
+
+         END IF
       END IF
 
    END SUBROUTINE safety_check
@@ -905,14 +1010,19 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'print_info', routineP = moduleN//':'//routineN
 
       INTEGER                                            :: i
+      REAL(dp)                                           :: occ
+      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
       TYPE(dft_control_type), POINTER                    :: dft_control
       TYPE(section_vals_type), POINTER                   :: input, kernel_section
 
-      NULLIFY (input, kernel_section, dft_control)
+      NULLIFY (input, kernel_section, dft_control, matrix_s)
+
+      CALL get_qs_env(qs_env, input=input, dft_control=dft_control, matrix_s=matrix_s)
+
+      !Overlap matrix sparsity
+      occ = dbcsr_get_occupation(matrix_s(1)%matrix)
 
       IF (ou .LE. 0) RETURN
-
-      CALL get_qs_env(qs_env, input=input, dft_control=dft_control)
 
       !Reference calculation
       IF (xas_tdp_control%do_uks) THEN
@@ -964,7 +1074,7 @@ CONTAINS
          "XAS_TDP| EPS_FILTER: ", xas_tdp_control%eps_filter
 
       !Grid info
-      IF (xas_tdp_control%do_soc .OR. xas_tdp_control%do_xc) THEN
+      IF (xas_tdp_control%do_xc) THEN
          WRITE (UNIT=ou, FMT="(T3,A)") &
             "XAS_TDP| Radial Grid(s) Info: Kind,  na,  nr"
          DO i = 1, SIZE(xas_tdp_control%grid_info, 1)
@@ -1044,6 +1154,42 @@ CONTAINS
       ELSE
          WRITE (UNIT=ou, FMT="(/,T3,A,/)") &
             "XAS_TDP| Exact Exchange Kernel: No "
+      END IF
+
+      !overlap mtrix occupation
+      WRITE (UNIT=ou, FMT="(/,T3,A,F5.2)") &
+         "XAS_TDP| Overlap matrix occupation: ", occ
+
+      !GW2X parameter
+      IF (xas_tdp_control%do_gw2x) THEN
+         WRITE (UNIT=ou, FMT="(T3,A,/)") &
+            "XAS_TDP| GW2X correction enabled"
+
+         IF (xas_tdp_control%xps_only) THEN
+            WRITE (UNIT=ou, FMT="(T3,A)") &
+               "GW2X| Only computing ionizations potentials for XPS"
+         END IF
+
+         IF (xas_tdp_control%pseudo_canonical) THEN
+            WRITE (UNIT=ou, FMT="(T3,A)") &
+               "GW2X| Using the pseudo-canonical scheme"
+         ELSE
+            WRITE (UNIT=ou, FMT="(T3,A)") &
+               "GW2X| Using the GW2X* scheme"
+         END IF
+
+         WRITE (UNIT=ou, FMT="(T3,A,ES7.1)") &
+            "GW2X| EPS_GW2X: ", xas_tdp_control%gw2x_eps
+
+         WRITE (UNIT=ou, FMT="(T3,A,I5)") &
+            "GW2X| contraction batch size: ", xas_tdp_control%batch_size
+
+         IF ((INT(xas_tdp_control%c_os) .NE. 1) .OR. (INT(xas_tdp_control%c_ss) .NE. 1)) THEN
+            WRITE (UNIT=ou, FMT="(T3,A,F7.4,/,T3,A,F7.4)") &
+               "GW2X| Same-spin scaling factor: ", xas_tdp_control%c_ss, &
+               "GW2X| Opposite-spin scaling factor: ", xas_tdp_control%c_os
+         END IF
+
       END IF
 
    END SUBROUTINE print_info
@@ -1302,6 +1448,7 @@ CONTAINS
       INTEGER, DIMENSION(4, 7)                           :: ne
       INTEGER, DIMENSION(:), POINTER                     :: first_sgf, lq, nq
       INTEGER, DIMENSION(:, :, :), POINTER               :: mos_of_ex_atoms
+      LOGICAL                                            :: unique
       REAL(dp)                                           :: zeff
       REAL(dp), ALLOCATABLE, DIMENSION(:)                :: diag, overlap, sto_overlap
       REAL(dp), ALLOCATABLE, DIMENSION(:, :)             :: max_overlap
@@ -1454,6 +1601,9 @@ CONTAINS
          next_best_overlap(ispin) = MAXVAL(overlap, 1)
          next_best_overlap_ind(ispin) = MAXLOC(overlap, 1)
 
+!        Sort MO indices
+         CALL sort_unique(my_mos(:, ispin), unique)
+
       END DO !ispin
 
 !     Some clean-up
@@ -1585,6 +1735,10 @@ CONTAINS
             CALL cp_fm_struct_release(eval_mat_struct)
 
          END IF ! do_localize and/or ROKS
+
+!        Allocate and initialize GW2X corrected IPs as energy_evals
+         ALLOCATE (donor_state%gw2x_evals(SIZE(donor_state%energy_evals, 1), SIZE(donor_state%energy_evals, 2)))
+         donor_state%gw2x_evals(:, :) = donor_state%energy_evals(:, :)
 
 !        Clean-up
          CALL cp_fm_struct_release(gs_struct)
@@ -2672,6 +2826,7 @@ CONTAINS
       ALLOCATE (xas_tdp_env%ot_prec(ispin)%matrix)
       CALL dbcsr_create(xas_tdp_env%ot_prec(ispin)%matrix, template=matrix_s(1)%matrix, name="OT_PREC")
       CALL copy_fm_to_dbcsr(fm_prec, xas_tdp_env%ot_prec(ispin)%matrix)
+      CALL dbcsr_filter(xas_tdp_env%ot_prec(ispin)%matrix, xas_tdp_control%eps_filter)
 
       CALL cp_fm_release(work_fm)
       CALL cp_fm_release(fm_prec)
@@ -2679,6 +2834,68 @@ CONTAINS
       CALL timestop(handle)
 
    END SUBROUTINE build_ot_spin_prec
+
+! **************************************************************************************************
+!> \brief Prints GW2X corrected ionization potentials to main output file, including SOC splitting
+!> \param donor_state ...
+!> \param xas_tdp_env ...
+!> \param xas_tdp_control ...
+!> \param qs_env ...
+! **************************************************************************************************
+   SUBROUTINE print_xps(donor_state, xas_tdp_env, xas_tdp_control, qs_env)
+
+      TYPE(donor_state_type), POINTER                    :: donor_state
+      TYPE(xas_tdp_env_type), POINTER                    :: xas_tdp_env
+      TYPE(xas_tdp_control_type), POINTER                :: xas_tdp_control
+      TYPE(qs_environment_type), POINTER                 :: qs_env
+
+      INTEGER                                            :: ido_mo, ispin, nspins, output_unit
+      REAL(dp), ALLOCATABLE, DIMENSION(:, :)             :: IPs, soc_shifts
+
+      output_unit = cp_logger_get_default_io_unit()
+
+      nspins = 1; IF (xas_tdp_control%do_uks .OR. xas_tdp_control%do_roks) nspins = 2
+
+      ALLOCATE (IPs(SIZE(donor_state%gw2x_evals, 1), SIZE(donor_state%gw2x_evals, 2)))
+      IPs(:, :) = donor_state%gw2x_evals(:, :)
+
+      !Apply SOC splitting
+      IF (donor_state%ndo_mo > 1) THEN
+         CALL get_soc_splitting(soc_shifts, donor_state, xas_tdp_env, xas_tdp_control, qs_env)
+         IPs(:, :) = IPs(:, :) + soc_shifts
+
+         IF (output_unit > 0) THEN
+            WRITE (output_unit, FMT="(/,T5,A,F23.6)") &
+               "Ionization potentials for XPS (GW2X + SOC): ", -IPs(1, 1)*evolt
+
+            DO ispin = 1, nspins
+               DO ido_mo = 1, donor_state%ndo_mo
+
+                  IF (ispin == 1 .AND. ido_mo == 1) CYCLE
+
+                  WRITE (output_unit, FMT="(T5,A,F23.6)") &
+                     "                                            ", -IPs(ido_mo, ispin)*evolt
+
+               END DO
+            END DO
+         END IF
+
+      ELSE
+
+         ! No SOC, only 1 donor MO per spin
+         IF (output_unit > 0) THEN
+            WRITE (output_unit, FMT="(/,T5,A,F29.6)") &
+               "Ionization potentials for XPS (GW2X): ", -IPs(1, 1)*evolt
+
+            IF (nspins == 2) THEN
+               WRITE (output_unit, FMT="(T5,A,F29.6)") &
+                  "                                      ", -IPs(1, 2)*evolt
+            END IF
+         END IF
+
+      END IF
+
+   END SUBROUTINE print_xps
 
 ! **************************************************************************************************
 !> \brief Prints the excitation energies and the oscillator strengths for a given donor_state in a file
@@ -2707,7 +2924,7 @@ CONTAINS
       output_unit = cp_logger_get_default_io_unit()
 
       IF (output_unit > 0) THEN
-         WRITE (output_unit, FMT="(/,T5,A)") &
+         WRITE (output_unit, FMT="(/,T5,A,/)") &
             "Calculations done: "
       END IF
 
@@ -2746,7 +2963,7 @@ CONTAINS
          END IF !xas_tdp_unit > 0
 
          IF (output_unit > 0) THEN
-            WRITE (output_unit, FMT="(T5,A,F25.6)") &
+            WRITE (output_unit, FMT="(T5,A,F17.6)") &
                "First spin-conserving XAS excitation energy (eV): ", donor_state%sc_evals(1)*evolt
          END IF
 
@@ -2786,7 +3003,7 @@ CONTAINS
          END IF !xas_tdp_unit
 
          IF (output_unit > 0) THEN
-            WRITE (output_unit, FMT="(T5,A,F25.6)") &
+            WRITE (output_unit, FMT="(T5,A,F23.6)") &
                "First spin-flip XAS excitation energy (eV): ", donor_state%sf_evals(1)*evolt
          END IF
       END IF ! do_spin_flip
@@ -2870,7 +3087,7 @@ CONTAINS
          END IF
       END IF ! do_triplet
 
-      IF (xas_tdp_control%do_soc) THEN
+      IF (xas_tdp_control%do_soc .AND. donor_state%state_type == xas_2p_type) THEN
          IF (xas_tdp_unit > 0) THEN
 
 !           Printing the general donor state information
@@ -2904,7 +3121,7 @@ CONTAINS
          END IF !xas_tdp_unit
 
          IF (output_unit > 0) THEN
-            WRITE (output_unit, FMT="(T5,A,F25.6)") &
+            WRITE (output_unit, FMT="(T5,A,F29.6)") &
                "First SOC XAS excitation energy (eV): ", donor_state%soc_evals(1)*evolt
          END IF
       END IF !do_soc

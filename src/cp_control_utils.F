@@ -16,8 +16,9 @@ MODULE cp_control_utils
         VanVoorhis2015, VandeVondele2005a, VandeVondele2005b, Yin2017, Zhechkov2005, cite_reference
    USE cp_control_types,                ONLY: &
         admm_control_create, admm_control_type, ddapc_control_create, ddapc_restraint_type, &
-        dft_control_create, dft_control_type, efield_type, qs_control_type, sccs_control_create, &
-        tddfpt2_control_type, tddfpt_control_create, tddfpt_control_type, xtb_control_type
+        dft_control_create, dft_control_type, efield_type, expot_control_create, &
+        maxwell_control_create, qs_control_type, sccs_control_create, tddfpt2_control_type, &
+        tddfpt_control_create, tddfpt_control_type, xtb_control_type
    USE cp_files,                        ONLY: close_file,&
                                               open_file
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
@@ -26,6 +27,7 @@ MODULE cp_control_utils
                                               cp_print_key_unit_nr
    USE cp_units,                        ONLY: cp_unit_from_cp2k,&
                                               cp_unit_to_cp2k
+   USE force_fields_input,              ONLY: read_gp_section
    USE input_constants,                 ONLY: &
         constant_env, custom_env, do_admm_basis_projection, do_admm_blocked_projection, &
         do_admm_blocking_purify_full, do_admm_charge_constrained_projection, &
@@ -54,6 +56,8 @@ MODULE cp_control_utils
    USE kinds,                           ONLY: default_path_length,&
                                               default_string_length,&
                                               dp
+   USE mathconstants,                   ONLY: fourpi
+   USE pair_potential_types,            ONLY: pair_potential_reallocate
    USE periodic_table,                  ONLY: get_ptable_info
    USE qs_cdft_utils,                   ONLY: read_cdft_control_section
    USE string_utilities,                ONLY: uppercase
@@ -99,7 +103,8 @@ CONTAINS
       REAL(KIND=dp)                                      :: density_cut, gradient_cut, tau_cut
       REAL(KIND=dp), DIMENSION(:), POINTER               :: pol
       TYPE(cp_logger_type), POINTER                      :: logger
-      TYPE(section_vals_type), POINTER                   :: sccs_section, scf_section, tmp_section, &
+      TYPE(section_vals_type), POINTER                   :: maxwell_section, sccs_section, &
+                                                            scf_section, tmp_section, &
                                                             xc_fun_section, xc_section
       TYPE(xc_rho_cflags_type)                           :: needs
 
@@ -433,6 +438,31 @@ CONTAINS
       ! Read the external potential input section
       tmp_section => section_vals_get_subs_vals(dft_section, "EXTERNAL_POTENTIAL")
       CALL section_vals_get(tmp_section, explicit=dft_control%apply_external_potential)
+      IF (dft_control%apply_external_potential) THEN
+         CALL expot_control_create(dft_control%expot_control)
+         CALL section_vals_val_get(tmp_section, "READ_FROM_CUBE", &
+                                   l_val=dft_control%expot_control%read_from_cube)
+         CALL section_vals_val_get(tmp_section, "STATIC", &
+                                   l_val=dft_control%expot_control%static)
+         CALL section_vals_val_get(tmp_section, "SCALING_FACTOR", &
+                                   r_val=dft_control%expot_control%scaling_factor)
+         ! External potential using Maxwell equation
+         maxwell_section => section_vals_get_subs_vals(tmp_section, "MAXWELL")
+         CALL section_vals_get(maxwell_section, explicit=is_present)
+         IF (is_present) THEN
+            dft_control%expot_control%maxwell_solver = .TRUE.
+            CALL maxwell_control_create(dft_control%maxwell_control)
+            ! read the input values from Maxwell section
+            CALL section_vals_val_get(maxwell_section, "TEST_REAL", &
+                                      r_val=dft_control%maxwell_control%real_test)
+            CALL section_vals_val_get(maxwell_section, "TEST_INTEGER", &
+                                      i_val=dft_control%maxwell_control%int_test)
+            CALL section_vals_val_get(maxwell_section, "TEST_LOGICAL", &
+                                      l_val=dft_control%maxwell_control%log_test)
+         ELSE
+            dft_control%expot_control%maxwell_solver = .FALSE.
+         END IF
+      END IF
 
       ! Read the SCCS input section if present
       sccs_section => section_vals_get_subs_vals(dft_section, "SCCS")
@@ -443,6 +473,8 @@ CONTAINS
                                    l_val=dft_control%do_sccs)
          IF (dft_control%do_sccs) THEN
             CALL sccs_control_create(dft_control%sccs_control)
+            CALL section_vals_val_get(sccs_section, "RELATIVE_PERMITTIVITY", &
+                                      r_val=dft_control%sccs_control%epsilon_solvent)
             CALL section_vals_val_get(sccs_section, "ALPHA", &
                                       r_val=dft_control%sccs_control%alpha_solvent)
             CALL section_vals_val_get(sccs_section, "BETA", &
@@ -453,8 +485,6 @@ CONTAINS
                                       i_val=dft_control%sccs_control%derivative_method)
             CALL section_vals_val_get(sccs_section, "METHOD", &
                                       i_val=dft_control%sccs_control%method_id)
-            CALL section_vals_val_get(sccs_section, "DIELECTRIC_CONSTANT", &
-                                      r_val=dft_control%sccs_control%epsilon_solvent)
             CALL section_vals_val_get(sccs_section, "EPS_SCCS", &
                                       r_val=dft_control%sccs_control%eps_sccs)
             CALL section_vals_val_get(sccs_section, "EPS_SCF", &
@@ -616,21 +646,21 @@ CONTAINS
       CHARACTER(LEN=default_string_length), &
          DIMENSION(:), POINTER                           :: clist
       INTEGER                                            :: handle, itmp, j, jj, k, n_rep, n_var, &
-                                                            ngauss, nrep
+                                                            ngauss, ngp, nrep
       INTEGER, DIMENSION(:), POINTER                     :: tmplist
       LOGICAL                                            :: explicit, was_present
       REAL(dp)                                           :: tmp, tmpsqrt, value
       REAL(dp), POINTER                                  :: scal(:)
       TYPE(section_vals_type), POINTER :: cdft_control_section, ddapc_restraint_section, &
-         dftb_parameter, dftb_section, lri_optbas_section, mull_section, s2_restraint_section, &
-         se_section, xtb_parameter, xtb_section
+         dftb_parameter, dftb_section, genpot_section, lri_optbas_section, mull_section, &
+         nonbonded_section, s2_restraint_section, se_section, xtb_parameter, xtb_section
 
       CALL timeset(routineN, handle)
 
       was_present = .FALSE.
       NULLIFY (mull_section, ddapc_restraint_section, s2_restraint_section, &
                se_section, dftb_section, xtb_section, dftb_parameter, xtb_parameter, lri_optbas_section, &
-               cdft_control_section)
+               cdft_control_section, genpot_section)
 
       mull_section => section_vals_get_subs_vals(qs_section, "MULLIKEN_RESTRAINT")
       ddapc_restraint_section => section_vals_get_subs_vals(qs_section, "DDAPC_RESTRAINT")
@@ -642,6 +672,8 @@ CONTAINS
       xtb_parameter => section_vals_get_subs_vals(xtb_section, "PARAMETER")
       lri_optbas_section => section_vals_get_subs_vals(qs_section, "OPTIMIZE_LRI_BASIS")
       cdft_control_section => section_vals_get_subs_vals(qs_section, "CDFT")
+      nonbonded_section => section_vals_get_subs_vals(xtb_section, "NONBONDED")
+      genpot_section => section_vals_get_subs_vals(nonbonded_section, "GENPOT")
 
       ! Setup all defaults values and overwrite input parameters
       ! EPS_DEFAULT should set the target accuracy in the total energy (~per electron) or a closely related value
@@ -1109,6 +1141,18 @@ CONTAINS
          CALL section_vals_val_get(xtb_parameter, "HALOGEN_BINDING", r_vals=scal)
          qs_control%xtb_control%kxr = scal(1)
          qs_control%xtb_control%kx2 = scal(2)
+         ! NONBONDED interactions
+         CALL section_vals_val_get(xtb_section, "DO_NONBONDED", &
+                                   l_val=qs_control%xtb_control%do_nonbonded)
+         CALL section_vals_get(nonbonded_section, explicit=explicit)
+         IF (explicit .AND. qs_control%xtb_control%do_nonbonded) THEN
+            CALL section_vals_get(genpot_section, explicit=explicit, n_repetition=ngp)
+            IF (explicit) THEN
+               CALL pair_potential_reallocate(qs_control%xtb_control%nonbonded, 1, ngp, gp=.TRUE.)
+               CALL read_gp_section(qs_control%xtb_control%nonbonded, genpot_section, 0)
+            END IF
+         END IF !nonbonded
+
          ! XB_radius
          CALL section_vals_val_get(xtb_parameter, "XB_RADIUS", r_val=qs_control%xtb_control%xb_radius)
          ! Kab
@@ -1460,14 +1504,19 @@ CONTAINS
             END IF
             WRITE (UNIT=output_unit, FMT="(/,T2,A)") &
                "SCCS| Self-consistent continuum solvation model"
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
+               "SCCS| Relative permittivity of the solvent (medium)", &
+               dft_control%sccs_control%epsilon_solvent, &
+               "SCCS| Absolute permittivity [a.u.]", &
+               dft_control%sccs_control%epsilon_solvent/fourpi
             SELECT CASE (dft_control%sccs_control%method_id)
             CASE (sccs_andreussi)
-               WRITE (UNIT=output_unit, FMT="(T2,A,/,(T2,A,T69,ES12.3))") &
+               WRITE (UNIT=output_unit, FMT="(T2,A,/,(T2,A,T61,ES20.6))") &
                   "SCCS| Dielectric function proposed by Andreussi et al.", &
                   "SCCS|  rho_max", dft_control%sccs_control%rho_max, &
                   "SCCS|  rho_min", dft_control%sccs_control%rho_min
             CASE (sccs_fattebert_gygi)
-               WRITE (UNIT=output_unit, FMT="(T2,A,/,(T2,A,T69,ES12.3))") &
+               WRITE (UNIT=output_unit, FMT="(T2,A,/,(T2,A,T61,ES20.6))") &
                   "SCCS| Dielectric function proposed by Fattebert and Gygi", &
                   "SCCS|  beta", dft_control%sccs_control%beta, &
                   "SCCS|  rho_zero", dft_control%sccs_control%rho_zero
@@ -1476,44 +1525,48 @@ CONTAINS
             END SELECT
             SELECT CASE (dft_control%sccs_control%derivative_method)
             CASE (sccs_derivative_fft)
-               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") "SCCS| Numerical derivative calculation", &
+               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") &
+                  "SCCS| Numerical derivative calculation", &
                   ADJUSTR("FFT")
             CASE (sccs_derivative_cd3)
-               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") "SCCS| Numerical derivative calculation", &
+               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") &
+                  "SCCS| Numerical derivative calculation", &
                   ADJUSTR("3-point stencil central differences")
             CASE (sccs_derivative_cd5)
-               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") "SCCS| Numerical derivative calculation", &
+               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") &
+                  "SCCS| Numerical derivative calculation", &
                   ADJUSTR("5-point stencil central differences")
             CASE (sccs_derivative_cd7)
-               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") "SCCS| Numerical derivative calculation", &
+               WRITE (UNIT=output_unit, FMT="(T2,A,T46,A35)") &
+                  "SCCS| Numerical derivative calculation", &
                   ADJUSTR("7-point stencil central differences")
             CASE DEFAULT
                CALL cp_abort(__LOCATION__, &
                              "Invalid derivative method specified for SCCS model. "// &
                              "Please, check your input!")
             END SELECT
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,F12.3)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
                "SCCS| Repulsion parameter alpha [mN/m] = [dyn/cm]", &
                cp_unit_from_cp2k(dft_control%sccs_control%alpha_solvent, "mN/m")
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,F12.3)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
                "SCCS| Dispersion parameter beta [GPa]", &
                cp_unit_from_cp2k(dft_control%sccs_control%beta_solvent, "GPa")
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,F12.3)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
                "SCCS| Surface tension gamma [mN/m] = [dyn/cm]", &
                cp_unit_from_cp2k(dft_control%sccs_control%gamma_solvent, "mN/m")
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,F12.3)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
                "SCCS| Mixing parameter applied during the iteration cycle", &
                dft_control%sccs_control%mixing
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,ES12.3)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
                "SCCS| Tolerance for the convergence of the SCCS iteration cycle", &
                dft_control%sccs_control%eps_sccs
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,I12)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,I20)") &
                "SCCS| Maximum number of iteration steps", &
                dft_control%sccs_control%max_iter
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,ES12.3)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
                "SCCS| SCF convergence threshold for starting the SCCS iteration", &
                dft_control%sccs_control%eps_scf
-            WRITE (UNIT=output_unit, FMT="(T2,A,T69,ES12.3)") &
+            WRITE (UNIT=output_unit, FMT="(T2,A,T61,ES20.6)") &
                "SCCS| Numerical increment for the cavity surface calculation", &
                dft_control%sccs_control%delta_rho
          END IF
@@ -1560,6 +1613,8 @@ CONTAINS
             "xTB| Halogen interaction potential", xtb_control%xb_interaction
          WRITE (UNIT=output_unit, FMT="(T2,A,T71,F10.3)") &
             "xTB| Halogen interaction potential cutoff radius", xtb_control%xb_radius
+         WRITE (UNIT=output_unit, FMT="(T2,A,T71,L10)") &
+            "xTB| Nonbonded interactions", xtb_control%do_nonbonded
          WRITE (UNIT=output_unit, FMT="(T2,A,T31,A50)") &
             "xTB| D3 Dispersion: Parameter file", ADJUSTR(TRIM(xtb_control%dispersion_parameter_file))
          WRITE (UNIT=output_unit, FMT="(T2,A,T51,3F10.3)") &
