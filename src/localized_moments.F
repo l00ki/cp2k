@@ -24,7 +24,9 @@ module localized_moments
                                      cp_fm_to_cfm
    use cp_control_types,       only: dft_control_type
    use cp_dbcsr_operations,    only: copy_dbcsr_to_fm, &
-                                     cp_dbcsr_sm_fm_multiply
+                                     cp_dbcsr_sm_fm_multiply, &
+                                     dbcsr_allocate_matrix_set, &
+                                     dbcsr_deallocate_matrix_set
    use cp_fm_basic_linalg,     only: cp_fm_gemm, &
                                      cp_fm_schur_product
    use cp_fm_struct,           only: cp_fm_struct_create, &
@@ -352,8 +354,10 @@ contains
         do_rtp = (size(mo_local) == 2 * nspins)  ! check for time-dependent orbitals
         zwfc = 3.0_dp - real(nspins, dp)  ! occupation of Wannier functions (uniform)
         allocate(moments(nmoments, nsubsets), first_atoms(nsubsets), &
-             last_atoms(nsubsets), rccs(3, nsubsets), moments_op(nmoments), moments_op_fm(nmoments), ref_point(3), &
-             cmoments_op_fm(nmoments), atom_to_mol(natoms), mol_to_nelectrons(nsubsets))
+             last_atoms(nsubsets), rccs(3, nsubsets), moments_op_fm(nmoments), ref_point(3))
+        allocate(cmoments_op_fm(nmoments))
+        allocate(atom_to_mol(natoms))
+        allocate(mol_to_nelectrons(nsubsets))
         moments = 0.0_dp
         call get_molecule_set_info(molecules, &
              mol_to_first_atom=first_atoms, mol_to_last_atom=last_atoms, atom_to_mol=atom_to_mol, &
@@ -376,7 +380,7 @@ contains
            call cp_fm_create(vecopvec, nmostruct)
         end if
         
-
+        call dbcsr_allocate_matrix_set(moments_op, nmoments)
         do imoment = 1, nmoments
            allocate(moments_op(imoment)%matrix)
            call dbcsr_copy(moments_op(imoment)%matrix, matrix_s(1)%matrix, "moments operator")
@@ -589,11 +593,10 @@ contains
 
         ! cleanup
         do imoment = 1, nmoments
-           call dbcsr_release(moments_op(imoment)%matrix)
            call cp_fm_release(moments_op_fm(imoment)%matrix)
-           deallocate(moments_op(imoment)%matrix)
         end do
-        deallocate(moments_op, moments_op_fm)
+        deallocate(moments_op_fm)
+        call dbcsr_deallocate_matrix_set(moments_op)
         deallocate(moments, first_atoms, last_atoms, rccs, ref_point, atom_to_mol, mol_to_nelectrons)
 
         call cp_fm_struct_release(opstruct)
@@ -602,7 +605,6 @@ contains
            do imoment = 1, nmoments
               call cp_cfm_release(cmoments_op_fm(imoment)%matrix)
            end do
-           deallocate(cmoments_op_fm)
            call cp_cfm_release(cvec)
            call cp_cfm_release(copvec)
            call cp_cfm_release(cvecopvec)
@@ -612,6 +614,7 @@ contains
            call cp_fm_release(opvec)
            call cp_fm_release(vecopvec)
         end if
+        deallocate(cmoments_op_fm)
      end if
   
      call timestop(handle)
