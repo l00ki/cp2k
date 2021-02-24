@@ -7,6 +7,10 @@
 #ifndef GRID_LIBRARY_H
 #define GRID_LIBRARY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "grid_constants.h"
 #include "grid_sphere_cache.h"
 #include <stdbool.h>
@@ -64,8 +68,19 @@ void grid_library_print_stats(void (*mpi_sum_func)(long *, int), int mpi_comm,
  ******************************************************************************/
 typedef struct {
   grid_sphere_cache sphere_cache;
-  long counters[20][2][2]; // [lp][kernel][operation]
+  long counters[4 * 4 * 20]; // [backend][kernel][lp]
 } grid_library_globals;
+
+/*******************************************************************************
+ * \brief Various kernels provided by the grid library.
+ * \author Ole Schuett
+ ******************************************************************************/
+enum grid_library_kernel {
+  GRID_COLLOCATE_ORTHO = 0,
+  GRID_INTEGRATE_ORTHO = 1,
+  GRID_COLLOCATE_GENERAL = 2,
+  GRID_INTEGRATE_GENERAL = 3,
+};
 
 /*******************************************************************************
  * \brief Returns a pointer to the thread local sphere cache.
@@ -74,13 +89,16 @@ typedef struct {
 grid_sphere_cache *grid_library_get_sphere_cache();
 
 /*******************************************************************************
- * \brief Increment specified counter.
- * \param lp    Total angular momentum: la_max + lb_max.
- * \param kern  Kernel: 0=ortho, 1=general.
- * \param op    Operation: 0=integrate, 1=collocate.
+ * \brief Adds given increment to counter specified by lp, backend, and kernel.
  * \author Ole Schuett
  ******************************************************************************/
-void grid_library_increment_counter(int collocate, int ortho, int lp);
+void grid_library_counter_add(const int lp, const enum grid_backend backend,
+                              const enum grid_library_kernel kern,
+                              const int increment);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // GRID_LIBRARY_H
 

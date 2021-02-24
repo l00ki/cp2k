@@ -1598,7 +1598,7 @@ CONTAINS
                                        " see <a href=""https://brehm-research.de/bqb"" target=""_blank"">"// &
                                        " https://brehm-research.de/bqb</a> ). Currently does not work"// &
                                        "  with changing cell vector (NpT ensemble).", &
-                                       print_level=debug_print_level, filename="", &
+                                       print_level=debug_print_level + 1, filename="", &
                                        citations=(/Brehm2018/))
 
       CALL keyword_create(keyword, __LOCATION__, name="SKIP_FIRST", &
@@ -1618,6 +1618,13 @@ CONTAINS
                           description="Performs an on-the-fly decompression of each compressed BQB frame to check"// &
                           " whether the volumetric data exactly matches, and aborts the run if not so.", &
                           usage="CHECK T", default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(print_key, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="OVERWRITE", &
+                          description="Specify this keyword to overwrite the output BQB file if"// &
+                          " it already exists. By default, the data is appended to an existing file.", &
+                          usage="OVERWRITE T", default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(print_key, keyword)
       CALL keyword_release(keyword)
 
@@ -1658,13 +1665,20 @@ CONTAINS
                                        " and [Brehm2020] (via LibVori,"// &
                                        " see <a href=""https://brehm-research.de/voronoi"" target=""_blank"">"// &
                                        " https://brehm-research.de/voronoi</a> ).", &
-                                       print_level=debug_print_level, filename="", &
+                                       print_level=debug_print_level + 1, filename="", &
                                        citations=(/Rycroft2009, Thomas2015, Brehm2018, Brehm2020/))
 
       CALL keyword_create(keyword, __LOCATION__, name="SANITY_CHECK", &
                           description="Performs a sanity check before each Voronoi integration, i.e.,"// &
                           " checks if every grid point is located in exactly one Voronoi cell.", &
                           usage="SANITY_CHECK T", default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(print_key, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="OVERWRITE", &
+                          description="Specify this keyword to overwrite any existing ""properties.emp"" file if"// &
+                          " it already exists. By default, the data is appended to an existing file.", &
+                          usage="OVERWRITE T", default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(print_key, keyword)
       CALL keyword_release(keyword)
 

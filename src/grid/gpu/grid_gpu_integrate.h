@@ -4,8 +4,8 @@
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
-#ifndef GRID_GPU_COLLOCATE_H
-#define GRID_GPU_COLLOCATE_H
+#ifndef GRID_GPU_INTEGRATE_H
+#define GRID_GPU_INTEGRATE_H
 
 #ifdef __GRID_CUDA
 
@@ -17,16 +17,17 @@ extern "C" {
 #endif
 
 /*******************************************************************************
- * \brief Launches the Cuda kernel that collocates all tasks of one grid level.
+ * \brief Launches the Cuda kernel that integrates all tasks of one grid level.
  * \author Ole Schuett
  ******************************************************************************/
-void grid_gpu_collocate_one_grid_level(
+void grid_gpu_integrate_one_grid_level(
     const grid_gpu_task_list *task_list, const int first_task,
-    const int last_task, const bool orthorhombic, const enum grid_func func,
+    const int last_task, const bool orthorhombic, const bool compute_tau,
     const int npts_global[3], const int npts_local[3], const int shift_local[3],
     const int border_width[3], const double dh[3][3], const double dh_inv[3][3],
-    const cudaStream_t stream, const double *pab_blocks_dev, double *grid_dev,
-    int *lp_diff);
+    const cudaStream_t stream, const double *pab_blocks_dev,
+    const double *grid_dev, double *hab_blocks_dev, double *forces_dev,
+    double *virial_dev, int *lp_diff);
 
 #ifdef __cplusplus
 }
