@@ -1,13 +1,15 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef __GRID_CUDA
 #include <cublas_v2.h>
@@ -20,7 +22,7 @@
 #include "tensor_local.h"
 #include "utils.h"
 
-struct collocation_integration_ *collocate_create_handle() {
+struct collocation_integration_ *collocate_create_handle(void) {
   struct collocation_integration_ *handle = NULL;
   handle = (struct collocation_integration_ *)malloc(
       sizeof(struct collocation_integration_));
@@ -41,7 +43,7 @@ struct collocation_integration_ *collocate_create_handle() {
   handle->coef_alloc_size = realloc_tensor(&handle->coef);
   handle->pol_alloc_size = realloc_tensor(&handle->pol);
 
-  handle->scratch = memalign(4096, sizeof(double) * 32768);
+  handle->scratch = malloc(32768 * sizeof(double));
   handle->scratch_alloc_size = 32768;
   handle->T_alloc_size = 8192;
   handle->W_alloc_size = 2048;
@@ -72,6 +74,8 @@ void collocate_destroy_handle(void *gaussian_handle) {
   free(handle->scratch);
   free(handle->pol.data);
   free(handle->cube.data);
+  free(handle->alpha.data);
+  free(handle->coef.data);
   free(handle->blocks_coordinates.data);
   handle->alpha.data = NULL;
   handle->coef.data = NULL;
@@ -105,8 +109,7 @@ void initialize_W_and_T(collocation_integration *const handler,
 
     if (handler->scratch)
       free(handler->scratch);
-    handler->scratch =
-        memalign(64, sizeof(double) * handler->scratch_alloc_size);
+    handler->scratch = malloc(sizeof(double) * handler->scratch_alloc_size);
     if (handler->scratch == NULL)
       abort();
   }
@@ -136,8 +139,7 @@ void initialize_W_and_T_integrate(collocation_integration *const handler,
 
     if (handler->scratch)
       free(handler->scratch);
-    handler->scratch =
-        memalign(64, sizeof(double) * handler->scratch_alloc_size);
+    handler->scratch = malloc(sizeof(double) * handler->scratch_alloc_size);
     if (handler->scratch == NULL)
       abort();
   }

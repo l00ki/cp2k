@@ -1,11 +1,35 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
 #ifndef GRID_COMMON_H
 #define GRID_COMMON_H
+
+#define GRID_STRINGIFY(SYMBOL) #SYMBOL
+
+// GCC introduced the unroll pragma with version 8 using a custom syntax.
+#if defined(__INTEL_COMPILER)
+#define GRID_PRAGMA_UNROLL(N) _Pragma(GRID_STRINGIFY(unroll(N)))
+#if __INTEL_COMPILER >= 1900
+#define GRID_PRAGMA_SIMD(OBJS, N)                                              \
+  _Pragma(GRID_STRINGIFY(omp simd linear OBJS simdlen(N)))
+#else
+#define GRID_PRAGMA_SIMD(OBJS, N)
+#endif
+#elif defined(__GNUC__) && __GNUC__ >= 8
+#define GRID_PRAGMA_SIMD(OBJS, N)                                              \
+  _Pragma(GRID_STRINGIFY(omp simd linear OBJS simdlen(N)))
+#define GRID_PRAGMA_UNROLL(N) _Pragma(GRID_STRINGIFY(GCC unroll N))
+#elif defined(__GNUC__) && __GNUC__ < 8
+#define GRID_PRAGMA_SIMD(OBJS, N)
+#define GRID_PRAGMA_UNROLL(N)
+#else // Most other compilers support a common syntax.
+#define GRID_PRAGMA_SIMD(OBJS, N)                                              \
+  _Pragma(GRID_STRINGIFY(omp simd linear OBJS simdlen(N)))
+#define GRID_PRAGMA_UNROLL(N) _Pragma(GRID_STRINGIFY(unroll(N)))
+#endif
 
 #if defined(__CUDACC__)
 #define GRID_HOST_DEVICE __host__ __device__

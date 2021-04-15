@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -49,6 +49,10 @@ MODULE environment
    USE force_env_types,                 ONLY: multiple_fe_list
    USE gamma,                           ONLY: deallocate_md_ftable
    USE global_types,                    ONLY: global_environment_type
+   USE grid_api,                        ONLY: GRID_BACKEND_AUTO,&
+                                              GRID_BACKEND_CPU,&
+                                              GRID_BACKEND_GPU,&
+                                              GRID_BACKEND_REF
    USE header,                          ONLY: cp2k_footer,&
                                               cp2k_header
    USE input_constants,                 ONLY: &
@@ -69,9 +73,14 @@ MODULE environment
                                               dp,&
                                               int_8,&
                                               print_kind_info
-   USE machine,                         ONLY: &
-        flush_should_flush, m_cpuid, m_cpuid_name, m_cpuid_static, m_cpuinfo, m_energy, &
-        m_flush_internal, m_memory_details, m_procrun
+   USE machine,                         ONLY: flush_should_flush,&
+                                              m_cpuid,&
+                                              m_cpuid_name,&
+                                              m_cpuid_static,&
+                                              m_cpuinfo,&
+                                              m_energy,&
+                                              m_memory_details,&
+                                              m_procrun
    USE message_passing,                 ONLY: add_mp_perf_env,&
                                               describe_mp_perf_env,&
                                               mp_collect_timings,&
@@ -207,7 +216,7 @@ CONTAINS
          WRITE (UNIT=my_output_unit, FMT="(T2,A,T31,A50)") &
             "CP2K| Input file name", &
             ADJUSTR(TRIM(input_file_name))
-         CALL m_flush_internal(my_output_unit)
+         FLUSH (my_output_unit) ! ignore &GLOBAL / FLUSH_SHOULD_FLUSH
       END IF
 
 #if defined(__FAST_MATH__)
@@ -486,8 +495,8 @@ CONTAINS
       CHARACTER(len=default_string_length)               :: env_num, model_name, project_name
       CHARACTER(LEN=default_string_length), &
          DIMENSION(:), POINTER                           :: trace_routines
-      INTEGER :: cpuid, cpuid_static, i_diag, i_fft, iforce_eval, method_name_id, n_rep_val, &
-         nforce_eval, num_threads, output_unit, print_level, trace_max, unit_nr
+      INTEGER :: cpuid, cpuid_static, i_diag, i_fft, i_grid_backend, iforce_eval, method_name_id, &
+         n_rep_val, nforce_eval, num_threads, output_unit, print_level, trace_max, unit_nr
       INTEGER(kind=int_8) :: Buffers, Buffers_avr, Buffers_max, Buffers_min, Cached, Cached_avr, &
          Cached_max, Cached_min, MemFree, MemFree_avr, MemFree_max, MemFree_min, MemLikelyFree, &
          MemLikelyFree_avr, MemLikelyFree_max, MemLikelyFree_min, MemTotal, MemTotal_avr, &
@@ -768,6 +777,22 @@ CONTAINS
             print_level_string = " DEBUG"
          CASE DEFAULT
             CPABORT("Unknown print_level")
+         END SELECT
+
+         CALL section_vals_val_get(global_section, "GRID%BACKEND", i_val=i_grid_backend)
+         SELECT CASE (i_grid_backend)
+         CASE (GRID_BACKEND_AUTO)
+            WRITE (UNIT=output_unit, FMT="(T2,A,T75,A6)") &
+               start_section_label//"| Grid backend", "AUTO"
+         CASE (GRID_BACKEND_CPU)
+            WRITE (UNIT=output_unit, FMT="(T2,A,T75,A6)") &
+               start_section_label//"| Grid backend", "CPU"
+         CASE (GRID_BACKEND_GPU)
+            WRITE (UNIT=output_unit, FMT="(T2,A,T75,A6)") &
+               start_section_label//"| Grid backend", "GPU"
+         CASE (GRID_BACKEND_REF)
+            WRITE (UNIT=output_unit, FMT="(T2,A,T75,A6)") &
+               start_section_label//"| Grid backend", "REF"
          END SELECT
 
          WRITE (UNIT=output_unit, FMT="(T2,A,T75,A6)") &
@@ -1214,7 +1239,7 @@ CONTAINS
 
          ! Just a choice, do not print the CP2K footer if there is a failure
          CALL cp2k_footer(iw, wdir)
-         IF (iw > 0) CALL m_flush_internal(iw)
+         IF (iw > 0) FLUSH (iw)  ! ignore &GLOBAL / FLUSH_SHOULD_FLUSH
 
          CALL cp_print_key_finished_output(iw, logger, root_section, &
                                            "GLOBAL%PROGRAM_RUN_INFO")

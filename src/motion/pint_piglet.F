@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -175,6 +175,7 @@ CONTAINS
       p = piglet_therm%p
       pint_env%e_piglet = 0.0_dp
       pint_env%piglet_therm%thermostat_energy = 0.0_dp
+      CALL section_vals_val_get(section, "THERMOSTAT_ENERGY", r_val=piglet_therm%thermostat_energy)
       CALL section_vals_val_get(section, "SMATRIX_INIT", i_val=matrix_init)
       !Read the matices
 

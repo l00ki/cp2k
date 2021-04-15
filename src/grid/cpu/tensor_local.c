@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -28,7 +28,7 @@ size_t realloc_tensor(tensor *t) {
   t->data = NULL;
 
   if (t->data == NULL) {
-    t->data = memalign(4096, sizeof(double) * t->alloc_size_);
+    t->data = malloc(sizeof(double) * t->alloc_size_);
     if (!t->data)
       abort();
     t->old_alloc_size_ = t->alloc_size_;
@@ -42,7 +42,7 @@ void alloc_tensor(tensor *t) {
     abort();
   }
 
-  t->data = memalign(4096, sizeof(double) * t->alloc_size_);
+  t->data = malloc(sizeof(double) * t->alloc_size_);
   if (!t->data)
     abort();
   t->old_alloc_size_ = t->alloc_size_;

@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -131,7 +131,7 @@ CONTAINS
    END SUBROUTINE pao_ml_init
 
 ! **************************************************************************************************
-!> \brief Reads the given file and adds it's training points to linked lists.
+!> \brief Reads the given file and adds its training points to linked lists.
 !> \param pao ...
 !> \param qs_env ...
 !> \param training_lists ...

@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -260,7 +260,7 @@ CONTAINS
 
             ! restore the original alignment of beads in imaginary time
             ! (this is useful to make a single bead's position easy to follow
-            ! in the trajectory, otherwise it's index would change every step)
+            ! in the trajectory, otherwise its index would change every step)
             CALL helium_rotate(helium_env(k)%helium, -helium_env(k)%helium%relrot)
 
             inv_xn = 1.0_dp/REAL(helium_env(k)%helium%iter_rot, dp)

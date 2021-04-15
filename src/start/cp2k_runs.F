@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -178,8 +178,9 @@ CONTAINS
       CHARACTER(len=default_path_length), &
          DIMENSION(:, :), INTENT(IN)                     :: initial_variables
 
-      INTEGER :: f_env_handle, grid_backend, grid_queue_length, ierr, iter_level, method_name_id, &
-         new_env_id, prog_name_id, run_type_id
+      INTEGER                                            :: f_env_handle, grid_backend, ierr, &
+                                                            iter_level, method_name_id, &
+                                                            new_env_id, prog_name_id, run_type_id
       INTEGER(KIND=int_8)                                :: m_memory_max_mpi
       LOGICAL                                            :: echo_input, grid_apply_cutoff, &
                                                             grid_validate, I_was_ionode
@@ -195,7 +196,6 @@ CONTAINS
       CALL cp_para_env_create(para_env, group=mpi_comm, owns_group=.FALSE.)
 
       ! DBCSR sets the GPU device, make sure it is the first GPU call
-      CALL dbcsr_init_lib(mpi_comm, io_unit=output_unit)
       CALL dbcsr_init_lib(mpi_comm, io_unit=output_unit)
 
       CALL cuda_nvtx_init()
@@ -255,12 +255,11 @@ CONTAINS
       CALL section_vals_val_get(root_section, "GLOBAL%GRID%BACKEND", i_val=grid_backend)
       CALL section_vals_val_get(root_section, "GLOBAL%GRID%VALIDATE", l_val=grid_validate)
       CALL section_vals_val_get(root_section, "GLOBAL%GRID%APPLY_CUTOFF", l_val=grid_apply_cutoff)
-      CALL section_vals_val_get(root_section, "GLOBAL%GRID%QUEUE_LENGTH", i_val=grid_queue_length)
+
       CALL grid_library_set_config(backend=grid_backend, &
                                    device_id=get_accdrv_active_device_id(), &
                                    validate=grid_validate, &
-                                   apply_cutoff=grid_apply_cutoff, &
-                                   queue_length=grid_queue_length)
+                                   apply_cutoff=grid_apply_cutoff)
 
       SELECT CASE (prog_name_id)
       CASE (do_atom)

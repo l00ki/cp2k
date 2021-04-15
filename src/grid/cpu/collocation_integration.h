@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -170,7 +170,7 @@ typedef struct collocation_integration_ {
 
 } collocation_integration;
 
-extern struct collocation_integration_ *collocate_create_handle();
+extern struct collocation_integration_ *collocate_create_handle(void);
 extern void collocate_synchronize(void *gaussian_handler);
 extern void collocate_destroy_handle(void *gaussian_handle);
 extern void calculate_collocation(void *const in);

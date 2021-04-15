@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -154,14 +154,15 @@ static void create_dummy_basis_set(const int size, const int lmin,
  * \brief Creates mock task list with one task per cycle.
  * \author Ole Schuett
  ******************************************************************************/
-static void create_dummy_task_list(const int border_mask, const double ra[3],
-                                   const double rab[3], const double radius,
-                                   const grid_basis_set *basis_set_a,
-                                   const grid_basis_set *basis_set_b,
-                                   const int o1, const int o2, const int la_max,
-                                   const int lb_max, const int cycles,
-                                   const int cycles_per_block,
-                                   grid_task_list **task_list) {
+static void create_dummy_task_list(
+    const bool orthorhombic, const int border_mask, const double ra[3],
+    const double rab[3], const double radius, const grid_basis_set *basis_set_a,
+    const grid_basis_set *basis_set_b, const int o1, const int o2,
+    const int la_max, const int lb_max, const int cycles,
+    const int cycles_per_block, const int npts_global[][3],
+    const int npts_local[][3], const int shift_local[][3],
+    const int border_width[][3], const double dh[][3][3],
+    const double dh_inv[][3][3], grid_task_list **task_list) {
 
   const int ntasks = cycles;
   const int nlevels = 1;
@@ -201,11 +202,12 @@ static void create_dummy_task_list(const int border_mask, const double ra[3],
   }
   const double(*rab_list)[3] = (const double(*)[3])rab_list_mutable;
 
-  grid_create_task_list(ntasks, nlevels, natoms, nkinds, nblocks, block_offsets,
-                        atom_positions, atom_kinds, basis_sets, level_list,
-                        iatom_list, jatom_list, iset_list, jset_list, ipgf_list,
-                        jpgf_list, border_mask_list, block_num_list,
-                        radius_list, rab_list, task_list);
+  grid_create_task_list(
+      orthorhombic, ntasks, nlevels, natoms, nkinds, nblocks, block_offsets,
+      atom_positions, atom_kinds, basis_sets, level_list, iatom_list,
+      jatom_list, iset_list, jset_list, ipgf_list, jpgf_list, border_mask_list,
+      block_num_list, radius_list, rab_list, npts_global, npts_local,
+      shift_local, border_width, dh, dh_inv, task_list);
 }
 
 /*******************************************************************************
@@ -242,7 +244,7 @@ double grid_replay(const char *filename, const int cycles, const bool collocate,
 
   const bool orthorhombic = parse_int("orthorhombic", fp);
   const int border_mask = parse_int("border_mask", fp);
-  const int func = parse_int("func", fp);
+  const enum grid_func func = parse_int("func", fp);
   const bool compute_tau = (func == GRID_FUNC_DADB);
   const int la_max = parse_int("la_max", fp);
   const int la_min = parse_int("la_min", fp);
@@ -330,9 +332,12 @@ double grid_replay(const char *filename, const int cycles, const bool collocate,
     create_dummy_basis_set(n1, la_min, la_max, zeta, &basisa);
     create_dummy_basis_set(n2, lb_min, lb_max, zetb, &basisb);
     grid_task_list *task_list = NULL;
-    create_dummy_task_list(border_mask, ra, rab, radius, basisa, basisb, o1, o2,
-                           la_max, lb_max, cycles, cycles_per_block,
-                           &task_list);
+    create_dummy_task_list(
+        orthorhombic, border_mask, ra, rab, radius, basisa, basisb, o1, o2,
+        la_max, lb_max, cycles, cycles_per_block, (const int(*)[3])npts_global,
+        (const int(*)[3])npts_local, (const int(*)[3])shift_local,
+        (const int(*)[3])border_width, (const double(*)[3][3])dh,
+        (const double(*)[3][3])dh_inv, &task_list);
     grid_buffer *pab_blocks = NULL, *hab_blocks = NULL;
     grid_create_buffer(n1 * n2, &pab_blocks);
     grid_create_buffer(n1 * n2, &hab_blocks);
@@ -348,20 +353,16 @@ double grid_replay(const char *filename, const int cycles, const bool collocate,
     if (collocate) {
       // collocate
       double *grids_array[1] = {grid_test};
-      grid_collocate_task_list(
-          task_list, orthorhombic, func, nlevels, (const int(*)[3])npts_global,
-          (const int(*)[3])npts_local, (const int(*)[3])shift_local,
-          (const int(*)[3])border_width, (const double(*)[3][3])dh,
-          (const double(*)[3][3])dh_inv, pab_blocks, grids_array);
+      grid_collocate_task_list(task_list, func, nlevels,
+                               (const int(*)[3])npts_local, pab_blocks,
+                               grids_array);
     } else {
       // integrate
       double *grids_array[1] = {grid_ref};
-      grid_integrate_task_list(
-          task_list, orthorhombic, compute_tau, natoms, nlevels,
-          (const int(*)[3])npts_global, (const int(*)[3])npts_local,
-          (const int(*)[3])shift_local, (const int(*)[3])border_width,
-          (const double(*)[3][3])dh, (const double(*)[3][3])dh_inv, pab_blocks,
-          (const double(**))grids_array, hab_blocks, forces_test, virial_test);
+      grid_integrate_task_list(task_list, compute_tau, natoms, nlevels,
+                               (const int(*)[3])npts_local, pab_blocks,
+                               (const double(**))grids_array, hab_blocks,
+                               forces_test, virial_test);
       for (int i = 0; i < n2; i++) {
         for (int j = 0; j < n1; j++) {
           hab_test[i][j] = hab_blocks->host_buffer[i * n1 + j];

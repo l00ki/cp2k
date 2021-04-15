@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -68,7 +68,7 @@ CONTAINS
 
       CALL print_abort_message(message, location, unit_nr)
       CALL print_stack(unit_nr)
-      CALL m_flush(unit_nr)
+      FLUSH (unit_nr)  ! ignore &GLOBAL / FLUSH_SHOULD_FLUSH
 
       CALL mp_abort()
    END SUBROUTINE cp_abort_handler

@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -15,7 +15,7 @@
 #include "../common/grid_basis_set.h"
 #include "../common/grid_buffer.h"
 #include "../common/grid_common.h"
-
+#include "../common/grid_constants.h"
 enum checksum_ { task_checksum = 0x2384989, ctx_checksum = 0x2356734 };
 
 typedef struct {
@@ -48,6 +48,15 @@ typedef struct {
   enum checksum_ checksum;
 } _task;
 
+typedef struct {
+  int npts_global[3];
+  int npts_local[3];
+  int shift_local[3];
+  int border_width[3];
+  double dh[3][3];
+  double dh_inv[3][3];
+} _layout;
+
 typedef struct grid_context_ {
   int ntasks;  // total number of tasks
   int nlevels; // number of different grid
@@ -63,6 +72,7 @@ typedef struct grid_context_ {
   int *atom_kinds;
   grid_basis_set **basis_sets;
   _task **tasks;
+  _layout *layouts;
   int *tasks_per_level;
   int maxco;
   bool apply_cutoff;
@@ -154,7 +164,8 @@ extern void set_grid_parameters(
 
 extern void collocate_one_grid_level_dgemm(grid_context *const ctx,
                                            const int *const, const int *const,
-                                           const int func, const int level,
+                                           const enum grid_func func,
+                                           const int level,
                                            const grid_buffer *pab_blocks);
 
 extern void integrate_one_grid_level_dgemm(

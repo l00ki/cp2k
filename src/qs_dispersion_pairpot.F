@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -1393,10 +1393,10 @@ CONTAINS
             WRITE (unit_nr, *) " Cutoff coordination numbers", eps_cn
             IF (dispersion_env%lrc) THEN
                WRITE (unit_nr, *) " Apply a long range correction"
-               WRITE (unit_nr, *) " SRB parameters (s,g,t1,t2) ", ssrb, gsrb, t1srb, t2srb
             END IF
             IF (dispersion_env%srb) THEN
                WRITE (unit_nr, *) " Apply a short range bond correction"
+               WRITE (unit_nr, *) " SRB parameters (s,g,t1,t2) ", ssrb, gsrb, t1srb, t2srb
             END IF
             IF (domol) THEN
                WRITE (unit_nr, *) " Inter-molecule scaling parameter (s8) ", kgc8
@@ -2003,9 +2003,11 @@ CONTAINS
                END DO
             END DO
             IF (use_virial) THEN
-               DO i = 1, 3
-                  virial%pv_virial(i, i) = virial%pv_virial(i, i) + (elrc6 + elrc8 + 2._dp*elrc9)
-               END DO
+               IF (para_env%ionode) THEN
+                  DO i = 1, 3
+                     virial%pv_virial(i, i) = virial%pv_virial(i, i) + (elrc6 + elrc8 + 2._dp*elrc9)
+                  END DO
+               END IF
             END IF
             DEALLOCATE (cnkind)
          END IF

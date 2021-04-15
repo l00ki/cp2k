@@ -1,7 +1,7 @@
 # Tested with: GFortran 8.3.0, MPICH 3.3, LAPACK 3.9.0, ScaLAPACK 2.0.2, FFTW 3.3,
-#              LIBINT 2.6.0, LIBXC 4.3.4, ELPA 2020.05.001, PLUMED 2.6.2, SPGLIB 1.16.0,
-#              LIBVORI 201229
-# Author: Matthias Krack (matthias.krack@psi.ch, PSI, December 2020)
+#              LIBINT 2.6.0, LIBXC 5.1.3, ELPA 2020.11.001, PLUMED 2.6.2, SPGLIB 1.16.0,
+#              LIBVORI 210412
+# Author: Matthias Krack (matthias.krack@psi.ch, PSI, April 2021)
 
 CC          = mpicc
 FC          = mpif90
@@ -10,7 +10,7 @@ AR          = ar -r
 
 include       $(MPI_PATH)/plumed2/2.6.2/lib/plumed/src/lib/Plumed.inc.static
 
-ELPA_VER    = 2020.05.001
+ELPA_VER    = 2020.11.001
 ELPA_INC    = $(MPI_PATH)/elpa/$(ELPA_VER)/include/elpa_openmp-$(ELPA_VER)
 ELPA_LIB    = $(MPI_PATH)/elpa/$(ELPA_VER)/lib
 
@@ -20,15 +20,15 @@ FFTW_LIB    = $(GNU_PATH)/fftw/3.3-regtest/lib
 LIBINT_INC  = $(GNU_PATH)/libint/2.6.0-lmax-4-regtest/include
 LIBINT_LIB  = $(GNU_PATH)/libint/2.6.0-lmax-4-regtest/lib
 
-LIBVORI_LIB = $(GNU_PATH)/libvori/201229/lib
+LIBVORI_LIB = $(GNU_PATH)/libvori/210412-regtest/lib
 
-LIBXC_INC   = $(GNU_PATH)/libxc/4.3.4-regtest/include
-LIBXC_LIB   = $(GNU_PATH)/libxc/4.3.4-regtest/lib
+LIBXC_INC   = $(GNU_PATH)/libxc/5.1.3-regtest/include
+LIBXC_LIB   = $(GNU_PATH)/libxc/5.1.3-regtest/lib
 
-SPGLIB_INC  = $(GNU_PATH)/spglib/1.16.0/include
-SPGLIB_LIB  = $(GNU_PATH)/spglib/1.16.0/lib
+SPGLIB_INC  = $(GNU_PATH)/spglib/1.16.0-regtest/include
+SPGLIB_LIB  = $(GNU_PATH)/spglib/1.16.0-regtest/lib
 
-CFLAGS      = -O1 -fopenmp -g -mtune=generic
+CFLAGS      = -O2 -fopenmp -fopenmp-simd -g -march=native -mtune=native
 
 DFLAGS      = -D__ELPA
 DFLAGS     += -D__FFTW3
@@ -59,6 +59,7 @@ WFLAGS     += -Werror=unused-dummy-argument
 WFLAGS     += -Werror=unused-variable
 
 FCFLAGS     = $(CFLAGS) $(DFLAGS) $(WFLAGS)
+FCFLAGS    += -fbacktrace
 FCFLAGS    += -fcheck=bounds,do,recursion,pointer
 FCFLAGS    += -ffree-form
 FCFLAGS    += -ffree-line-length-none
@@ -66,7 +67,9 @@ FCFLAGS    += -fimplicit-none
 FCFLAGS    += -fno-omit-frame-pointer
 FCFLAGS    += -std=f2008
 FCFLAGS    += -I$(ELPA_INC)/elpa -I$(ELPA_INC)/modules
-FCFLAGS    += -I$(FFTW_INC) -I$(LIBINT_INC) -I$(LIBXC_INC)
+FCFLAGS    += -I$(FFTW_INC)
+FCFLAGS    += -I$(LIBINT_INC)
+FCFLAGS    += -I$(LIBXC_INC)
 
 LDFLAGS     = $(FCFLAGS) -fsanitize=leak
 
@@ -82,4 +85,5 @@ LIBS       += $(FFTW_LIB)/libfftw3_threads.a
 LIBS       += $(MPI_LIBRARY_PATH)/libscalapack-regtest.a
 LIBS       += $(LIBPATH)/liblapack-regtest.a
 LIBS       += $(LIBPATH)/libblas-regtest.a
-LIBS       += -ldl -lstdc++
+LIBS       += -ldl
+LIBS       += -lstdc++

@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -104,8 +104,7 @@ extern void extract_sub_grid(const int *lower_corner, const int *upper_corner,
 extern void add_sub_grid(const int *lower_corner, const int *upper_corner,
                          const int *position, const tensor *subgrid,
                          tensor *grid);
-extern void return_cube_position(const int *grid_size, const int *lb_grid,
-                                 const int *cube_center,
+extern void return_cube_position(const int *lb_grid, const int *cube_center,
                                  const int *lower_boundaries_cube,
                                  const int *period, int *const position);
 
@@ -147,7 +146,7 @@ static inline void grid_free_scratch(void *ptr) {
 #endif
 }
 
-/* even openblas has cblas versions of lapack and blas. */
+/* even openblas and lapack has cblas versions of lapack and blas. */
 #ifndef __MKL
 enum CBLAS_LAYOUT { CblasRowMajor = 101, CblasColMajor = 102 };
 enum CBLAS_TRANSPOSE {

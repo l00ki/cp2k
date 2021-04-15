@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -23,9 +23,8 @@ MODULE input_cp2k_global
                                               BLACS_GRID_SQUARE
    USE cp_dbcsr_cp2k_link,              ONLY: create_dbcsr_section
    USE cp_fm_elpa,                      ONLY: elpa_kernel_descriptions,&
-                                              elpa_kernel_names,&
-                                              get_elpa_kernel_index,&
-                                              get_elpa_number_kernels
+                                              elpa_kernel_ids,&
+                                              elpa_kernel_names
    USE cp_output_handling,              ONLY: add_last_numeric,&
                                               cp_print_key_section_create,&
                                               debug_print_level,&
@@ -36,7 +35,6 @@ MODULE input_cp2k_global
    USE grid_api,                        ONLY: GRID_BACKEND_AUTO,&
                                               GRID_BACKEND_CPU,&
                                               GRID_BACKEND_GPU,&
-                                              GRID_BACKEND_HYBRID,&
                                               GRID_BACKEND_REF
    USE input_constants,                 ONLY: &
         bsse_run, callgraph_all, callgraph_master, callgraph_none, cell_opt_run, debug_run, &
@@ -58,7 +56,6 @@ MODULE input_cp2k_global
                                               integer_t,&
                                               logical_t
    USE kinds,                           ONLY: dp
-   USE machine,                         ONLY: m_cpuid
    USE string_utilities,                ONLY: s2a
    USE timings,                         ONLY: default_timings_level
 #include "./base/base_uses.f90"
@@ -81,7 +78,7 @@ CONTAINS
    SUBROUTINE create_global_section(section)
       TYPE(section_type), POINTER                        :: section
 
-      INTEGER                                            :: default_i_val, i
+      INTEGER                                            :: default_diag
       TYPE(keyword_type), POINTER                        :: keyword
       TYPE(section_type), POINTER                        :: print_key, sub_section
 
@@ -112,15 +109,15 @@ CONTAINS
       CALL keyword_release(keyword)
 
 #if defined(__ELPA)
-      default_i_val = do_diag_elpa
+      default_diag = do_diag_elpa
 #else
-      default_i_val = do_diag_sl
+      default_diag = do_diag_sl
 #endif
       CALL keyword_create( &
          keyword, __LOCATION__, name="PREFERRED_DIAG_LIBRARY", &
          description="Specifies the DIAGONALIZATION library to be used. If not available, the standard scalapack is used", &
          usage="PREFERRED_DIAG_LIBRARY ELPA", &
-         default_i_val=default_i_val, &
+         default_i_val=do_diag_sl, &
          enum_i_vals=(/do_diag_sl, do_diag_elpa/), &
          enum_c_vals=s2a("SL", "ELPA"), &
          enum_desc=s2a("Standard (Sca)LAPACK: syevd", "ELPA"), &
@@ -128,13 +125,11 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
-      default_i_val = get_elpa_kernel_index(m_cpuid())
-      CPASSERT(default_i_val .LE. get_elpa_number_kernels())
       CALL keyword_create( &
          keyword, __LOCATION__, name="ELPA_KERNEL", &
          description="Specifies the kernel to be used when ELPA is in use", &
-         default_i_val=default_i_val, &
-         enum_i_vals=[(i, i=1, get_elpa_number_kernels())], &
+         default_i_val=elpa_kernel_ids(1), &
+         enum_i_vals=elpa_kernel_ids, &
          enum_c_vals=elpa_kernel_names, &
          enum_desc=elpa_kernel_descriptions)
       CALL section_add_keyword(section, keyword)
@@ -717,13 +712,12 @@ CONTAINS
                           description="Selects the backed used by the grid library.", &
                           default_i_val=GRID_BACKEND_AUTO, &
                           enum_i_vals=(/GRID_BACKEND_AUTO, GRID_BACKEND_REF, GRID_BACKEND_CPU, &
-                                        GRID_BACKEND_GPU, GRID_BACKEND_HYBRID/), &
-                          enum_c_vals=s2a("AUTO", "REF", "CPU", "GPU", "HYBRID"), &
+                                        GRID_BACKEND_GPU/), &
+                          enum_c_vals=s2a("AUTO", "REF", "CPU", "GPU"), &
                           enum_desc=s2a("Let the grid library pick the backend automatically", &
                                         "Reference backend implementation", &
                                         "Optimized CPU backend", &
-                                        "Optimized GPU backend", &
-                                        "Backend using both CPU and GPU"))
+                                        "Optimized GPU backend"))
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
@@ -736,18 +730,12 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="APPLY_CUTOFF", &
-                          description="When enabled the cpu and hybrid backends "// &
+                          description="When enabled the cpu backend "// &
                           " apply a spherical cutoff on the top of the cube. "// &
                           " There is a performance penalty using it in "// &
                           "combination with the cpu backend but it is on by "// &
                           "default for the regtests", default_l_val=.TRUE., &
                           lone_keyword_l_val=.TRUE.)
-      CALL section_add_keyword(section, keyword)
-      CALL keyword_release(keyword)
-
-      CALL keyword_create(keyword, __LOCATION__, name="QUEUE_LENGTH", &
-                          description="Number of gaussians that the hybrid backend treats in one round", &
-                          default_i_val=4096)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 

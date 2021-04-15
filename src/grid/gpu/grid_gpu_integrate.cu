@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -38,9 +38,9 @@ __device__ static void store_hab(const kernel_params *params,
   for (int i = threadIdx.x; i < task->nsgf_setb; i += blockDim.x) {
     for (int j = threadIdx.y; j < task->nsgf_seta; j += blockDim.y) {
       const int jco_start = task->first_cosetb + threadIdx.z;
+      double block_val = 0.0;
       for (int jco = jco_start; jco < task->ncosetb; jco += blockDim.z) {
         const orbital b = coset_inv[jco];
-        double block_val = 0.0;
         const double sphib = task->sphib[i * task->maxcob + jco];
         for (int ico = task->first_coseta; ico < task->ncoseta; ico++) {
           const orbital a = coset_inv[ico];
@@ -49,11 +49,11 @@ __device__ static void store_hab(const kernel_params *params,
           const double sphia = task->sphia[j * task->maxcoa + ico];
           block_val += hab * sphia * sphib;
         }
-        if (task->block_transposed) {
-          atomicAddDouble(&task->hab_block[j * task->nsgfb + i], block_val);
-        } else {
-          atomicAddDouble(&task->hab_block[i * task->nsgfa + j], block_val);
-        }
+      }
+      if (task->block_transposed) {
+        atomicAddDouble(&task->hab_block[j * task->nsgfb + i], block_val);
+      } else {
+        atomicAddDouble(&task->hab_block[i * task->nsgfa + j], block_val);
       }
     }
   }
@@ -87,11 +87,11 @@ __device__ static void store_forces_and_virial(const kernel_params *params,
           for (int k = 0; k < 3; k++) {
             const double force_a = get_force_a(a, b, k, task->zeta, task->zetb,
                                                task->n1, cab, COMPUTE_TAU);
-            coalescedAtomicAdd(&task->forces_a[k], force_a * pabval);
+            atomicAddDouble(&task->forces_a[k], force_a * pabval);
             const double force_b =
                 get_force_b(a, b, k, task->zeta, task->zetb, task->rab,
                             task->n1, cab, COMPUTE_TAU);
-            coalescedAtomicAdd(&task->forces_b[k], force_b * pabval);
+            atomicAddDouble(&task->forces_b[k], force_b * pabval);
           }
           if (params->virial != NULL) {
             for (int k = 0; k < 3; k++) {
@@ -103,7 +103,7 @@ __device__ static void store_forces_and_virial(const kernel_params *params,
                     get_virial_b(a, b, k, l, task->zeta, task->zetb, task->rab,
                                  task->n1, cab, COMPUTE_TAU);
                 const double virial = pabval * (virial_a + virial_b);
-                coalescedAtomicAdd(&params->virial[k * 3 + l], virial);
+                atomicAddDouble(&params->virial[k * 3 + l], virial);
               }
             }
           }
@@ -202,19 +202,12 @@ __global__ static void grid_integrate_tau_forces(const kernel_params params) {
  ******************************************************************************/
 void grid_gpu_integrate_one_grid_level(
     const grid_gpu_task_list *task_list, const int first_task,
-    const int last_task, const bool orthorhombic, const bool compute_tau,
-    const int npts_global[3], const int npts_local[3], const int shift_local[3],
+    const int last_task, const bool compute_tau, const int npts_global[3],
+    const int npts_local[3], const int shift_local[3],
     const int border_width[3], const double dh[3][3], const double dh_inv[3][3],
     const cudaStream_t stream, const double *pab_blocks_dev,
     const double *grid_dev, double *hab_blocks_dev, double *forces_dev,
     double *virial_dev, int *lp_diff) {
-
-  const int ntasks = last_task - first_task + 1;
-  if (ntasks == 0) {
-    return; // Nothing to do.
-  }
-
-  init_constant_memory();
 
   // Compute max angular momentum.
   const bool calculate_forces = (forces_dev != NULL);
@@ -226,6 +219,13 @@ void grid_gpu_integrate_one_grid_level(
   const int la_max = task_list->lmax + ldiffs.la_max_diff;
   const int lb_max = task_list->lmax + ldiffs.lb_max_diff;
   const int lp_max = la_max + lb_max;
+
+  const int ntasks = last_task - first_task + 1;
+  if (ntasks == 0) {
+    return; // Nothing to do and lp_diff already set.
+  }
+
+  init_constant_memory();
 
   // Compute required shared memory.
   // TODO: Currently, cab's indicies run over 0...ncoset[lmax],
@@ -251,7 +251,7 @@ void grid_gpu_integrate_one_grid_level(
   params.smem_alpha_offset = cab_len;
   params.smem_cxyz_offset = params.smem_alpha_offset + alpha_len;
   params.first_task = first_task;
-  params.orthorhombic = orthorhombic;
+  params.orthorhombic = task_list->orthorhombic;
   params.grid = grid_dev;
   params.tasks = task_list->tasks_dev;
   params.atom_kinds = task_list->atom_kinds_dev;
@@ -275,7 +275,8 @@ void grid_gpu_integrate_one_grid_level(
 
   // Launch !
   const int nblocks = ntasks;
-  const dim3 threads_per_block(4, 8, 8);
+  const dim3 threads_per_block(32, 2, 1);
+  assert(threads_per_block.x == 32); // needed for __syncwarp
 
   if (!compute_tau && !calculate_forces) {
     grid_integrate_density<<<nblocks, threads_per_block, smem_per_block,

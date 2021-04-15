@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -46,7 +46,7 @@ __device__ static void block_to_cab(const kernel_params *params,
   // Decontract block, apply prepare_pab, and store in cab.
   // This is a double matrix product. Since the pab block can be quite large the
   // two products are fused to conserve shared memory.
-  for (int i = threadIdx.x; i < task->nsgf_setb; i += blockDim.x) {
+  for (int i = threadIdx.z; i < task->nsgf_setb; i += blockDim.z) {
     for (int j = threadIdx.y; j < task->nsgf_seta; j += blockDim.y) {
       double block_val;
       if (task->block_transposed) {
@@ -57,8 +57,8 @@ __device__ static void block_to_cab(const kernel_params *params,
 
       if (IS_FUNC_AB) {
         // fast path for common case
-        const int jco_start = task->first_cosetb + threadIdx.z;
-        for (int jco = jco_start; jco < task->ncosetb; jco += blockDim.z) {
+        const int jco_start = task->first_cosetb + threadIdx.x;
+        for (int jco = jco_start; jco < task->ncosetb; jco += blockDim.x) {
           const double sphib = task->sphib[i * task->maxcob + jco];
           for (int ico = task->first_coseta; ico < task->ncoseta; ico++) {
             const double sphia = task->sphia[j * task->maxcoa + ico];
@@ -68,8 +68,8 @@ __device__ static void block_to_cab(const kernel_params *params,
         }
       } else {
         // Since prepare_pab is a register hog we use it only when really needed
-        const int jco_start = task->first_cosetb + threadIdx.z;
-        for (int jco = jco_start; jco < task->ncosetb; jco += blockDim.z) {
+        const int jco_start = task->first_cosetb + threadIdx.x;
+        for (int jco = jco_start; jco < task->ncosetb; jco += blockDim.x) {
           const orbital b = coset_inv[jco];
           for (int ico = task->first_coseta; ico < task->ncoseta; ico++) {
             const orbital a = coset_inv[ico];
@@ -139,18 +139,11 @@ __global__ static void collocate_kernel_anyfunc(const kernel_params params) {
  ******************************************************************************/
 void grid_gpu_collocate_one_grid_level(
     const grid_gpu_task_list *task_list, const int first_task,
-    const int last_task, const bool orthorhombic, const enum grid_func func,
-    const int npts_global[3], const int npts_local[3], const int shift_local[3],
+    const int last_task, const enum grid_func func, const int npts_global[3],
+    const int npts_local[3], const int shift_local[3],
     const int border_width[3], const double dh[3][3], const double dh_inv[3][3],
     const cudaStream_t stream, const double *pab_blocks_dev, double *grid_dev,
     int *lp_diff) {
-
-  const int ntasks = last_task - first_task + 1;
-  if (ntasks == 0) {
-    return; // Nothing to do.
-  }
-
-  init_constant_memory();
 
   // Compute max angular momentum.
   const prepare_ldiffs ldiffs = prepare_get_ldiffs(func);
@@ -158,6 +151,13 @@ void grid_gpu_collocate_one_grid_level(
   const int la_max = task_list->lmax + ldiffs.la_max_diff;
   const int lb_max = task_list->lmax + ldiffs.lb_max_diff;
   const int lp_max = la_max + lb_max;
+
+  const int ntasks = last_task - first_task + 1;
+  if (ntasks == 0) {
+    return; // Nothing to do and lp_diff already set.
+  }
+
+  init_constant_memory();
 
   // Compute required shared memory.
   // TODO: Currently, cab's indicies run over 0...ncoset[lmax],
@@ -183,7 +183,7 @@ void grid_gpu_collocate_one_grid_level(
   params.smem_alpha_offset = cab_len;
   params.smem_cxyz_offset = params.smem_alpha_offset + alpha_len;
   params.first_task = first_task;
-  params.orthorhombic = orthorhombic;
+  params.orthorhombic = task_list->orthorhombic;
   params.func = func;
   params.grid = grid_dev;
   params.la_min_diff = ldiffs.la_min_diff;
@@ -205,7 +205,7 @@ void grid_gpu_collocate_one_grid_level(
 
   // Launch !
   const int nblocks = ntasks;
-  const dim3 threads_per_block(4, 8, 8);
+  const dim3 threads_per_block(4, 4, 4);
 
   if (func == GRID_FUNC_AB) {
     collocate_kernel_density<<<nblocks, threads_per_block, smem_per_block,

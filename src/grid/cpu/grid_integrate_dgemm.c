@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <omp.h>
 
@@ -35,7 +36,7 @@ void extract_cube_within_spherical_cutoff_ortho(
   int **map = handler->map;
   map[1] = map[0] + 2 * cmax + 1;
   map[2] = map[1] + 2 * cmax + 1;
-  memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
+  // memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
 
   for (int i = 0; i < 3; i++) {
     for (int ig = 0; ig < handler->cube.size[i]; ig++) {
@@ -100,7 +101,9 @@ void extract_cube_within_spherical_cutoff_ortho(
                                            lower_corner[1], lower_corner[2]);
 
               const int sizex = upper_corner[2] - lower_corner[2];
-#pragma GCC ivdep
+
+              //#pragma omp simd linear(dst, src) simdlen(8)
+              GRID_PRAGMA_SIMD((dst, src), 8)
               for (int x = 0; x < sizex; x++) {
                 dst[x] = src[x];
               }
@@ -130,7 +133,7 @@ void extract_cube_within_spherical_cutoff_generic(
   int **map = handler->map;
   map[1] = map[0] + 2 * cmax + 1;
   map[2] = map[1] + 2 * cmax + 1;
-  memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
+  // memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
 
   for (int i = 0; i < 3; i++) {
     for (int ig = 0; ig < handler->cube.size[i]; ig++) {
@@ -215,18 +218,20 @@ void extract_cube_within_spherical_cutoff_generic(
           /* the function will internally take care of the local vs global
            * grid */
 
-          const double *__restrict__ const src = &idx3(
-              handler->grid, lower_corner[0], lower_corner[1], lower_corner[2]);
+          double *__restrict__ src = &idx3(handler->grid, lower_corner[0],
+                                           lower_corner[1], lower_corner[2]);
           double *__restrict__ dst =
               &idx3(handler->cube, position1[0], position1[1], position1[2]);
 
           const int sizex = upper_corner[2] - lower_corner[2];
-#pragma GCC ivdep
+
+          //#pragma omp simd linear(dst, src) simdlen(8)
+          GRID_PRAGMA_SIMD((dst, src), 8)
           for (int x = 0; x < sizex; x++) {
             dst[x] = src[x];
           }
 
-          if (handler->grid.size[0] == handler->grid.full_size[0])
+          if (handler->grid.size[2] == handler->grid.full_size[2])
             update_loop_index(handler->grid.full_size[2], x1, &x);
           else
             x += upper_corner[2] - lower_corner[2] - 1;
@@ -485,7 +490,7 @@ void extract_cube(struct collocation_integration_ *handler, const int cmax,
   int **map = handler->map;
   map[1] = map[0] + 2 * cmax + 1;
   map[2] = map[1] + 2 * cmax + 1;
-  memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
+  //  memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
   for (int i = 0; i < 3; i++) {
     for (int ig = 0; ig < handler->cube.size[i]; ig++) {
       map[i][ig] = modulo(cube_center[i] + ig + lower_boundaries_cube[i] -
@@ -503,8 +508,6 @@ void extract_cube(struct collocation_integration_ *handler, const int cmax,
                             .xmax = handler->grid.window_size[1]};
   const Interval xwindow = {.xmin = handler->grid.window_shift[2],
                             .xmax = handler->grid.window_size[2]};
-
-  memset(handler->cube.data, 0, sizeof(double) * handler->cube.alloc_size_);
 
   for (int z = 0; (z < handler->cube.size[0]); z++) {
     const int z1 = map[0][z];
@@ -594,9 +597,10 @@ void grid_integrate(collocation_integration *const handler,
    */
 
   /* seting up the cube parameters */
-  int cmax = compute_cube_properties(use_ortho, radius, handler->dh,
-                                     handler->dh_inv, rp, &disr_radius, roffset,
-                                     cubecenter, lb_cube, ub_cube, cube_size);
+  int cmax = compute_cube_properties(
+      use_ortho, radius, (const double(*)[3])handler->dh,
+      (const double(*)[3])handler->dh_inv, rp, &disr_radius, roffset,
+      cubecenter, lb_cube, ub_cube, cube_size);
 
   /* initialize the multidimensional array containing the polynomials */
   if (lp != 0) {
@@ -678,8 +682,8 @@ void grid_integrate(collocation_integration *const handler,
 
     /* the three remaining tensors are initialized in the function */
     calculate_non_orthorombic_corrections_tensor(
-        zetp, roffset, handler->dh, lb_cube, ub_cube, handler->orthogonal,
-        &handler->Exp);
+        zetp, roffset, (const double(*)[3])handler->dh, lb_cube, ub_cube,
+        handler->orthogonal, &handler->Exp);
   }
 
   if (handler->apply_cutoff) {
@@ -743,7 +747,8 @@ void grid_integrate(collocation_integration *const handler,
 
   /* go from ijk -> xyz */
   if (!use_ortho)
-    grid_transform_coef_jik_to_yxz(handler->dh, &handler->coef);
+    grid_transform_coef_jik_to_yxz((const double(*)[3])handler->dh,
+                                   &handler->coef);
 }
 
 void integrate_one_grid_level_dgemm(
@@ -834,7 +839,8 @@ void integrate_one_grid_level_dgemm(
       alloc_tensor(&virial_local_pair_);
     }
 
-    initialize_basis_vectors(handler, grid->dh, grid->dh_inv);
+    initialize_basis_vectors(handler, (const double(*)[3])grid->dh,
+                             (const double(*)[3])grid->dh_inv);
 
     tensor_copy(&handler->grid, grid);
     handler->grid.data = grid->data;
@@ -905,8 +911,8 @@ void integrate_one_grid_level_dgemm(
       grid_integrate(handler, ctx->orthorhombic, task->zetp, task->rp,
                      task->radius);
       /*
-        handler->coef contains coefficients in the (x - x_12) basis. now
-        we need to rotate them in the (x - x_1) (x - x_2) basis
+              handler->coef contains coefficients in the (x - x_12) basis. now
+              we need to rotate them in the (x - x_1) (x - x_2) basis
       */
 
       /* compute the transformation matrix */
@@ -1017,6 +1023,10 @@ void integrate_one_grid_level_dgemm(
           cblas_daxpy(forces_local_.alloc_size_, 1.0, forces_local_.data, 1,
                       forces_->data, 1);
         }
+      } else {
+        // we are running with OMP_NUM_THREADS=1
+        cblas_daxpy(forces_local_.alloc_size_, 1.0, forces_local_.data, 1,
+                    forces_->data, 1);
       }
     }
 
@@ -1049,13 +1059,9 @@ void integrate_one_grid_level_dgemm(
  * matrix multiplication
  ******************************************************************************/
 void grid_cpu_integrate_task_list(
-    void *ptr, const bool orthorhombic, const bool compute_tau,
-    const int natoms, const int nlevels, const int npts_global[nlevels][3],
-    const int npts_local[nlevels][3], const int shift_local[nlevels][3],
-    const int border_width[nlevels][3], const double dh[nlevels][3][3],
-    const double dh_inv[nlevels][3][3], const grid_buffer *const pab_blocks,
-    double *grid[nlevels], grid_buffer *hab_blocks, double forces[natoms][3],
-    double virial[3][3]) {
+    void *ptr, const bool compute_tau, const int natoms, const int nlevels,
+    const grid_buffer *const pab_blocks, double *grid[nlevels],
+    grid_buffer *hab_blocks, double forces[natoms][3], double virial[3][3]) {
 
   grid_context *const ctx = (grid_context *const)ptr;
 
@@ -1068,18 +1074,16 @@ void grid_cpu_integrate_task_list(
 
   const int max_threads = omp_get_max_threads();
 
-  if (ctx->scratch == NULL) {
-    ctx->scratch = memalign(4096, hab_blocks->size * max_threads);
-  }
-
-  ctx->orthorhombic = orthorhombic;
+  if (ctx->scratch == NULL)
+    ctx->scratch = malloc(hab_blocks->size * max_threads);
 
   //#pragma omp parallel for
   for (int level = 0; level < ctx->nlevels; level++) {
-    set_grid_parameters(&ctx->grid[level], orthorhombic, npts_global[level],
-                        npts_local[level], shift_local[level],
-                        border_width[level], dh[level], dh_inv[level],
-                        grid[level]);
+    const _layout *layout = &ctx->layouts[level];
+    set_grid_parameters(&ctx->grid[level], ctx->orthorhombic,
+                        layout->npts_global, layout->npts_local,
+                        layout->shift_local, layout->border_width, layout->dh,
+                        layout->dh_inv, grid[level]);
     ctx->grid[level].data = grid[level];
   }
 
@@ -1097,9 +1101,10 @@ void grid_cpu_integrate_task_list(
   }
 
   for (int level = 0; level < ctx->nlevels; level++) {
+    const _layout *layout = &ctx->layouts[level];
     integrate_one_grid_level_dgemm(ctx, level, compute_tau, calculate_forces,
-                                   calculate_virial, shift_local[level],
-                                   border_width[level], pab_blocks, hab_blocks,
+                                   calculate_virial, layout->shift_local,
+                                   layout->border_width, pab_blocks, hab_blocks,
                                    &forces_, &virial_);
     ctx->grid[level].data = NULL;
   }

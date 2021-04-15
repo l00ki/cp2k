@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -71,6 +71,7 @@ CONTAINS
       !Get input parameter
       CALL section_vals_val_get(section, "TAU", r_val=pile_therm%tau)
       CALL section_vals_val_get(section, "LAMBDA", r_val=pile_therm%lamb)
+      CALL section_vals_val_get(section, "THERMOSTAT_ENERGY", r_val=pile_therm%thermostat_energy)
 
       p = pint_env%p
       dti2 = 0.5_dp*pint_env%dt

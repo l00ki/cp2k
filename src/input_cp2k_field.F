@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -110,7 +110,8 @@ CONTAINS
 
       CPASSERT(.NOT. ASSOCIATED(section))
       CALL section_create(section, __LOCATION__, name="EFIELD", &
-                          description="parameters for finite, time dependent, nonperiodic electric fields", &
+                          description="parameters for finite, time dependent, nonperiodic electric fields."// &
+                          " For static fields use EXTERNAL_POTENTIAL.", &
                           n_keywords=6, n_subsections=1, repeats=.TRUE.)
 
       NULLIFY (keyword, subsection)

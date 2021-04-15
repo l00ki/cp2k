@@ -1,14 +1,15 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
 
 #include "../common/grid_common.h"
 #include "../common/grid_constants.h"
-#include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #if defined(__CUDACC__)
 #define GRID_DEVICE __device__
@@ -346,7 +347,7 @@ GRID_DEVICE static void prepare_pab(const enum grid_func func, const orbital a,
     prepare_pab_Di2(2, a, b, zeta, zetb, pab_val, n, cab);
     break;
   default:
-    assert(false && "Unknown ga_gb_function.");
+    break; // Error: Unknown ga_gb_function - do nothing.
   }
 }
 
@@ -421,7 +422,8 @@ static prepare_ldiffs prepare_get_ldiffs(const enum grid_func func) {
     ldiffs.lb_min_diff = -2;
     break;
   default:
-    assert(false && "Unknown ga_gb_function.");
+    fprintf(stderr, "Error: Unknown ga_gb_function %i.\n", func);
+    abort();
   }
 
   return ldiffs;

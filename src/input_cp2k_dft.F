@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -16,8 +16,8 @@ MODULE input_cp2k_dft
                                               basis_sort_zet
    USE bibliography,                    ONLY: &
         Andermatt2016, Andreussi2012, Avezac2005, BaniHashemian2016, Becke1988b, Bengtsson1999, &
-        Blochl1995, Brehm2018, Brehm2020, Brelaz1979, Dewar1977, Dewar1985, Dudarev1997, &
-        Dudarev1998, Ehrhardt1985, Fattebert2002, Golze2017a, Golze2017b, Guidon2010, &
+        Blochl1995, Brehm2018, Brehm2020, Brehm2021, Brelaz1979, Dewar1977, Dewar1985, &
+        Dudarev1997, Dudarev1998, Ehrhardt1985, Fattebert2002, Golze2017a, Golze2017b, Guidon2010, &
         Heinzmann1976, Holmberg2017, Holmberg2018, Hunt2003, Iannuzzi2005, Iannuzzi2006, &
         Iannuzzi2007, Kolafa2004, Krack2000, Krack2002, Kuhne2007, Kunert2003, Lippert1997, &
         Lippert1999, Lu2004, Perdew1981, Repasky2002, Rocha2006, Rycroft2009, Schenter2008, &
@@ -1661,12 +1661,18 @@ CONTAINS
       ! Voronoi Integration via LibVori
       CALL cp_print_key_section_create(print_key, __LOCATION__, name="VORONOI", &
                                        description="Controls the Voronoi integration of the total electron density"// &
-                                       " for the computation of electromagnetic moments, see [Thomas2015]"// &
-                                       " and [Brehm2020] (via LibVori,"// &
+                                       " for the computation of electromagnetic moments, see [Thomas2015],"// &
+                                       " [Brehm2020], and [Brehm2021] (via LibVori,"// &
                                        " see <a href=""https://brehm-research.de/voronoi"" target=""_blank"">"// &
                                        " https://brehm-research.de/voronoi</a> ).", &
                                        print_level=debug_print_level + 1, filename="", &
-                                       citations=(/Rycroft2009, Thomas2015, Brehm2018, Brehm2020/))
+                                       citations=(/Rycroft2009, Thomas2015, Brehm2018, Brehm2020, Brehm2021/))
+
+      CALL keyword_create(keyword, __LOCATION__, name="APPEND", &
+                          description="Appends frames to already existing .voronoi file.", &
+                          default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(print_key, keyword)
+      CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="SANITY_CHECK", &
                           description="Performs a sanity check before each Voronoi integration, i.e.,"// &
@@ -1677,7 +1683,7 @@ CONTAINS
 
       CALL keyword_create(keyword, __LOCATION__, name="OVERWRITE", &
                           description="Specify this keyword to overwrite any existing ""properties.emp"" file if"// &
-                          " it already exists. By default, the data is appended to an existing file.", &
+                          " it already exists. By default, the data is appended to an existing .emp file.", &
                           usage="OVERWRITE T", default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(print_key, keyword)
       CALL keyword_release(keyword)
@@ -1695,13 +1701,15 @@ CONTAINS
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="OUTPUT_EMP", &
-                          description="Writes the resulting electromagnetic moments to a binary file ""properties.emp"".", &
+                          description="Writes the resulting electromagnetic moments to a binary file ""properties.emp""."// &
+                          " The file name cannot be changed.", &
                           usage="OUTPUT_EMP T", default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(print_key, keyword)
       CALL keyword_release(keyword)
 
       CALL keyword_create(keyword, __LOCATION__, name="OUTPUT_TEXT", &
-                          description="Writes the resulting electromagnetic moments to text files (*.voronoi).", &
+                          description="Writes the resulting electromagnetic moments to text files (*.voronoi)."// &
+                          " The file name is specified via FILENAME.", &
                           usage="OUTPUT_TEXT T", default_l_val=.TRUE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(print_key, keyword)
       CALL keyword_release(keyword)

@@ -37,6 +37,10 @@ cd tools/toolchain/
 Sub-points here discuss prerequisites needed to build CP2K. Copies of the
 recommended versions of 3rd party software can be downloaded from <https://www.cp2k.org/static/downloads/>.
 
+Generally, CP2K supports only one version for each of its dependencies.
+These are defined by the [toolchain scripts](./tools/toolchain/scripts/).
+Other versions might work too, but we don't test them. So, your mileage may vary.
+
 ### 2a. GNU make (required, build system)
 
 GNU make should be on your system (gmake or make on linux) and used for the build,
@@ -73,8 +77,10 @@ matching your compiler, and download all patches!
   - <http://math-atlas.sourceforge.net>
   - <https://www.tacc.utexas.edu/research-development/tacc-software/gotoblas2>
 
-If compiling with OpenMP support then it is recommended to use a non-threaded
-version of BLAS. In particular if compiling with MKL and using OpenMP you must
+Please note that the BLAS/LAPACK implementation used by CP2K needs to be
+OpenMP thread-safe. Examples are: the sequential variant of the Intel MKL,
+the Cray libsci, the OpenBLAS OpenMP variant and the reference BLAS/LAPACK packages.
+In particular if compiling with MKL you must
 define `-D__MKL` to ensure the code is thread-safe. MKL with multiple OpenMP
 threads in CP2K requires that CP2K was compiled with the Intel compiler.
 If the `cpp` precompiler is used in a separate precompilation step in combination
@@ -99,6 +105,7 @@ If your computing platform does not provide MPI,
 there are several freely available alternatives:
 
 - MPICH2 MPI: <http://www-unix.mcs.anl.gov/mpi/mpich/>
+  (may require `-fallow-argument-mismatch` when building with GCC 10)
 - OpenMPI MPI: <http://www.open-mpi.org/>
 - ScaLAPACK:
   - <http://www.netlib.org/scalapack/>
@@ -125,9 +132,8 @@ use gfortran).
 :warning: Note that on machines and compilers which support SSE you can configure
 FFTW3 with `--enable-sse2`. Compilers/systems that do not align memory (NAG f95,
 Intel IA32/gfortran) should either not use `--enable-sse2` or otherwise set the
-define `-D__FFTW3_UNALIGNED` in the arch file. When building an OpenMP parallel
-version of CP2K (ssmp or psmp), the FFTW3 threading library libfftw3_threads
-(or libfftw3_omp) is required.
+define `-D__FFTW3_UNALIGNED` in the arch file. Since CP2K is OpenMP parallelized,
+the FFTW3 threading library libfftw3_threads (or libfftw3_omp) is required.
 
 ### 2g. LIBINT (optional, enables methods including HF exchange)
 
@@ -191,7 +197,7 @@ version of CP2K (ssmp or psmp), the FFTW3 threading library libfftw3_threads
 
 ### 2k. libxc (optional, wider choice of xc functionals)
 
-- The version 4.0.3 (or later) of libxc can be downloaded from <http://www.tddft.org/programs/octopus/wiki/index.php/Libxc>.
+- The version 5.1.0 (or later) of libxc can be downloaded from <https://www.tddft.org/programs/libxc>
 - During the installation, the directories `$(LIBXC_DIR)/lib`
   and `$(LIBXC_DIR)/include` are created.
 - Add `-D__LIBXC` to DFLAGS, `-I$(LIBXC_DIR)/include` to FCFLAGS
@@ -204,8 +210,7 @@ Library ELPA for the solution of the eigenvalue problem
 
 - ELPA replaces the ScaLapack `SYEVD` to improve the performance of the diagonalization
 - A version of ELPA can to be downloaded from <http://elpa.rzg.mpg.de/software>.
-- During the installation the `libelpa.a`
-  (or `libelpa_openmp.a` if OpenMP is enabled) is created.
+- During the installation the `libelpa_openmp.a` is created.
 - Minimal supported version of ELPA is 2018.05.001.
 - Add `-D__ELPA` to `DFLAGS`
 - Add `-I$(ELPA_INCLUDE_DIR)/modules` to `FCFLAGS`
@@ -305,21 +310,23 @@ SIRIUS is a domain specific library for electronic structure calculations.
 
 ### 2t. LibVori (Voronoi Integration for Electrostatic Properties from Electron Density)
 
-- LibVori is a library which enables to compute electrostatic properties
-  (charge, dipole vector, quadrupole tensor, ...) via integration of the total
+- LibVori is a library which enables the calculation of electrostatic properties
+  (charge, dipole vector, quadrupole tensor, etc.) via integration of the total
   electron density in the Voronoi cell of each atom.
-- Add `-D__LIBVORI` to DFLAGS to enable support for LibVori.
-- see <https://brehm-research.de/voronoi> for more information.
+- Add `-D__LIBVORI` to the DFLAGS to enable support for LibVori.
+- see <https://brehm-research.de/libvori> for more information.
 - LibVori also enables support for the BQB file format for compressed trajectories,
-  please see <https://brehm-research.de/bqb.php> for more information as well as
+  please see <https://brehm-research.de/bqb> for more information as well as
   the `bqbtool` to inspect BQB files.
 
+<!---
 ### 2u. LibMaxwell (External Maxwell Solver)
 
 - LibMaxwell is a library to solve the time-dependent Maxwell equations
   and use the resulting electric field in MD runs or real-time propagation.
 - Add `-D__LIBMAXWELL` to DFLAGS to enable support for LibMaxwell.
 - see <https://brehm-research.de> for more information.
+-->
 
 ## 3. Compile
 
@@ -405,8 +412,6 @@ partially depending on installed libraries (see 2.)
 - `-D__GRID_CORE=X` (with X=1..6) specific optimized core routines can be
   selected.  Reasonable defaults are [provided](./src/grid/collocate_fast.f90)
   but trial-and-error might yield (a small ~10%) speedup.
-- `-D__HAS_LIBGRID` (and `-L/path/to/libgrid.a` in LIBS) tuned versions of
-  integrate and collocate routines can be [generated](./tools/autotune_grid/README).
 - `-D__PILAENV_BLOCKSIZE`: can be used to specify the blocksize (e.g. `-D__PILAENV_BLOCKSIZE=1024`),
   which is a hack to overwrite (if the linker allows this) the PILAENV function
   provided by Scalapack. This can lead to much improved PDGEMM performance.
@@ -423,8 +428,7 @@ partially depending on installed libraries (see 2.)
 Features useful to deal with legacy systems
 
 - `-D__NO_MPI_THREAD_SUPPORT_CHECK`  - Workaround for MPI libraries that do not
-  declare they are thread safe (funneled) but you want to use them with OpenMP
-  code anyways.
+  declare they are thread safe (funneled).
 - `-D__NO_IPI_DRIVER` disables the socket interface in case of troubles compiling
   on systems that do not support POSIX sockets.
 - `-D__HAS_IEEE_EXCEPTIONS` disables trapping temporarily for libraries like scalapack.

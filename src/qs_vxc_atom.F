@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -110,6 +110,8 @@ CONTAINS
                                                             paw_atom, tau_f
       REAL(dp)                                           :: density_cut, exc_h, exc_s, gradient_cut, &
                                                             my_adiabatic_rescale_factor, tau_cut
+      REAL(dp), DIMENSION(1, 1)                          :: tau_d
+      REAL(dp), DIMENSION(1, 1, 1, 1)                    :: rho_d
       REAL(dp), DIMENSION(:, :), POINTER                 :: rho_h, rho_nlcc, rho_s, weight
       REAL(dp), DIMENSION(:, :, :), POINTER              :: tau_h, tau_s, vtau_h, vtau_s, vxc_h, &
                                                             vxc_s
@@ -303,10 +305,13 @@ CONTAINS
                ELSE
                   NULLIFY (r_h, r_s)
                   CALL get_rho_atom(rho_atom=rho_atom, rho_rad_h=r_h, rho_rad_s=r_s)
+                  rho_d = 0.0_dp
                END IF
                IF (tau_f) THEN
                   !compute tau on the grid all at once
                   CALL calc_tau_atom(tau_h, tau_s, rho_atom, my_kind_set(ikind), nspins)
+               ELSE
+                  tau_d = 0.0_dp
                END IF
 
                DO ir = 1, nr
@@ -317,8 +322,16 @@ CONTAINS
                      CALL calc_rho_nlcc(grid_atom, nspins, gradient_f, &
                                         ir, rho_nlcc(:, 1), rho_h, rho_s, rho_nlcc(:, 2), drho_h, drho_s)
                   END IF
-                  CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, drho_h, tau_h(:, ir, :), na, ir)
-                  CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, drho_s, tau_s(:, ir, :), na, ir)
+                  IF (tau_f) THEN
+                     CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, drho_h, tau_h(:, ir, :), na, ir)
+                     CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, drho_s, tau_s(:, ir, :), na, ir)
+                  ELSE IF (gradient_f) THEN
+                     CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, drho_h, tau_d, na, ir)
+                     CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, drho_s, tau_d, na, ir)
+                  ELSE
+                     CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, rho_d, tau_d, na, ir)
+                     CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, rho_d, tau_d, na, ir)
+                  END IF
                END DO
 
                !-------------------!
@@ -479,6 +492,8 @@ CONTAINS
       LOGICAL                                            :: gradient_functional, lsd, lsd_singlets, &
                                                             paw_atom, tau_f
       REAL(KIND=dp)                                      :: density_cut, gradient_cut, rtot, tau_cut
+      REAL(KIND=dp), DIMENSION(1, 1)                     :: rtau
+      REAL(KIND=dp), DIMENSION(1, 1, 1, 1)               :: rrho
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: rho1_h, rho1_s, rho_h, rho_s, tau1_h, &
                                                             tau1_s, tau_h, tau_s, weight
       REAL(KIND=dp), DIMENSION(:, :, :), POINTER         :: vxc_h, vxc_s
@@ -548,6 +563,8 @@ CONTAINS
       tau_f = (needs%tau .OR. needs%tau_spin)
       IF (tau_f) THEN
          CPABORT("Tau functionals not implemented for GAPW 2nd derivatives")
+      ELSE
+         rtau = 0.0_dp
       END IF
 
       IF (do_tddft) THEN
@@ -619,11 +636,15 @@ CONTAINS
          IF (gradient_functional) THEN
             ALLOCATE (drho_h(1:4, 1:na, 1:nr, 1:nspins), drho1_h(1:4, 1:na, 1:nr, 1:nspins), &
                       drho_s(1:4, 1:na, 1:nr, 1:nspins), drho1_s(1:4, 1:na, 1:nr, 1:nspins))
-
             ALLOCATE (vxg_h(1:3, 1:na, 1:nr, 1:nspins), vxg_s(1:3, 1:na, 1:nr, 1:nspins))
-            vxg_h = 0.0_dp
-            vxg_s = 0.0_dp
+         ELSE
+            ALLOCATE (drho_h(1, 1, 1, 1), drho1_h(1, 1, 1, 1), &
+                      drho_s(1, 1, 1, 1), drho1_s(1, 1, 1, 1))
+            ALLOCATE (vxg_h(1, 1, 1, 1), vxg_s(1, 1, 1, 1))
+            rrho = 0.0_dp
          END IF
+         vxg_h = 0.0_dp
+         vxg_s = 0.0_dp
 
          ! parallelization
          local_loop_limit = get_limit(natom, para_env%num_pe, para_env%mepos)
@@ -669,10 +690,22 @@ CONTAINS
                                      ir, r1_h, r1_s, rho1_h, rho1_s, dr1_h, dr1_s, r1_h_d, r1_s_d, &
                                      drho1_h, drho1_s)
 
-               CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, drho_h, tau_h, na, ir)
-               CALL fill_rho_set(rho1_set_h, lsd, nspins, needs, rho1_h, drho1_h, tau1_h, na, ir)
-               CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, drho_s, tau_s, na, ir)
-               CALL fill_rho_set(rho1_set_s, lsd, nspins, needs, rho1_s, drho1_s, tau1_s, na, ir)
+               IF (tau_f) THEN
+                  CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, drho_h, tau_h, na, ir)
+                  CALL fill_rho_set(rho1_set_h, lsd, nspins, needs, rho1_h, drho1_h, tau1_h, na, ir)
+                  CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, drho_s, tau_s, na, ir)
+                  CALL fill_rho_set(rho1_set_s, lsd, nspins, needs, rho1_s, drho1_s, tau1_s, na, ir)
+               ELSE IF (gradient_functional) THEN
+                  CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, drho_h, rtau, na, ir)
+                  CALL fill_rho_set(rho1_set_h, lsd, nspins, needs, rho1_h, drho1_h, rtau, na, ir)
+                  CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, drho_s, rtau, na, ir)
+                  CALL fill_rho_set(rho1_set_s, lsd, nspins, needs, rho1_s, drho1_s, rtau, na, ir)
+               ELSE
+                  CALL fill_rho_set(rho_set_h, lsd, nspins, needs, rho_h, rrho, rtau, na, ir)
+                  CALL fill_rho_set(rho1_set_h, lsd, nspins, needs, rho1_h, rrho, rtau, na, ir)
+                  CALL fill_rho_set(rho_set_s, lsd, nspins, needs, rho_s, rrho, rtau, na, ir)
+                  CALL fill_rho_set(rho1_set_s, lsd, nspins, needs, rho1_s, rrho, rtau, na, ir)
+               END IF
 
             END DO
 
@@ -700,10 +733,8 @@ CONTAINS
          ! some cleanup
          NULLIFY (weight)
          DEALLOCATE (rho_h, rho_s, rho1_h, rho1_s, vxc_h, vxc_s)
-         IF (gradient_functional) THEN
-            DEALLOCATE (drho_h, drho_s, vxg_h, vxg_s)
-            DEALLOCATE (drho1_h, drho1_s)
-         END IF
+         DEALLOCATE (drho_h, drho_s, vxg_h, vxg_s)
+         DEALLOCATE (drho1_h, drho1_s)
 
          CALL xc_dset_release(deriv_set)
          CALL xc_rho_set_release(rho_set_h)

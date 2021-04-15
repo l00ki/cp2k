@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -128,6 +128,8 @@ CONTAINS
       CPASSERT(ASSOCIATED(xc_section))
       CPASSERT(.NOT. ASSOCIATED(vxc_rho))
       CPASSERT(.NOT. ASSOCIATED(vxc_tau))
+
+      virial_xc = 0.0_dp
 
       CALL section_vals_val_get(xc_section, "FUNCTIONAL_ROUTINE", &
                                 i_val=f_routine)
@@ -1116,6 +1118,7 @@ CONTAINS
       END IF
 
       use_virial = compute_virial
+      virial_xc = 0.0_dp
 
       bo = rho_r(1)%pw%pw_grid%bounds_local
       npoints = (bo(2, 1) - bo(1, 1) + 1)*(bo(2, 2) - bo(1, 2) + 1)*(bo(2, 3) - bo(1, 3) + 1)

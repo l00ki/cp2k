@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.5.0
+    rev: v3.4.0
     hooks:
     -   id: check-yaml
     -   id: check-added-large-files
@@ -20,38 +20,13 @@ repos:
             tools/build_utils/fypp|
           )$
 -   repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: master
+    rev: v0.26.0
     hooks:
     -   id: markdownlint
 -   repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.7.1.1
     hooks:
     -   id: shellcheck
-        exclude: >-
-          (?x)^(
-            benchmarks/QS_single_node/do_benchmark|
-            tools/autotools/autogen.sh|
-            tools/autotune_grid/(generate_makefile|get_results).sh|
-            tools/build_utils/get_revision_number|
-            tools/conventions/test_conventions.sh|
-            tools/doxify/(generate_doxygen.sh|doxify.sh)|
-            tools/formatting/test_formatting.sh|
-            tools/hfx_tools/(contraction/create|block_contraction/generate_hfx_contract_block)|
-            tools/toolchain/(
-                install_cp2k_toolchain.sh|
-                scripts/(common_vars|get_openblas_arch|setup_buildtools|signal_trap|tool_kit|generate_arch_files).sh|
-                scripts/install_(
-                    acml|sirius|libsmm|libxc|mkl|cmake|openmpi|spfft|hdf5|intelmpi|
-                    mathlibs|mpich|pexsi|ptscotch|superlu|cosma|quip|reflapack|
-                    libxsmm|libint|elpa|fftw|libvdwxc|openblas|plumed|valgrind|gcc|
-                    gsl|spglib|scalapack
-                    ).sh
-                )|
-            tools/manual/(update_manual|xml2htm)|
-            tools/plan_mpi_omp/plan.sh|
-            tools/precommit/deploy.sh|
-            tools/regtesting/do_regtest|
-          )$
 -   repo: local
     hooks:
     -   id: doxify
@@ -69,9 +44,9 @@ repos:
             src/base/base_uses.f90|
             src/common/util.F|
           )$
-    -   id: analyze_src
-        name: Run analyze_src
-        entry: ./tools/conventions/analyze_src.py --fail --suppressions ./tools/conventions/conventions.supp
+    -   id: check_file_properties
+        name: Run check_file_properties.py
+        entry: ./tools/precommit/check_file_properties.py
         language: script
         files: '^src/.*\.(F|fypp|c|cu|cpp|h|hpp)$'
     -   id: regen_data
@@ -93,3 +68,11 @@ repos:
             tools/manual/collapsibleList.js|
             tools/manual/toggle_folding.js|
           )$
+    -   id: shfmt
+        name: 'Reformat shell scripts with shfmt'
+        minimum_pre_commit_version: 2.4.0
+        language: golang
+        additional_dependencies: [mvdan.cc/sh/v3/cmd/shfmt@v3.2.2]
+        entry: shfmt
+        args: ['-i=2', '-ci', '-sr', '-w']
+        files: '\.sh$'

@@ -15,18 +15,16 @@
 
     &POISSON
       PERIODIC NONE
-      PSOLVER MT 
+      PSOLVER MT
     &END
 
     &XC
-      &XC_FUNCTIONAL 
-            &LIBXC 
-               FUNCTIONAL GGA_C_PBE 
-            &END LIBXC 
-            &LIBXC 
-               FUNCTIONAL GGA_X_PBE 
-               SCALE 0.75 
-            &END LIBXC
+      &XC_FUNCTIONAL
+            &GGA_C_PBE
+            &END GGA_C_PBE
+            &GGA_X_PBE
+               SCALE 0.75
+            &END GGA_X_PBE
       &END XC_FUNCTIONAL
       &HF
          FRACTION 0.25
@@ -47,14 +45,12 @@
       N_EXCITED 15
 
       &KERNEL
-         &XC_FUNCTIONAL 
-            &LIBXC 
-               FUNCTIONAL GGA_C_PBE 
-            &END LIBXC 
-            &LIBXC 
-               FUNCTIONAL GGA_X_PBE 
-               SCALE 0.75 
-            &END LIBXC
+         &XC_FUNCTIONAL
+            &GGA_C_PBE
+            &END GGA_C_PBE
+            &GGA_X_PBE
+               SCALE 0.75
+            &END GGA_X_PBE
          &END XC_FUNCTIONAL
          &EXACT_EXCHANGE
             FRACTION 0.25

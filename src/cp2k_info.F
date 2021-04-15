@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -47,7 +47,7 @@ MODULE cp2k_info
    CHARACTER(LEN=*), PARAMETER :: compile_revision = "unknown"
 #endif
 
-   CHARACTER(LEN=*), PARAMETER :: version_nr = "8.0"
+   CHARACTER(LEN=*), PARAMETER :: version_nr = "9.0"
    CHARACTER(LEN=*), PARAMETER :: cp2k_year = "2020"
    CHARACTER(LEN=*), PARAMETER :: cp2k_version = "CP2K version "//TRIM(version_nr)
    CHARACTER(LEN=*), PARAMETER :: cp2k_home = "https://www.cp2k.org/"
@@ -220,9 +220,6 @@ CONTAINS
 #endif
 #if defined(__DBCSR_ACC)
       flags = TRIM(flags)//" dbcsr_acc"
-#endif
-#if defined(__HAS_LIBGRID)
-      flags = TRIM(flags)//" libgrid"
 #endif
 #if defined(__MAX_CONTR)
       CALL integer_to_string(__MAX_CONTR, tmp_str)

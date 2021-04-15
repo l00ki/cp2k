@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -335,7 +335,7 @@ CONTAINS
 
       INTEGER                                            :: dest, tag
 
-! Only rank-0 of worker group sends it's report
+! Only rank-0 of worker group sends its report
 
       IF (swarm_mpi%worker%source /= swarm_mpi%worker%mepos) RETURN
 

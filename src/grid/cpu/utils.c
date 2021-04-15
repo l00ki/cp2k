@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -14,6 +14,10 @@
 
 #ifdef __LIBXSMM
 #include <libxsmm.h>
+#endif
+
+#ifdef __MKL
+#include <mkl.h>
 #endif
 
 #include "../common/grid_common.h"
@@ -199,7 +203,8 @@ void extract_sub_grid(const int *lower_corner, const int *upper_corner,
 #ifdef __LIBXSMM
       LIBXSMM_PRAGMA_SIMD
 #else
-#pragma GCC ivdep
+      //#pragma omp simd linear(dst, src) simdlen(8)
+      GRID_PRAGMA_SIMD((dst, src), 8)
 #endif
       for (int x = 0; x < sizex; x++) {
         dst[x] = src[x];
@@ -219,25 +224,6 @@ void add_sub_grid(const int *lower_corner, const int *upper_corner,
     position1[1] = position[1];
     position1[2] = position[2];
   }
-  for (int d = 0; d < 3; d++) {
-    if ((lower_corner[d] < grid->window_shift[d]) || (lower_corner[d] < 0) ||
-        (lower_corner[d] >= upper_corner[d]) || (upper_corner[d] <= 0) ||
-        (upper_corner[d] - lower_corner[d] > subgrid->size[d]) ||
-        (grid == NULL) || (subgrid == NULL)) {
-      printf("Error : invalid parameters. Values of the given parameters along "
-             "the first wrong dimension\n");
-      printf("      : lorner corner  [%d] = %d\n", d, lower_corner[d]);
-      printf("      : upper  corner  [%d] = %d\n", d, upper_corner[d]);
-      printf("      : diff           [%d] = %d\n", d,
-             upper_corner[d] - lower_corner[d]);
-      printf("      : src grid size  [%d] = %d\n", d, subgrid->size[d]);
-      printf("      : dst grid size  [%d] = %d\n", d, grid->size[d]);
-      printf("      : window dst grid size  [%d] = %d\n", d,
-             grid->window_size[d]);
-      printf("      : window dst shift  [%d] = %d\n", d, grid->window_shift[d]);
-      abort();
-    }
-  }
 
   const int sizex = upper_corner[2] - lower_corner[2];
   const int sizey = upper_corner[1] - lower_corner[1];
@@ -253,7 +239,8 @@ void add_sub_grid(const int *lower_corner, const int *upper_corner,
 #ifdef __LIBXSMM
       LIBXSMM_PRAGMA_SIMD
 #else
-#pragma GCC ivdep
+      //#pragma omp simd linear(dst, src) simdlen(8)
+      GRID_PRAGMA_SIMD((dst, src), 8)
 #endif
       for (int x = 0; x < sizex; x++) {
         dst[x] += src[x];
@@ -263,7 +250,8 @@ void add_sub_grid(const int *lower_corner, const int *upper_corner,
       src += subgrid->ld_;
     }
 
-#pragma GCC ivdep
+    //#pragma omp simd linear(dst, src) simdlen(8)
+    GRID_PRAGMA_SIMD((dst, src), 8)
     for (int x = 0; x < sizex; x++) {
       dst[x] += src[x];
     }
@@ -364,16 +352,13 @@ int compute_cube_properties(const bool ortho, const double radius,
   return cmax;
 }
 
-void return_cube_position(const int *const grid_size, const int *const lb_grid,
+void return_cube_position(const int *const lb_grid,
                           const int *const cube_center,
                           const int *const lower_boundaries_cube,
                           const int *const period, int *const position) {
   for (int i = 0; i < 3; i++)
     position[i] = modulo(cube_center[i] - lb_grid[i] + lower_boundaries_cube[i],
                          period[i]);
-
-  assert(!(position[0] >= grid_size[0]) || (position[1] >= grid_size[1]) ||
-         (position[2] >= grid_size[2]));
 }
 
 void verify_orthogonality(const double dh[3][3], bool orthogonal[3]) {
@@ -402,30 +387,34 @@ void verify_orthogonality(const double dh[3][3], bool orthogonal[3]) {
 }
 
 #ifndef __MKL
+extern void dger_(const int *M, const int *N, const double *alpha,
+                  const double *X, const int *incX, const double *Y,
+                  const int *incY, double *A, const int *lda);
+extern void dgemv_(const char *Trans, const int *M, const int *N,
+                   const double *alpha, const double *A, const int *lda,
+                   const double *X, const int *incX, const double *beta,
+                   double *Y, const int *incY);
+
 void cblas_daxpy(const int N, const double alpha, const double *X,
                  const int incX, double *Y, const int incY) {
   if ((incX == 1) && (incY == 1)) {
-#pragma GCC ivdep
     for (int i = 0; i < N; i++)
       Y[i] += alpha * X[i];
     return;
   }
 
   if (incX == 1) {
-#pragma GCC ivdep
     for (int i = 0; i < N; i++)
       Y[i + incY] += alpha * X[i];
     return;
   }
 
   if (incY == 1) {
-#pragma GCC ivdep
     for (int i = 0; i < N; i++)
       Y[i] += alpha * X[i + incX];
     return;
   }
 
-#pragma GCC ivdep
   for (int i = 0; i < N; i++)
     Y[i + incY] += alpha * X[i + incX];
   return;
@@ -436,7 +425,6 @@ double cblas_ddot(const int N, const double *X, const int incX, const double *Y,
   if ((incX == incY) && (incY == 1)) {
     double res = 0.0;
 
-#pragma GCC ivdep
     for (int i = 0; i < N; i++) {
       res += X[i] * Y[i];
     }
@@ -446,7 +434,6 @@ double cblas_ddot(const int N, const double *X, const int incX, const double *Y,
   if (incX == 1) {
     double res = 0.0;
 
-#pragma GCC ivdep
     for (int i = 0; i < N; i++) {
       res += X[i] * Y[i + incY];
     }
@@ -456,7 +443,6 @@ double cblas_ddot(const int N, const double *X, const int incX, const double *Y,
   if (incY == 1) {
     double res = 0.0;
 
-#pragma GCC ivdep
     for (int i = 0; i < N; i++) {
       res += X[i + incX] * Y[i];
     }
@@ -465,7 +451,6 @@ double cblas_ddot(const int N, const double *X, const int incX, const double *Y,
 
   double res = 0.0;
 
-#pragma GCC ivdep
   for (int i = 0; i < N; i++) {
     res += X[i + incX] * Y[i + incY];
   }
@@ -476,39 +461,9 @@ void cblas_dger(const CBLAS_LAYOUT Layout, const int M, const int N,
                 const double alpha, const double *X, const int incX,
                 const double *Y, const int incY, double *A, const int lda) {
   if (Layout == CblasRowMajor) {
-    for (int i = 0; i < M; i++) {
-      const double x = alpha * X[i + incX];
-      if (incY == 1) {
-        double *restrict dst = &A[i * lda];
-        const double *restrict y = Y;
-        for (int k = 0; k < N; k++) {
-          dst[k] += y[k] * x;
-        }
-      } else {
-        double *restrict dst = &A[i * lda];
-        const double *restrict y = Y;
-        for (int k = 0; k < N; k++) {
-          dst[k] += y[k + incY] * x;
-        }
-      }
-    }
+    dger_(&N, &M, &alpha, Y, &incY, X, &incX, A, &lda);
   } else {
-    for (int j = 0; j < N; j++) {
-      const double y = alpha * Y[j + incY];
-      if (incX == 1) {
-        double *restrict dst = &A[j * lda];
-        const double *restrict x = X;
-        for (int k = 0; k < M; k++) {
-          dst[k] += x[k] * y;
-        }
-      } else {
-        double *restrict dst = &A[j * lda];
-        const double *restrict x = X;
-        for (int k = 0; k < M; k++) {
-          dst[k] += x[k + incX] * y;
-        }
-      }
-    }
+    dger_(&N, &M, &alpha, X, &incX, Y, &incY, A, &lda);
   }
 }
 
@@ -518,75 +473,20 @@ void cblas_dgemv(const CBLAS_LAYOUT order, const CBLAS_TRANSPOSE TransA,
                  const int M, const int N, const double alpha, const double *A,
                  const int lda, const double *X, const int incX,
                  const double beta, double *Y, const int incY) {
-  int i, j;
-  int lenX, lenY;
-#define OFFSET(N, incX) ((incX) > 0 ? 0 : ((N)-1) * (-(incX)))
 
-  const int Trans = (TransA != CblasConjTrans) ? TransA : CblasTrans;
-
-  if (M == 0 || N == 0)
-    return;
-
-  if (alpha == 0.0 && beta == 1.0)
-    return;
-
-  if (Trans == CblasNoTrans) {
-    lenX = N;
-    lenY = M;
+  if (order == CblasColMajor) {
+    if (TransA == CblasTrans)
+      dgemv_("T", &M, &N, &alpha, A, &lda, X, &incX, &beta, Y, &incY);
+    else {
+      dgemv_("N", &M, &N, &alpha, A, &lda, X, &incX, &beta, Y, &incY);
+    }
   } else {
-    lenX = M;
-    lenY = N;
-  }
-
-  /* form  y := beta*y */
-  if (beta == 0.0) {
-    int iy = OFFSET(lenY, incY);
-    for (i = 0; i < lenY; i++) {
-      Y[iy] = 0.0;
-      iy += incY;
-    }
-  } else if (beta != 1.0) {
-    int iy = OFFSET(lenY, incY);
-    for (i = 0; i < lenY; i++) {
-      Y[iy] *= beta;
-      iy += incY;
+    if (TransA == CblasTrans)
+      dgemv_("N", &N, &M, &alpha, A, &lda, X, &incX, &beta, Y, &incY);
+    else {
+      dgemv_("T", &N, &M, &alpha, A, &lda, X, &incX, &beta, Y, &incY);
     }
   }
-
-  if (alpha == 0.0)
-    return;
-
-  if ((order == CblasRowMajor && Trans == CblasNoTrans) ||
-      (order == CblasColMajor && Trans == CblasTrans)) {
-    /* form  y := alpha*A*x + y */
-    int iy = OFFSET(lenY, incY);
-    for (i = 0; i < lenY; i++) {
-      double temp = 0.0;
-      int ix = OFFSET(lenX, incX);
-      for (j = 0; j < lenX; j++) {
-        temp += X[ix] * A[lda * i + j];
-        ix += incX;
-      }
-      Y[iy] += alpha * temp;
-      iy += incY;
-    }
-  } else if ((order == CblasRowMajor && Trans == CblasTrans) ||
-             (order == CblasColMajor && Trans == CblasNoTrans)) {
-    /* form  y := alpha*A'*x + y */
-    int ix = OFFSET(lenX, incX);
-    for (j = 0; j < lenX; j++) {
-      const double temp = alpha * X[ix];
-      if (temp != 0.0) {
-        int iy = OFFSET(lenY, incY);
-        for (i = 0; i < lenY; i++) {
-          Y[iy] += temp * A[lda * j + i];
-          iy += incY;
-        }
-      }
-      ix += incX;
-    }
-  }
-#undef OFFSET
 }
 #endif
 
@@ -604,12 +504,12 @@ void compute_interval(const int *const map, const int full_size, const int size,
 
     *upper_corner = compute_next_boundaries(x1, *x, full_size, cube_size);
 
-    {
-      Interval tz = create_interval(*lower_corner, *upper_corner);
-      Interval res = intersection_interval(tz, window);
-      *lower_corner = res.xmin;
-      *upper_corner = res.xmax;
-    }
+    /* { */
+    /*   Interval tz = create_interval(*lower_corner, *upper_corner); */
+    /*   Interval res = intersection_interval(tz, window); */
+    /*   *lower_corner = res.xmin; */
+    /*   *upper_corner = res.xmax; */
+    /* } */
   } else {
     *lower_corner = x1;
     *upper_corner = x1 + 1;
@@ -620,7 +520,7 @@ void compute_interval(const int *const map, const int full_size, const int size,
     // window of interest and is also equal to the previous point + 1. The last
     // check is pointless in practice.
 
-    for (int i = *x + 1; (i < size) && (*upper_corner == map[i]) &&
+    for (int i = *x + 1; (i < cube_size) && (*upper_corner == map[i]) &&
                          is_point_in_interval(map[i], window);
          i++) {
       (*upper_corner)++;

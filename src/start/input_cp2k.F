@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -550,7 +550,7 @@ CONTAINS
       CALL keyword_release(keyword)
       CALL keyword_create(keyword, __LOCATION__, name="RESTART_CONSTRAINT", &
                           description="Restarts constraint section. It's necessary when doing restraint"// &
-                          " calculation to have a perfect energy conservation. For constraints only it's"// &
+                          " calculation to have a perfect energy conservation. For constraints only its"// &
                           " use is optional.", &
                           type_of_var=logical_t, lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(section, keyword)

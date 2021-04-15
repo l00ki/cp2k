@@ -17,14 +17,14 @@ H2O-32-ot_solver.inp                                   88      1e-07           5
 #as well as the use of RI metrics for screening
 Ne-pbc-truncated.inp                                   88      1e-08           890.773794
 Ne-pbc-truncated-tc_metric.inp                         88      1e-06           890.780820
-Ne-pbc-shortrange.inp                                  88      1e-08           890.494623
-Ne-pbc-shortrange-sr_metric.inp                        88      1e-08           890.495800
-Ne-pbc-shortrange-ovlp_metric.inp                      88      1e-08           890.501870
+Ne-pbc-shortrange.inp                                  88      1e-08           890.608044
+Ne-pbc-shortrange-sr_metric.inp                        88      1e-08           890.609224
+Ne-pbc-shortrange-ovlp_metric.inp                      88      1e-08           890.615305
 #Checking the use of pseudo-potential and ADMM
 SiH4-PBE0-admm-pseudo.inp                              88      1e-08           146.185955
 #Checking open-shell calculation with non-singlet ground state
 CH3-PBE-uks.inp                                        88      1e-06           265.243216 
 #Checking singlet, triplet, spin-conserving, spin-flip and SOC
 Ar-HF-2p-SOC-rcs.inp                                   88      1e-08           261.349222
-Ar-HF-2p-SOC-os.inp                                    88      1e-08           261.347682
+Ar-HF-2p-SOC-os.inp                                    88      1e-08           261.347679
 #EOF

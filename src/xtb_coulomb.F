@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -83,7 +83,7 @@ MODULE xtb_coulomb
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'xtb_coulomb'
 
-   PUBLIC :: build_xtb_coulomb, gamma_rab_sr
+   PUBLIC :: build_xtb_coulomb, gamma_rab_sr, xtb_dsint_list
 
 CONTAINS
 

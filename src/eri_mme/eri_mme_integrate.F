@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -73,7 +73,7 @@ CONTAINS
       INTEGER, INTENT(IN)                                :: la_min, la_max, lb_min, lb_max
       REAL(KIND=dp), INTENT(IN)                          :: zeta, zetb
       REAL(KIND=dp), DIMENSION(3), INTENT(IN)            :: rab
-      REAL(KIND=dp), DIMENSION(:, :), INTENT(OUT)        :: hab
+      REAL(KIND=dp), DIMENSION(:, :), INTENT(INOUT)      :: hab
       INTEGER, INTENT(IN)                                :: o1, o2
       INTEGER, INTENT(INOUT), OPTIONAL                   :: G_count, R_count
       LOGICAL, INTENT(IN), OPTIONAL                      :: normalize

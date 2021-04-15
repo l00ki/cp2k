@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -41,7 +41,6 @@ enum grid_backend {
   GRID_BACKEND_REF = 11,
   GRID_BACKEND_CPU = 12,
   GRID_BACKEND_GPU = 13,
-  GRID_BACKEND_HYBRID = 14
 };
 
 #endif

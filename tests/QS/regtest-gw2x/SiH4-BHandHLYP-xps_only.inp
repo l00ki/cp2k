@@ -20,9 +20,8 @@
 
     &XC
       &XC_FUNCTIONAL
-         &LIBXC
-            FUNCTIONAL HYB_GGA_XC_BHandHLYP
-         &END LIBXC
+         &HYB_GGA_XC_BHandHLYP
+         &END HYB_GGA_XC_BHandHLYP
       &END XC_FUNCTIONAL
       &HF
          FRACTION 0.5
@@ -43,7 +42,7 @@
       &GW2X
          XPS_ONLY
       &END GW2X
-      
+
       &KERNEL
          ! No need for xc kernel as we only care about XPS
          &XC_FUNCTIONAL NONE

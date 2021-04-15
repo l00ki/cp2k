@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -8,11 +8,11 @@
 #ifndef TENSOR_LOCAL_H
 #define TENSOR_LOCAL_H
 
-#include <malloc.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 typedef struct tensor_ {
   int dim_;
@@ -115,7 +115,7 @@ static inline tensor *create_tensor(const int dim, const int *sizes) {
     abort();
 
   initialize_tensor(a, dim, sizes);
-  a->data = (double *)memalign(64, sizeof(double) * a->alloc_size_);
+  a->data = (double *)malloc(sizeof(double) * a->alloc_size_);
   if (a->data == NULL)
     abort();
   a->old_alloc_size_ = a->alloc_size_;
@@ -255,7 +255,4 @@ extern void alloc_tensor(tensor *t);
   a.data[(i)*a.offsets[0] + (j)*a.offsets[1] + (k)*a.ld_ + (l)]
 #define idx3(a, i, j, k) a.data[(i)*a.offsets[0] + (j)*a.ld_ + (k)]
 #define idx2(a, i, j) a.data[(i)*a.ld_ + (j)]
-
-extern void compute_block_dimensions(const int *const grid_size,
-                                     int *const blockDim);
 #endif

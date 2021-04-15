@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -63,7 +63,7 @@ CONTAINS
          END DO
       END DO
       ! pint_env%mass is REAL, DIMENSION(NDIM) which means that each atom
-      ! has it's mass defined three times - here we hope that all three
+      ! has its mass defined three times - here we hope that all three
       ! values are equal
       tmass = tmass/3.0_dp
       com_r(:) = com_r(:)/tmass

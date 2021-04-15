@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------------*/
 /*  CP2K: A general program to perform molecular dynamics simulations         */
-/*  Copyright 2000-2020 CP2K developers group <https://cp2k.org>              */
+/*  Copyright 2000-2021 CP2K developers group <https://cp2k.org>              */
 /*                                                                            */
 /*  SPDX-License-Identifier: GPL-2.0-or-later                                 */
 /*----------------------------------------------------------------------------*/
@@ -208,8 +208,8 @@ void grid_fill_pol_dgemm(const bool transpose, const double dr,
       double *__restrict__ poly = &idx2(pol, 1, 0);
       double *__restrict__ src1 = &idx2(pol, 0, 0);
       double *__restrict__ dst = &idx2(pol, 2, 0);
-//#pragma omp simd
-#pragma GCC ivdep
+      //#pragma omp simd linear(dst, src1, poly) simdlen(8)
+      GRID_PRAGMA_SIMD((dst, src1, poly), 8)
       for (int ig = 0; ig < (xmax - xmin + 1 + pol_offset); ig++)
         dst[ig] = src1[ig] * poly[ig] * poly[ig];
     }
@@ -218,8 +218,8 @@ void grid_fill_pol_dgemm(const bool transpose, const double dr,
       const double *__restrict__ poly = &idx2(pol, 1, 0);
       const double *__restrict__ src1 = &idx2(pol, icoef - 1, 0);
       double *__restrict__ dst = &idx2(pol, icoef, 0);
-//#pragma omp simd
-#pragma GCC ivdep
+      //#pragma omp simd linear(dst, src1, poly) simdlen(8)
+      GRID_PRAGMA_SIMD((dst, src1, poly), 8)
       for (int ig = 0; ig < (xmax - xmin + 1 + pol_offset); ig++) {
         dst[ig] = src1[ig] * poly[ig];
       }
@@ -229,7 +229,8 @@ void grid_fill_pol_dgemm(const bool transpose, const double dr,
     if (lp > 0) {
       double *__restrict__ dst = &idx2(pol, 1, 0);
       const double *__restrict__ src = &idx2(pol, 0, 0);
-#pragma GCC ivdep
+      //#pragma omp simd linear(dst, src) simdlen(8)
+      GRID_PRAGMA_SIMD((dst, src), 8)
       for (int ig = 0; ig < (xmax - xmin + 1 + pol_offset); ig++) {
         dst[ig] *= src[ig];
       }
@@ -245,7 +246,7 @@ void apply_sphere_cutoff_ortho(struct collocation_integration_ *const handler,
   int **map = handler->map;
   map[1] = map[0] + 2 * cmax + 1;
   map[2] = map[1] + 2 * cmax + 1;
-  memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
+  // memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
 
   for (int i = 0; i < 3; i++) {
     for (int ig = 0; ig < handler->cube.size[i]; ig++) {
@@ -306,7 +307,8 @@ void apply_sphere_cutoff_ortho(struct collocation_integration_ *const handler,
                                            position1[1], position1[2]);
 
               const int sizex = upper_corner[2] - lower_corner[2];
-#pragma GCC ivdep
+              //#pragma omp simd linear(dst, src) simdlen(8)
+              GRID_PRAGMA_SIMD((dst, src), 8)
               for (int x = 0; x < sizex; x++) {
                 dst[x] += src[x];
               }
@@ -336,7 +338,7 @@ void apply_spherical_cutoff_generic(
   int **map = handler->map;
   map[1] = map[0] + 2 * cmax + 1;
   map[2] = map[1] + 2 * cmax + 1;
-  memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
+  // memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
 
   for (int i = 0; i < 3; i++) {
     for (int ig = 0; ig < handler->cube.size[i]; ig++) {
@@ -427,7 +429,8 @@ void apply_spherical_cutoff_generic(
               &idx3(handler->cube, position1[0], position1[1], position1[2]);
 
           const int sizex = upper_corner[2] - lower_corner[2];
-#pragma GCC ivdep
+          //#pragma omp simd linear(dst, src) simdlen(8)
+          GRID_PRAGMA_SIMD((dst, src), 8)
           for (int x = 0; x < sizex; x++) {
             dst[x] += src[x];
           }
@@ -463,7 +466,8 @@ void collocate_l0(double *scratch, const double alpha, const bool orthogonal_xy,
     for (int y = 0; y < cube->size[1]; y++) {
       const double *__restrict src = &idx2(exp_xy[0], y, 0);
       double *__restrict dst = &scratch[y * cube->ld_];
-#pragma GCC ivdep
+      //#pragma omp simd linear(dst, src) simdlen(8)
+      GRID_PRAGMA_SIMD((dst, src), 8)
       for (int x = 0; x < cube->size[2]; x++) {
         dst[x] *= src[x];
       }
@@ -476,8 +480,8 @@ void collocate_l0(double *scratch, const double alpha, const bool orthogonal_xy,
 
 /* compute the following operation (variant) it is a tensor contraction
 
-   V_{kji} = \sum_{\alpha\beta\gamma} C_{\alpha\gamma\beta} T_{2,\alpha,i}
-   T_{1,\beta,j} T_{0,\gamma,k}
+                                 V_{kji} = \sum_{\alpha\beta\gamma}
+   C_{\alpha\gamma\beta} T_{2,\alpha,i} T_{1,\beta,j} T_{0,\gamma,k}
 
 */
 void tensor_reduction_for_collocate_integrate(
@@ -606,17 +610,33 @@ void tensor_reduction_for_collocate_integrate(
     }
   }
 
+  if (Exp == NULL)
+    return;
+
+  if (Exp && (!orthogonal[0] && !orthogonal[1])) {
+    tensor exp_yz;
+    tensor exp_xz;
+    initialize_tensor_2(&exp_xz, Exp->size[1], Exp->size[2]);
+    initialize_tensor_2(&exp_yz, Exp->size[1], Exp->size[2]);
+    exp_xz.data = &idx3(Exp[0], 0, 0, 0);
+    exp_yz.data = &idx3(Exp[0], 1, 0, 0);
+    apply_non_orthorombic_corrections_xz_yz_blocked(&exp_xz, &exp_yz, cube);
+    return;
+  }
+
   if (Exp && (!orthogonal[0] || !orthogonal[1])) {
-    tensor exp_xy;
-    initialize_tensor_2(&exp_xy, Exp->size[1], Exp->size[2]);
     if (!orthogonal[0]) {
-      exp_xy.data = &idx3(Exp[0], 0, 0, 0);
-      apply_non_orthorombic_corrections_xz_blocked(&exp_xy, cube);
+      tensor exp_xz;
+      initialize_tensor_2(&exp_xz, Exp->size[1], Exp->size[2]);
+      exp_xz.data = &idx3(Exp[0], 0, 0, 0);
+      apply_non_orthorombic_corrections_xz_blocked(&exp_xz, cube);
     }
 
     if (!orthogonal[1]) {
-      exp_xy.data = &idx3(Exp[0], 1, 0, 0);
-      apply_non_orthorombic_corrections_yz_blocked(&exp_xy, cube);
+      tensor exp_yz;
+      initialize_tensor_2(&exp_yz, Exp->size[1], Exp->size[2]);
+      exp_yz.data = &idx3(Exp[0], 1, 0, 0);
+      apply_non_orthorombic_corrections_yz_blocked(&exp_yz, cube);
     }
   }
 
@@ -635,7 +655,7 @@ void apply_mapping_cubic(struct collocation_integration_ *handler,
   int **map = handler->map;
   map[1] = map[0] + 2 * cmax + 1;
   map[2] = map[1] + 2 * cmax + 1;
-  memset(map[0], 0xff, sizeof(int) * 3 * (2 * cmax + 1));
+
   for (int i = 0; i < 3; i++) {
     for (int ig = 0; ig < handler->cube.size[i]; ig++) {
       map[i][ig] = modulo(cube_center[i] + ig + lower_boundaries_cube[i] -
@@ -705,7 +725,6 @@ void apply_mapping_cubic(struct collocation_integration_ *handler,
 
             if (upper_corner[2] - lower_corner[2]) {
               const int position1[3] = {z, y, x};
-
               /* the function will internally take care of the local vx global
                * grid */
               add_sub_grid(
@@ -764,9 +783,10 @@ void grid_collocate(collocation_integration *const handler,
    */
 
   /* seting up the cube parameters */
-  int cmax = compute_cube_properties(use_ortho, radius, handler->dh,
-                                     handler->dh_inv, rp, &disr_radius, roffset,
-                                     cubecenter, lb_cube, ub_cube, cube_size);
+  int cmax = compute_cube_properties(
+      use_ortho, radius, (const double(*)[3])handler->dh,
+      (const double(*)[3])handler->dh_inv, rp, &disr_radius, roffset,
+      cubecenter, lb_cube, ub_cube, cube_size);
 
   /* initialize the multidimensional array containing the polynomials */
   initialize_tensor_3(&handler->pol, 3, handler->coef.size[0], cmax);
@@ -803,11 +823,12 @@ void grid_collocate(collocation_integration *const handler,
                         &idx3(handler->pol, 2, 0, 0)); /* i indice */
 
     calculate_non_orthorombic_corrections_tensor(
-        zetp, roffset, handler->dh, lb_cube, ub_cube, handler->orthogonal,
-        &handler->Exp);
+        zetp, roffset, (const double(*)[3])handler->dh, lb_cube, ub_cube,
+        handler->orthogonal, &handler->Exp);
 
     /* Use a slightly modified version of Ole code */
-    grid_transform_coef_xzy_to_ikj(handler->dh, &handler->coef);
+    grid_transform_coef_xzy_to_ikj((const double(*)[3])handler->dh,
+                                   &handler->coef);
   }
 
   /* allocate memory for the polynomial and the cube */
@@ -865,7 +886,7 @@ void grid_collocate_pgf_product_cpu_dgemm(
   const double prefactor = rscale * exp(-zeta * f * rab2);
   const double zeta_pair[2] = {zeta, zetb};
   initialize_basis_vectors(handler, dh, dh_inv);
-  verify_orthogonality(dh, handler->orthogonal);
+  verify_orthogonality((const double(*)[3])dh, handler->orthogonal);
 
   initialize_tensor_3(&(handler->grid), grid_local_size[2], grid_local_size[1],
                       grid_local_size[0]);
@@ -1065,7 +1086,7 @@ void compute_coefficients(grid_context *const ctx,
 void collocate_one_grid_level_dgemm(grid_context *const ctx,
                                     const int *const border_width,
                                     const int *const shift_local,
-                                    const int func, const int level,
+                                    const enum grid_func func, const int level,
                                     const grid_buffer *pab_blocks) {
   tensor *const grid = &ctx->grid[level];
   // Using default(shared) because with GCC 9 the behavior around const changed:
@@ -1095,7 +1116,8 @@ void collocate_one_grid_level_dgemm(grid_context *const ctx,
     initialize_tensor_2(&pab_prep, ctx->maxco, ctx->maxco);
     alloc_tensor(&pab_prep);
 
-    initialize_basis_vectors(handler, grid->dh, grid->dh_inv);
+    initialize_basis_vectors(handler, (const double(*)[3])grid->dh,
+                             (const double(*)[3])grid->dh_inv);
 
     /* setup the grid parameters, window parameters (if the grid is split), etc
      */
@@ -1210,19 +1232,14 @@ void collocate_one_grid_level_dgemm(grid_context *const ctx,
  * \brief Collocate all tasks of a given list onto given grids.
  *        See grid_task_list.h for details.
  ******************************************************************************/
-void grid_cpu_collocate_task_list(
-    grid_cpu_task_list *const ptr, const bool orthorhombic,
-    const enum grid_func func, const int nlevels,
-    const int npts_global[nlevels][3], const int npts_local[nlevels][3],
-    const int shift_local[nlevels][3], const int border_width[nlevels][3],
-    const double dh[nlevels][3][3], const double dh_inv[nlevels][3][3],
-    const grid_buffer *pab_blocks, double *grid[nlevels]) {
+void grid_cpu_collocate_task_list(grid_cpu_task_list *const ptr,
+                                  const enum grid_func func, const int nlevels,
+                                  const grid_buffer *pab_blocks,
+                                  double *grid[nlevels]) {
 
   grid_context *const ctx = (grid_context *const)ptr;
 
   assert(ctx->checksum == ctx_checksum);
-
-  ctx->orthorhombic = orthorhombic;
 
   const int max_threads = omp_get_max_threads();
 
@@ -1230,10 +1247,11 @@ void grid_cpu_collocate_task_list(
 
   //#pragma omp parallel for
   for (int level = 0; level < ctx->nlevels; level++) {
-    set_grid_parameters(&ctx->grid[level], orthorhombic, npts_global[level],
-                        npts_local[level], shift_local[level],
-                        border_width[level], dh[level], dh_inv[level],
-                        grid[level]);
+    const _layout *layout = &ctx->layouts[level];
+    set_grid_parameters(&ctx->grid[level], ctx->orthorhombic,
+                        layout->npts_global, layout->npts_local,
+                        layout->shift_local, layout->border_width, layout->dh,
+                        layout->dh_inv, grid[level]);
     memset(ctx->grid[level].data, 0,
            sizeof(double) * ctx->grid[level].alloc_size_);
   }
@@ -1255,8 +1273,10 @@ void grid_cpu_collocate_task_list(
   }
 
   for (int level = 0; level < ctx->nlevels; level++) {
-    collocate_one_grid_level_dgemm(ctx, border_width[level], shift_local[level],
-                                   func, level, pab_blocks);
+    const _layout *layout = &ctx->layouts[level];
+    collocate_one_grid_level_dgemm(ctx, layout->border_width,
+                                   layout->shift_local, func, level,
+                                   pab_blocks);
   }
 
   grid_free_scratch(ctx->scratch);

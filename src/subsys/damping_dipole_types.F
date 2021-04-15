@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -101,7 +101,7 @@ CONTAINS
 !> \param damping ...
 ! **************************************************************************************************
    SUBROUTINE init_damping(damping)
-      TYPE(damping_type)                                 :: damping
+      TYPE(damping_type), INTENT(INOUT)                  :: damping
 
       damping%itype = no_damping
       damping%order = 1

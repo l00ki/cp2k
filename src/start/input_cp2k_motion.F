@@ -1,6 +1,6 @@
 !--------------------------------------------------------------------------------------------------!
 !   CP2K: A general program to perform molecular dynamics simulations                              !
-!   Copyright 2000-2020 CP2K developers group <https://cp2k.org>                                   !
+!   Copyright 2000-2021 CP2K developers group <https://cp2k.org>                                   !
 !                                                                                                  !
 !   SPDX-License-Identifier: GPL-2.0-or-later                                                      !
 !--------------------------------------------------------------------------------------------------!
@@ -8,6 +8,7 @@
 ! **************************************************************************************************
 !> \par History
 !>      10.2005 split input_cp2k into smaller modules [fawzi]
+!>      01.2020 add keywords related to Space Groups [pcazade]
 !> \author teo & fawzi
 ! **************************************************************************************************
 MODULE input_cp2k_motion
@@ -773,6 +774,8 @@ CONTAINS
 !> \param description ...
 !> \param just_optimizers ...
 !> \param use_model_hessian ...
+!> \par History
+!>      01.2020 keywords related to Space Group Symmetry added [pcazade]
 !> \author teo
 ! **************************************************************************************************
    RECURSIVE SUBROUTINE create_geoopt_section(section, location, label, description, just_optimizers, use_model_hessian)
@@ -859,6 +862,57 @@ CONTAINS
       CALL keyword_create(keyword, __LOCATION__, name="step_start_val", &
                           description="The starting step value for the "//TRIM(label)//" module.", &
                           usage="step_start_val <integer>", default_i_val=0)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      ! collects keywords related to Space Group Symmetry
+      CALL keyword_create( &
+         keyword, __LOCATION__, name="KEEP_SPACE_GROUP", &
+         description="Detect space group of the system and preserve it during optimization. "// &
+         "The space group symmetry is applied to coordinates, forces, and the stress tensor. "// &
+         "It works for supercell. It does not affect/reduce computational cost. "// &
+         "Use EPS_SYMMETRY to adjust the detection threshold.", &
+         usage="KEEP_SPACE_GROUP .TRUE.", &
+         default_l_val=.FALSE., lone_keyword_l_val=.TRUE., repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      ! collects keywords related to precision for finding the space group
+      CALL keyword_create( &
+         keyword, __LOCATION__, name="EPS_SYMMETRY", &
+         description="Accuracy for space group determination. EPS_SYMMETRY is dimensionless. "// &
+       "Roughly speaking, two scaled (fractional) atomic positions v1, v2 are considered identical if |v1 - v2| < EPS_SYMMETRY. ", &
+         usage="EPS_SYMMETRY {REAL}", &
+         default_r_val=1.e-4_dp, repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      ! collects keywords related to reduction of symmetry due to an external field
+      CALL keyword_create( &
+         keyword, __LOCATION__, name="SYMM_REDUCTION", &
+         description="Direction of the external static electric field. "// &
+         "Some symmetry operations are not compatible with the direction of an electric field. "// &
+         "These operations are used when enforcing the space group.", &
+         usage="SYMM_REDUCTION  0.0 0.0 0.0", &
+         repeats=.FALSE., n_var=3, &
+         type_of_var=real_t, default_r_vals=(/0.0_dp, 0.0_dp, 0.0_dp/))
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      ! collects keywords related to ranges of atoms to symmetrize
+      CALL keyword_create( &
+         keyword, __LOCATION__, name="SYMM_EXCLUDE_RANGE", &
+         description="Range of atoms to exclude from space group symmetry. "// &
+         "These atoms are excluded from both identification and enforcement. "// &
+         "This keyword can be repeated.", &
+         repeats=.TRUE., usage="SYMM_EXCLUDE_RANGE {Int} {Int}", type_of_var=integer_t, n_var=2)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create( &
+         keyword, __LOCATION__, name="SPGR_PRINT_ATOMS", &
+         description="Print equivalent atoms list for each space group symmetry operation.", &
+         default_l_val=.FALSE., lone_keyword_l_val=.TRUE.)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
@@ -1761,7 +1815,7 @@ CONTAINS
                           " May lead to unphysical motions if constraint e.g. FIXED_ATOMS, is applied."// &
                           " RESTART_HELIUM section has to be .FALSE. when restarting the PIGLET job.", &
                           citations=(/Ceriotti2010/), &
-                          n_keywords=2, n_subsections=1, &
+                          n_keywords=3, n_subsections=1, &
                           repeats=.FALSE.)
       CALL create_rng_section(subsubsection)
       CALL section_add_subsection(subsection, subsubsection)
@@ -1779,6 +1833,13 @@ CONTAINS
                           n_var=1, default_r_val=0.5_dp)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
+      CALL keyword_create(keyword, __LOCATION__, name="THERMOSTAT_ENERGY", &
+                          description="Thermostat energy for conserved quantity. "// &
+                          "Only useful in restart files.", &
+                          usage="THERMOSTAT_ENERGY {real}", type_of_var=real_t, &
+                          n_var=1, default_r_val=0.0_dp)
+      CALL section_add_keyword(subsection, keyword)
+      CALL keyword_release(keyword)
       CALL section_add_subsection(section, subsection)
       CALL section_release(subsection)
 
@@ -1786,7 +1847,7 @@ CONTAINS
                           description="Controls the PI Generalized Langevin Equation thermostat."// &
                           " Needs the exact harmonic integrator", &
                           citations=(/Ceriotti2012/), &
-                          n_keywords=3, n_subsections=2, &
+                          n_keywords=4, n_subsections=2, &
                           repeats=.FALSE.)
       CALL create_rng_section(subsubsection)
       CALL section_add_subsection(subsection, subsubsection)
@@ -1822,6 +1883,13 @@ CONTAINS
                           enum_i_vals=(/matrix_init_cholesky, matrix_init_diagonal/))
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
+      CALL keyword_create(keyword, __LOCATION__, name="THERMOSTAT_ENERGY", &
+                          description="Thermostat energy for conserved quantity. "// &
+                          "Only useful in restart files.", &
+                          usage="THERMOSTAT_ENERGY {real}", type_of_var=real_t, &
+                          n_var=1, default_r_val=0.0_dp)
+      CALL section_add_keyword(subsection, keyword)
+      CALL keyword_release(keyword)
       CALL section_add_subsection(section, subsection)
       CALL section_release(subsection)
 
@@ -1829,7 +1897,7 @@ CONTAINS
                           description="Controls the QTB-PILE thermostat."// &
                           " Needs the exact harmonic integrator", &
                           citations=(/Brieuc2016/), &
-                          n_keywords=6, n_subsections=1, &
+                          n_keywords=7, n_subsections=1, &
                           repeats=.FALSE.)
       CALL create_rng_section(subsubsection)
       CALL section_add_subsection(subsection, subsubsection)
@@ -1869,6 +1937,13 @@ CONTAINS
                           description="Number of points used for the convolution product.", &
                           usage="NF {integer}", type_of_var=integer_t, &
                           n_var=1, default_i_val=128)
+      CALL section_add_keyword(subsection, keyword)
+      CALL keyword_release(keyword)
+      CALL keyword_create(keyword, __LOCATION__, name="THERMOSTAT_ENERGY", &
+                          description="Thermostat energy for conserved quantity. "// &
+                          "Only useful in restart files.", &
+                          usage="THERMOSTAT_ENERGY {real}", type_of_var=real_t, &
+                          n_var=1, default_r_val=0.0_dp)
       CALL section_add_keyword(subsection, keyword)
       CALL keyword_release(keyword)
       CALL section_add_subsection(section, subsection)
