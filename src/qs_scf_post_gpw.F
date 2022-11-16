@@ -85,7 +85,6 @@ MODULE qs_scf_post_gpw
                                               section_vals_get_subs_vals,&
                                               section_vals_type,&
                                               section_vals_val_get
-   USE localized_moments,               ONLY: calculate_kg_moments
    USE kinds,                           ONLY: default_path_length,&
                                               default_string_length,&
                                               dp
@@ -1184,9 +1183,9 @@ CONTAINS
             ELSE
                CALL qs_moment_locop(qs_env, magnetic, maxmom, reference, ref_point, unit_nr, vel_reprs, com_nl)
             END IF
-            IF (do_kg) THEN
-               CALL calculate_kg_moments(qs_env, maxmom, input)
-            END IF
+            !IF (do_kg) THEN
+            !   CALL calculate_kg_moments(qs_env, maxmom, input)
+            !END IF
          END IF
 
          CALL cp_print_key_finished_output(unit_nr=unit_nr, logger=logger, &

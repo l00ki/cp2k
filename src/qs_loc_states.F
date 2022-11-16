@@ -13,6 +13,7 @@ MODULE qs_loc_states
                                               pbc
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
+                                              cp_cfm_p_type,&
                                               cp_cfm_release,&
                                               cp_cfm_to_fm,&
                                               cp_cfm_type,&
@@ -44,8 +45,7 @@ MODULE qs_loc_states
    USE qs_loc_molecules,                ONLY: wfc_to_molecule
    USE qs_loc_types,                    ONLY: qs_loc_env_new_type
    USE qs_mo_types,                     ONLY: mo_set_p_type
-   USE localized_moments,               ONLY: calculate_wannier_moments, &
-                                              calculate_wc_moments
+   USE localized_moments,               ONLY: calculate_localized_moments
    USE wannier_states,                  ONLY: construct_wannier_states
    USE wannier_states_types,            ONLY: wannier_centres_type
 #include "./base/base_uses.f90"
@@ -75,7 +75,7 @@ CONTAINS
 !> \param marked_states ...
 ! **************************************************************************************************
    SUBROUTINE get_localization_info(qs_env, qs_loc_env, loc_section, mo_local, &
-                                    wf_r, wf_g, particles, coeff, evals, marked_states, do_once)
+        wf_r, wf_g, particles, coeff, evals, marked_states, do_once, last_rmat)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
@@ -87,6 +87,7 @@ CONTAINS
       TYPE(cp_1d_r_p_type), DIMENSION(:), POINTER        :: evals
       INTEGER, DIMENSION(:, :, :), POINTER               :: marked_states
       LOGICAL, OPTIONAL                                  :: do_once
+      TYPE(cp_cfm_p_type), POINTER, OPTIONAL             :: last_rmat(:)
 
       CHARACTER(len=*), PARAMETER :: routineN = 'get_localization_info'
 
@@ -246,15 +247,18 @@ CONTAINS
       ! print moments of Wannier functions
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
            "WANNIER_MOMENTS"), cp_p_file)) THEN
-         CALL calculate_wannier_moments(qs_env, qs_loc_env, mo_local, loc_print_section, molecule_set)
+         !CALL calculate_wannier_moments(qs_env, qs_loc_env, mo_local, loc_print_section, molecule_set)
+         !CALL calculate_wannier_moments(qs_env, mo_local)
       END IF
      
       ! print moments of Wannier centres
       IF (BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &
            "WC_MOMENTS"), cp_p_file)) THEN
-         CALL calculate_wc_moments(qs_env, qs_loc_env, loc_print_section, molecule_set)
+         !CALL calculate_wc_moments(qs_env, qs_loc_env, loc_print_section, molecule_set)
       END IF
 
+      CALL calculate_localized_moments(qs_env, mo_local)
+      
       CALL cp_cfm_release(tmp_complex_coeffs)
       
       CALL timestop(handle)

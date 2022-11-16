@@ -100,7 +100,9 @@ MODULE qs_moments
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'qs_moments'
 
    ! Public subroutines
-   PUBLIC :: build_berry_moment_matrix, build_local_moment_matrix
+   PUBLIC :: build_berry_moment_matrix, build_local_moment_matrix, build_local_magmom_matrix, &
+        build_local_moments_der_matrix, calculate_commutator_nl_terms, op_orbbas, op_orbbas_rtp, &
+        print_moments, print_moments_nl, set_label
    PUBLIC :: build_berry_kpoint_matrix
    PUBLIC :: qs_moment_berry_phase, qs_moment_locop
 
@@ -634,12 +636,14 @@ CONTAINS
       DEALLOCATE (mab)
       DEALLOCATE (difmab)
       DEALLOCATE (work)
-      DO i = 1, nm
+      DO i = 1, size(mom_block)
          NULLIFY (mom_block(i)%block)
-         DO idir = 1, 3
+      END DO
+      DO i = 1, size(mom_block_der, 1)
+         DO idir = 1, size(mom_block_der, 2)
             NULLIFY (mom_block_der(i, idir)%block)
          ENDDO
-      END DO
+      ENDDO
       DEALLOCATE (mom_block)
       DEALLOCATE (mom_block_der)
 
@@ -876,7 +880,8 @@ CONTAINS
 !> \param sab_orb_external ...
 !> \param basis_type ...
 ! **************************************************************************************************
-   SUBROUTINE build_berry_moment_matrix(qs_env, cosmat, sinmat, kvec, sab_orb_external, basis_type)
+   SUBROUTINE build_berry_moment_matrix(qs_env, cosmat, sinmat, kvec, sab_orb_external, basis_type, &
+        q)
 
       TYPE(qs_environment_type), POINTER                 :: qs_env
       TYPE(dbcsr_type), POINTER                          :: cosmat, sinmat
@@ -884,6 +889,7 @@ CONTAINS
       TYPE(neighbor_list_set_p_type), DIMENSION(:), &
          OPTIONAL, POINTER                               :: sab_orb_external
       CHARACTER(len=*), OPTIONAL                         :: basis_type
+      LOGICAL, OPTIONAL                                  :: q
 
       CHARACTER(LEN=*), PARAMETER :: routineN = 'build_berry_moment_matrix'
 
