@@ -8,126 +8,43 @@
 ! **************************************************************************************************
 module localized_moments
 
-   use atomic_kind_types,      only: atomic_kind_type, &
-                                     get_atomic_kind
-   use basis_set_types,        only: gto_basis_set_p_type, &
-                                     gto_basis_set_type
-   use cell_types,             only: cell_type, &
-                                     pbc
-   use cp_cfm_basic_linalg,    only: cp_cfm_gemm, &
-                                     cp_cfm_lu_decompose, &
-                                     cp_cfm_schur_product
-   use cp_cfm_types,           only: cp_cfm_create, &
-                                     cp_cfm_get_element, &
-                                     cp_cfm_get_info, &
-                                     cp_cfm_p_type, &
-                                     cp_cfm_release, &
-                                     cp_cfm_set_all, &
-                                     cp_cfm_to_cfm, &
-                                     cp_cfm_type, &
-                                     cp_cfm_write_formatted, &
-                                     cp_fm_to_cfm
-   use cp_control_types,       only: dft_control_type
-   use cp_dbcsr_cp2k_link,     only: cp_dbcsr_alloc_block_from_nbl
-   use cp_dbcsr_operations,    only: copy_dbcsr_to_cfm, &
-                                     copy_dbcsr_to_fm, &
-                                     cp_dbcsr_sm_fm_multiply, &
-                                     dbcsr_allocate_matrix_set, &
-                                     dbcsr_deallocate_matrix_set
-   use cp_fm_basic_linalg,     only: cp_fm_gemm, &
-                                     cp_fm_schur_product
-   use cp_fm_struct,           only: cp_fm_struct_create, &
-                                     cp_fm_struct_release, &
-                                     cp_fm_struct_type
-   use cp_fm_types,            only: cp_fm_create, &
-                                     cp_fm_get_element, &
-                                     cp_fm_get_info, &
-                                     cp_fm_p_type, &
-                                     cp_fm_write_formatted, &
-                                     cp_fm_release, &
-                                     cp_fm_set_all, &
-                                     cp_fm_to_fm, &
-                                     cp_fm_type
-   use cp_log_handling,        only: cp_get_default_logger, &
-                                     cp_logger_type
-   use cp_output_handling,     only: cp_iter_string, &
-                                     cp_p_file, &
-                                     cp_print_key_finished_output, &
-                                     cp_print_key_should_output, &
-                                     cp_print_key_unit_nr
-   use cp_para_types,          only: cp_para_env_type
-   use dbcsr_api,              only: dbcsr_copy, &
-                                     dbcsr_create, &
-                                     dbcsr_desymmetrize, &
-                                     dbcsr_dot, &
-                                     dbcsr_get_block_p, &
-                                     dbcsr_get_diag, &
-                                     dbcsr_get_info, &
-                                     dbcsr_init_p, &
-                                     dbcsr_iterator_blocks_left, &
-                                     dbcsr_iterator_next_block, &
-                                     dbcsr_iterator_start, &
-                                     dbcsr_iterator_stop, &
-                                     dbcsr_iterator_type, &
-                                     dbcsr_multiply, &
-                                     dbcsr_p_type, &
-                                     dbcsr_print, &
-                                     dbcsr_release, &
-                                     dbcsr_set, &
-                                     dbcsr_trace, &
-                                     dbcsr_type, &
-                                     dbcsr_type_antisymmetric, &
-                                     dbcsr_type_no_symmetry
-   use distribution_1d_types,  only: distribution_1d_type
-   use input_constants,        only: use_mom_ref_coac, &
-                                     use_mom_ref_com, &
-                                     use_mom_ref_zero
-   use input_section_types,    only: section_vals_type, &
-                                     section_vals_val_get
-   use kinds,                  only: default_string_length, &
-                                     dp
-   use mathconstants,          only: gaussi, &
-                                     pi, &
-                                     twopi
-   use message_passing,        only: mp_bcast, &
-                                     mp_maxloc, &
-                                     mp_sum
-   use molecule_kind_types,    only: get_molecule_kind, &
-                                     molecule_kind_type
-   use molecule_types,         only: get_molecule_set_info, &
-                                     molecule_type
-   use moments_utils,          only: get_reference_point
-   use orbital_pointers,       only: indco, &
-                                     ncoset
-   use particle_types,         only: particle_type
-   use physcon,                only: c_light_au
-   use qs_environment_types,   only: get_qs_env, &
-                                     persistent_states_type, &
-                                     qs_environment_type
-   use qs_kind_types,          only: get_qs_kind, &
-                                     get_qs_kind_set, &
-                                     qs_kind_type
-   use qs_loc_types,           only: get_qs_loc_env, &
-                                     qs_loc_env_new_type
-   use qs_mo_types,            only: mo_set_p_type
-   use qs_moments,             only: build_berry_moment_matrix, &
-                                     build_local_magmom_matrix, &
-                                     build_local_moment_matrix, &
-                                     build_local_moments_der_matrix, &
-                                     calculate_commutator_nl_terms, &
-                                     op_orbbas, &
-                                     op_orbbas_rtp, &
-                                     print_moments, &
-                                     print_moments_nl, &
-                                     set_label
-   use qs_neighbor_list_types, only: neighbor_list_iterate, &
-                                     neighbor_list_iterator_create, &
-                                     neighbor_list_iterator_p_type, &
-                                     neighbor_list_set_p_type
-   use qs_operators_ao,        only: build_lin_mom_matrix
-   use qs_rho_types,           only: qs_rho_get, &
-                                     qs_rho_type
-   use wannier_states_types,   only: wannier_centres_type
+   use atomic_kind_types
+   use basis_set_types
+   use cell_types
+   use cp_cfm_basic_linalg
+   use cp_cfm_types
+   use cp_control_types
+   use cp_dbcsr_cp2k_link
+   use cp_dbcsr_operations
+   use cp_files
+   use cp_fm_basic_linalg
+   use cp_fm_struct
+   use cp_fm_types
+   use cp_log_handling
+   use cp_output_handling
+   use cp_para_types
+   use dbcsr_api
+   use distribution_1d_types
+   use input_constants
+   use input_section_types
+   use kinds
+   use mathconstants
+   use message_passing
+   use molecule_kind_types
+   use molecule_types
+   use moments_utils
+   use orbital_pointers
+   use particle_types
+   use physcon
+   use qs_environment_types
+   use qs_kind_types
+   use qs_loc_types
+   use qs_mo_types
+   use qs_moments
+   use qs_neighbor_list_types
+   use qs_operators_ao
+   use qs_rho_types
+   use wannier_states_types
 
 #include "./base/base_uses.f90"
 
@@ -150,7 +67,7 @@ module localized_moments
         "elqupvelnl xx, elqupvelnl xy, elqupvelnl xz, elqupvelnl yx, elqupvelnl yy, elqupvelnl zz, " // &
         "ref x, ref y, refz"
    integer, private            :: iteration = 0
-   integer, parameter, private :: nm = 9, nmm = 3
+   integer, parameter, private :: nm = 9
    type(persistent_states_type), pointer, private :: persistent_states(:, :)
 
 ! *** public subroutines ***
@@ -176,6 +93,7 @@ contains
       character(len=default_string_length)   :: iter, name                    
       integer                                :: handle, iatom, iproc, jatom, imo, isubset, itimes, &
                                                 natoms, &
+                                                file_unit, &
                                                 nao, nmo, nmolkinds, nmoments, &
                                                 norders, ns, &
                                                 nspins, nstates(2), nsubsets, nwcs, output_unit
@@ -236,10 +154,8 @@ contains
            mol_to_nelectrons=nelectrons)
 
       ! reference points
-      call get_reference_point(rcc0, qs_env=qs_env, reference=use_mom_ref_zero, ifirst=1, &
-           ilast=natoms)
-      call get_reference_point(rcc, qs_env=qs_env, reference=use_mom_ref_com, ifirst=1, &
-           ilast=natoms)
+      rcc = 0.5 * (cell%hmat(1,:) + cell%hmat(2,:) + cell%hmat(3,:))
+      call get_reference_point(rcc0, qs_env=qs_env, reference=use_mom_ref_zero)
       do isubset = 1, nsubsets
          call get_reference_point(rccs(isubset, :), &
               qs_env=qs_env, &
@@ -293,22 +209,14 @@ contains
          deallocate(wcs_to_atoms)
       end if
 
-      moments = 0._dp
-      call calculate_loc_moments(moments, qs_env, rcc, mo_local)
-      call print_localized_moments(logger, input, moments, rcc, "ref")
-      moments = 0._dp
-      call calculate_loc_moments(moments, qs_env, rcc0, mo_local)
-      call print_localized_moments(logger, input, moments, rcc0, "ref0")
+      call calculate_loc_moments(qs_env, rcc, mo_local, tag="ref")
+      call calculate_loc_moments(qs_env, rcc0, mo_local, tag="ref0")
 
       ! subsystems
       do isubset = 1, nsubsets
          states => persistent_states(isubset, 1)%states
          name = molecules(isubset)%molecule_kind%name
-
-         ! sub
-         moments = 0._dp
-         call calculate_loc_moments(moments, qs_env, rccs(isubset, :), mo_local, states)
-         call print_localized_moments(logger, input, moments, rccs(isubset, :), name)
+         call calculate_loc_moments(qs_env, rccs(isubset, :), mo_local, states, trim(name)) 
       end do
       
       deallocate(first_atoms, first_basis, last_atoms, last_basis, moments, nbasis, nelectrons, &
@@ -319,40 +227,336 @@ contains
    end subroutine calculate_localized_moments
 
 ! **************************************************************************************************
-   subroutine calculate_loc_moments(moments, qs_env, rcc, mo_local, statelist)
+   subroutine calculate_loc_moments(qs_env, rcc, mos, statelist, tag)
 
-     real(dp)                            :: moments(:)
      type(qs_environment_type), pointer  :: qs_env
      real(dp)                            :: rcc(3)
-     type(cp_fm_p_type), pointer         :: mo_local(:)
+     type(cp_fm_p_type), pointer         :: mos(:)
      integer, pointer, optional          :: statelist(:)
+     character(*), optional              :: tag
 
-     call cp_fm_get_info(mo_local(1)%matrix, nrow_global=nao, ncol_global=nmo)
+     character(*), parameter :: routinen = "calculate"
+
+     complex(dp) :: di
+     integer :: file_unit, handle, i, j, k, nao, nmm, nmo, ns
+     integer, pointer :: states(:)
+     logical :: do_rtp
+     real(dp) :: d, mu(3), muv(3), m(3), th(6), thder(9), thv(6), q, zwfc
+     real(dp), allocatable :: rv(:), rrv(:), rxrv(:)
+     type(cp_cfm_p_type), pointer :: mo(:), po(:), ro(:), roder(:,:)
+     type(cp_cfm_type), pointer :: o, ov, v, vov
+     type(cp_fm_struct_type), pointer :: v_struct, o_struct, vov_struct
+     type(cp_fm_type), pointer :: or, vr, vi
+     type(dbcsr_p_type), pointer :: matrix_s(:), rop(:), ropder(:, :), mop(:), pop(:)
+     type(neighbor_list_set_p_type), pointer :: sab_all(:), sab_orb(:)
+
+     call timeset(routinen, handle)
+
+     call get_qs_env(qs_env, matrix_s=matrix_s, sab_all=sab_all, sab_orb=sab_orb)
+     call cp_fm_get_info(mos(1)%matrix, nrow_global=nao, ncol_global=nmo)
      zwfc = 2._dp
+     do_rtp = (size(mos) == 2)
 
      if (present(statelist)) then
         ns = size(statelist)
-        do i = 1, ns
-           states(i) = statelist(i)
-        end do
+        states => statelist
      else
         ns = nmo
+        allocate(states(ns))
         do i = 1, ns
            states(i) = i
         end do
      end if
 
-     ! charge
+     ! matrices
+     call cp_fm_struct_create(v_struct, nrow_global=nao, ncol_global=ns, &
+          template_fmstruct=mos(1)%matrix%matrix_struct)
+     call cp_fm_struct_create(o_struct, nrow_global=nao, ncol_global=nao, &
+          template_fmstruct=mos(1)%matrix%matrix_struct)
+     call cp_fm_struct_create(vov_struct, nrow_global=ns, ncol_global=ns, &
+          template_fmstruct=mos(1)%matrix%matrix_struct)
 
-     ! mu
+     call cp_cfm_create(ov, v_struct, name="ov")
+     call cp_cfm_create(vov, vov_struct, name="vov")
+     call cp_fm_struct_release(vov_struct)
 
-     ! muv
+     ! MOs
+     call cp_fm_create(vr, v_struct, name="vr")
+     call cp_fm_create(vi, v_struct, name="vi")
+     call cp_cfm_create(v, v_struct, name="v")
+     call cp_fm_struct_release(v_struct)
+     do i = 1, ns
+        call cp_fm_to_fm(mos(1)%matrix, vr, 1, states(i), i)
+        if (do_rtp) then
+           call cp_fm_to_fm(mos(2)%matrix, vi, 1, states(i), i)
+           call cp_fm_to_cfm(vr, vi, v)
+        else
+           call cp_fm_to_cfm(vr, mtarget=v)
+        end if
+     end do
+     call cp_fm_release(vr)
+     call cp_fm_release(vi)
+     
+     ! operators
+     call cp_fm_create(or, o_struct)  ! tmp
+
+     ! r
+     nullify(rop)
+     call dbcsr_allocate_matrix_set(rop, nm)
+     do i = 1, nm
+        allocate(rop(i)%matrix)
+        call dbcsr_create(rop(i)%matrix, template=matrix_s(1)%matrix, &
+             matrix_type=dbcsr_type_no_symmetry)
+        call cp_dbcsr_alloc_block_from_nbl(rop(i)%matrix, sab_all)
+        call dbcsr_set(rop(i)%matrix, 0._dp)
+     end do
+
+     nullify(ropder)
+     call dbcsr_allocate_matrix_set(ropder, 3, 3)
+     do i = 1, 3
+        do j = 1, 3
+           call dbcsr_init_p(ropder(i,j)%matrix)
+           call dbcsr_create(ropder(i,j)%matrix, template=matrix_s(1)%matrix, &
+                matrix_type=dbcsr_type_no_symmetry)
+           call cp_dbcsr_alloc_block_from_nbl(ropder(i,j)%matrix, sab_all)
+           call dbcsr_set(ropder(i,j)%matrix, 0._dp)
+        end do
+     end do
+
+     call build_local_moments_der_matrix(qs_env, rop, ropder, 2, 1, rcc)
+
+     allocate(ro(9))
+     do i = 1, nm
+        call cp_cfm_create(ro(i)%matrix, o_struct)
+        call copy_dbcsr_to_fm(rop(i)%matrix, or)
+        call dbcsr_release(rop(i)%matrix)
+        deallocate(rop(i)%matrix)
+        call cp_fm_to_cfm(or, mtarget=ro(i)%matrix)
+     end do
+     deallocate(rop)
+
+     allocate(roder(3, 3))
+     do i = 1, 3
+        do j = 1, 3
+           call cp_cfm_create(roder(i,j)%matrix, o_struct)
+           call copy_dbcsr_to_fm(ropder(i,j)%matrix, or)
+           call dbcsr_release(ropder(i,j)%matrix)
+           deallocate(ropder(i,j)%matrix)
+           call cp_fm_to_cfm(or, mtarget=roder(i,j)%matrix)
+        end do
+     end do
+     deallocate(ropder)
+
+     ! p
+     nullify(pop)
+     call dbcsr_allocate_matrix_set(pop, 3)
+     do i = 1, 3
+        call dbcsr_init_p(pop(i)%matrix)
+        call dbcsr_create(pop(i)%matrix, template=matrix_s(1)%matrix, &
+             matrix_type=dbcsr_type_antisymmetric)
+        call cp_dbcsr_alloc_block_from_nbl(pop(i)%matrix, sab_orb)
+        call dbcsr_set(pop(i)%matrix, 0._dp)
+     end do
+
+     call build_lin_mom_matrix(qs_env, pop)
+
+     allocate(po(size(pop)))
+     do i = 1, 3
+        call cp_cfm_create(po(i)%matrix, o_struct)
+        call copy_dbcsr_to_fm(pop(i)%matrix, or)
+        call dbcsr_release(pop(i)%matrix)
+        deallocate(pop(i)%matrix)
+        call cp_fm_to_cfm(or, mtarget=po(i)%matrix)
+     end do
+     deallocate(pop)
 
      ! m
+     nullify(mop)
+     call build_local_magmom_matrix(qs_env, mop, 1, rcc)
+     nmm = size(mop)
 
-     ! theta
+     allocate(mo(nmm))
+     do i = 1, nmm
+        call cp_cfm_create(mo(i)%matrix, o_struct)
+        call copy_dbcsr_to_fm(mop(i)%matrix, or)
+        call dbcsr_release(mop(i)%matrix)
+        deallocate(mop(i)%matrix)
+        call cp_fm_to_cfm(or, mtarget=mo(i)%matrix)
+     end do
+     deallocate(mop)
 
-     ! thetav
+     call cp_fm_release(or)  ! tmp
+     call cp_fm_struct_release(o_struct)
+
+     ! charge
+     q = -ns * zwfc
+     call open_file("q_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(E14.8)") q
+     end if
+     call close_file(file_unit)
+
+     ! mu
+     mu = 0._dp
+     do i = 1, 3
+        o => ro(i)%matrix
+        call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
+        call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
+        call cp_cfm_release(o)
+        d = 0._dp
+        do j = 1, ns
+           call cp_cfm_get_element(vov, j, j, di)
+           d = d + real(di)
+        end do
+        mu(i) = -zwfc * d
+     end do
+     call open_file("mu_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(2(E14.8,','),E14.8)") mu
+     end if
+     call close_file(file_unit)
+
+     ! muv
+     muv = 0._dp
+     do i = 1, 3
+        o => po(i)%matrix
+        call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
+        call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
+        call cp_cfm_release(o)
+        d = 0._dp
+        do j = 1, ns
+           call cp_cfm_get_element(vov, j, j, di)
+           d = d + aimag(di)
+        end do
+        muv(i) = -zwfc * d
+     end do
+     deallocate(po)
+     call open_file("muv_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(2(E14.8,','),E14.8)") muv
+     end if
+     call close_file(file_unit)
+
+     ! m
+     m = 0._dp
+     do i = 1, 3
+        o => mo(i)%matrix
+        call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
+        call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
+        call cp_cfm_release(o)
+        d = 0._dp
+        do j = 1, ns
+           call cp_cfm_get_element(vov, j, j, di)
+           d = d + aimag(di)
+        end do
+        m(i) = - zwfc * d
+     end do
+     deallocate(mo)
+     call open_file("m_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(2(E14.8,','),E14.8)") m
+     end if
+     call close_file(file_unit)
+
+     ! th
+     th = 0._dp
+     do i = 1, 6
+        o => ro(i+3)%matrix
+        call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
+        call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
+        call cp_cfm_release(o)
+        d = 0._dp
+        do j = 1, ns
+           call cp_cfm_get_element(vov, j, j, di)
+           d = d + zwfc * real(di)
+        end do
+        th(i) = -d
+     end do
+     deallocate(ro)
+     call open_file("th_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(5(E14.8,','),E14.8)") th
+     end if
+     call close_file(file_unit)
+
+     ! thv
+     thv = 0._dp
+     do i = 1, 3
+        do j = 1, 3
+           o => roder(i, j)%matrix
+           call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
+           call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
+           call cp_cfm_release(o)
+           d = 0._dp
+           do k = 1, ns
+              call cp_cfm_get_element(vov, k, k, di)
+              d = d - aimag(di)
+              if (i == j) then
+                 d = d + real(di)
+              end if
+           end do
+           thder((i-1)*3+j) = zwfc * d
+        end do
+     end do
+     deallocate(roder)
+     thv(1) = -2 * thder(1) - q
+     thv(2) = -thder(2) - thder(4)
+     thv(3) = -thder(3) - thder(7)
+     thv(4) = -2 * thder(5) - q
+     thv(5) = -thder(6) - thder(8)
+     thv(6) = -2 * thder(9) - q
+     call open_file("thv_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(5(E14.8,','),E14.8)") thv
+     end if
+     call close_file(file_unit)
+
+     if (.not. present(statelist)) then
+        deallocate(states)
+     end if
+     call cp_cfm_release(v)
+     call cp_cfm_release(ov)
+     call cp_cfm_release(vov)
+
+     ! nl terms
+     allocate(rv(3), rrv(6), rxrv(3))
+     call calculate_commutator_nl_terms(qs_env, rv, rxrv, rrv, rcc)
+
+     call open_file("rv_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(2(E14.8,','),E14.8)") rv
+     end if
+     call close_file(file_unit)
+
+     call open_file("rrv_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(5(E14.8,','),E14.8)") rrv
+     end if
+     call close_file(file_unit)
+
+     call open_file("rxrv_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(2(E14.8,','),E14.8)") rxrv
+     end if
+     call close_file(file_unit)
+
+     call open_file("rcc_"//tag//".csv", unit_number=file_unit, file_action="write", &
+          file_position="append", file_status="unknown")
+     if (file_unit > 0) then
+        write (file_unit, "(2(E14.8,','),E14.8)") rcc
+     end if
+     call close_file(file_unit)
+
+     call timestop(handle)
 
    end subroutine calculate_loc_moments
 
@@ -807,7 +1011,7 @@ contains
      logical, optional                   :: periodic, ref
 
      complex(dp)                              :: cd
-     integer                                  :: i, j, k, nao, nmo, ns
+     integer                                  :: i, j, k, nao, nmm, nmo, ns
      integer, pointer                         :: states(:)
      logical                                  :: do_rtp, do_periodic, do_ref
      real(dp)                                 :: d, zwfc, qupoleder(9)
@@ -974,7 +1178,8 @@ contains
      end do
      nullify(op)
      allocate(mago(3))
-     call build_local_magmom_matrix(qs_env, magop, nmm, ref_point=rcc)
+     call build_local_magmom_matrix(qs_env, magop, 1, ref_point=rcc)
+     nmm = size(magop)
      do i = 1, nmm
         call cp_cfm_create(mago(i)%matrix, o_struct, name="mago")
         if (ref) then
