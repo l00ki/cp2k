@@ -1,0 +1,217 @@
+#!/bin/bash
+# Author: Lukas Schreder
+# \
+	module add daint-mc; \
+	module rm PrgEnv-cray; \
+	module add PrgEnv-gnu; \
+	module add cray-fftw; \
+	module add Libint-CP2K; \
+	module add ELPA; \
+  	module add libxc/5.1.7-CrayGNU-21.09; \
+	return
+
+# options
+CUDA           := no
+PARALLEL       := yes
+DEBUG          := no
+GCC_MASTER     := no
+HIP            := no
+OPENCL         := no
+CRAY           := yes
+LIBXSMM_MASTER := no
+MPI_MODE       := mpich
+MATH_MODE      := cray
+LIBINT_LMAX    := 5
+MAX_CONTR      := 4
+# libraries
+USE_COSMA     := no
+USE_ELPA      := no
+ELPA_VERSION  := no
+USE_ACML      := no
+USE_FFTW      := no
+USE_GCC       := no
+USE_INTEL     := no
+USE_INTELMPI  := no
+USE_LIBINT    := no
+USE_LIBPEXSI  := no
+USE_LIBVORI   := no
+USE_LIBXC     := yes
+USE_LIBXSMM   := no
+USE_MPICH     := no
+USE_OPENBLAS  := no
+USE_OPENMPI   := yes
+USE_PLUMED    := no
+USE_QUIP      := no
+USE_SCALAPACK := yes
+USE_SIRIUS    := no
+USE_SPGLIB    := no
+# for sirius
+USE_LIBVDWXC  := no
+USE_SPFFT     := no
+USE_SPLA      := no
+USE_HDF5      := no
+# for libpexsi
+USE_SCOTCH    := no
+USE_SUPERLU   := no
+# end of options
+
+# advanced setup
+DFLAGS := -D__HAS_IEEE_EXCEPTIONS
+DFLAGS += -D__MAX_CONTR=$(strip $(MAX_CONTR))
+
+# compilers, linker, archiver
+ifeq ($(CRAY), yes)
+    CC         := cc
+    CXX        := CC
+	ifeq ($(CUDA), yes)
+		OFFLOAD_CC := nvcc
+	endif
+    FC         := ftn
+    LD         := ftn
+    AR         := ar -r
+    ifeq ($(PARALLEL), yes)
+		DFLAGS += -D__parallel
+		DFLAGS += -D__MPI_VERSION=3
+	endif
+else ifeq ($(PARALLEL), yes)
+	CC     := mpicc
+	CXX    := mpicxx
+	FC     := mpif90
+	LD     := mpif90
+	AR     := ar -r
+	DFLAGS += -D__parallel
+	DFLAGS += -D__MPI_VERSION=3
+else ifeq ($(PARALLEL), no)
+	CC  := gcc
+	CXX := g++
+	FC  := gfortran
+	LD  := gfortran
+	AR  := ar -r
+endif
+
+CFLAGS += -fopenmp -fopenmp-simd -ftree-vectorize -funroll-loops -g -mtune=native
+ifeq ($(DEBUG), yes)
+	CFLAGS         += -Og -g
+    DFLAGS         += -D__CHECK_DIAG
+    FCFLAGS_DEBUG  := -fcheck=bounds,do,recursion,pointer
+    FCFLAGS_DEBUG  += -fcheck=all,no-array-temps
+    FCFLAGS_DEBUG  += -ffpe-trap=invalid,overflow,zero
+    FCFLAGS_DEBUG  += -fimplicit-none
+    FCFLAGS_DEBUG  += -finit-derived
+    FCFLAGS_DEBUG  += -finit-real=snan
+    FCFLAGS_DEBUG  += -finit-integer=-42
+    FCFLAGS_DEBUG  += -finline-matmul-limit=0
+	FCFLAGS_DEBUG  += -fbacktrace
+    LDFLAGS        += -fsanitize=leak
+    WFLAGS         := -Werror=aliasing
+    WFLAGS         += -Werror=ampersand
+    WFLAGS         += -Werror=c-binding-type
+    WFLAGS         += -Werror=conversion
+    WFLAGS         += -Werror=intrinsic-shadow
+    WFLAGS         += -Werror=intrinsics-std
+    WFLAGS         += -Werror=line-truncation
+    WFLAGS         += -Wrealloc-lhs
+    WFLAGS         += -Werror=tabs
+    WFLAGS         += -Werror=target-lifetime
+    WFLAGS         += -Werror=underflow
+    #WFLAGS         += -Werror=unused-but-set-variable
+    #WFLAGS         += -Werror=unused-dummy-argument
+    #WFLAGS         += -Werror=unused-variable
+else ifeq ($(DEBUG), no)
+	CFLAGS += -O2 -g
+endif
+
+# ELPA
+ifneq ($(USE_ELPA), no)
+	ifeq ($(PARALLEL), yes)
+		DFLAGS += -D__ELPA
+		ifeq ($(USE_ELPA), yes)
+			ifeq ($(CRAY), no)
+				LIBS += -lelpa
+			else ifeq ($(CRAY), yes)
+				CFLAGS += -I$(EBROOTELPA)/include/elpa-$(ELPA_VERSION)/elpa
+				CFLAGS += -I$(EBROOTELPA)/include/elpa-$(ELPA_VERSION)/modules
+				LIBS += $(EBROOTELPA)/lib/libelpa.a
+			endif
+		else
+			CFLAGS += -I$(USE_ELPA)/include/elpa-$(ELPA_VERSION)/elpa
+			CFLAGS += -I$(USE_ELPA)/include/elpa-$(ELPA_VERSION)/modules
+			LIBS   += $(USE_ELPA)/lib/libelpa.a
+	    endif
+	endif
+endif
+
+# FFTW
+ifneq ($(USE_FFTW), no)
+	DFLAGS += -D__FFTW3
+	LIBS += -lfftw3 -lfftw3_omp
+	ifeq ($(PARALLEL), yes)
+		LIBS += -lfftw3_mpi
+	endif
+endif
+
+# SCALAPACK
+ifneq ($(USE_SCALAPACK), no)
+	ifeq ($(PARALLEL), yes)
+		DFLAGS += -D__SCALAPACK
+		ifeq ($(USE_SCALAPACK), yes)
+			ifneq ($(CRAY), yes)
+				LIBS += -lscalapack-$(MPI_MODE)
+			endif
+		endif
+	endif
+endif
+
+# libint
+ifneq ($(USE_LIBINT), no)
+    DFLAGS += -D__LIBINT
+	ifeq ($(USE_LIBINT), yes)
+		LIBS += -lint2
+		ifeq ($(CRAY), yes)
+			CFLAGS += -I$(EBROOTLIBINTMINCP2K)/include
+		endif
+	else
+		CFLAGS += -I$(USE_LIBINT)/include
+		LIBS += $(USE_LIBINT)/lib/libint2.a
+	endif
+endif
+
+# Libxc
+ifneq ($(USE_LIBXC), no)
+    DFLAGS += -D__LIBXC
+    ifeq ($(USE_LIBXC), yes)
+	    LIBS += -lxc -lxcf03
+		ifeq ($(CRAY), yes)
+			CFLAGS += -I$(EBROOTLIBXC)/include
+		endif
+    else
+         CFLAGS += -I$(USE_LIBXC)/include
+         LIBS   += $(USE_LIBXC)/lib/libxcf03.a
+         LIBS   += $(USE_LIBXC)/lib/libxc.a
+    endif
+endif
+
+# LIBXSMM
+
+# math library
+ifeq ($(MATH_MODE), acml)
+else ifeq ($(MATH_MODE), cray)
+else ifeq ($(MATH_MODE), mkl)
+else ifeq ($(MATH_MODE), openblas)
+	LIBS += -lopenblas
+endif
+
+CFLAGS += $(DFLAGS)
+
+FCFLAGS := $(CFLAGS) $(FCFLAGS_DEBUG) $(WFLAGS)
+FCFLAGS += -ffree-form
+FCFLAGS += -ffree-line-length-none
+FCFLAGS += -fno-omit-frame-pointer
+FCFLAGS += -std=f2008
+
+LDFLAGS += $(FCFLAGS)
+
+LIBS += -lstdc++
+
+# EOF
+

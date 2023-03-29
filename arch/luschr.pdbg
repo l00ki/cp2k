@@ -7,35 +7,35 @@
 	module add cray-fftw; \
 	module add Libint-CP2K; \
 	module add ELPA; \
-    module add libxc/5.1.7-CrayGNU-21.09; \
+  	module add libxc/5.1.7-CrayGNU-21.09; \
 	return
 
 # options
 CUDA           := no
-PARALLEL       := no
-DEBUG          := no
+PARALLEL       := yes
+DEBUG          := yes
 GCC_MASTER     := no
 HIP            := no
 OPENCL         := no
-CRAY           := no
+CRAY           := yes
 LIBXSMM_MASTER := no
-MPI_MODE       := openmpi
-MATH_MODE      := openblas
+MPI_MODE       := mpich
+MATH_MODE      := cray
 LIBINT_LMAX    := 5
 MAX_CONTR      := 4
 # libraries
 USE_COSMA     := no
-USE_ELPA      := $(HOME)/opt/elpa-v2022.05.001
-ELPA_VERSION  := 2022.05.001
-USE_ACML      := yes
-USE_FFTW      := yes
-USE_GCC       := yes
-USE_INTEL     := yes
-USE_INTELMPI  := yes
-USE_LIBINT    := $(HOME)/opt/libint-cp2k-v2.6.0-lmax-5
+USE_ELPA      := no
+ELPA_VERSION  := no
+USE_ACML      := no
+USE_FFTW      := no
+USE_GCC       := no
+USE_INTEL     := no
+USE_INTELMPI  := no
+USE_LIBINT    := no
 USE_LIBPEXSI  := no
 USE_LIBVORI   := no
-USE_LIBXC     := $(HOME)/opt/libxc-v5.2.3
+USE_LIBXC     := yes
 USE_LIBXSMM   := no
 USE_MPICH     := no
 USE_OPENBLAS  := no
@@ -114,9 +114,9 @@ ifeq ($(DEBUG), yes)
     WFLAGS         += -Werror=tabs
     WFLAGS         += -Werror=target-lifetime
     WFLAGS         += -Werror=underflow
-    WFLAGS         += -Werror=unused-but-set-variable
-    WFLAGS         += -Werror=unused-dummy-argument
-    WFLAGS         += -Werror=unused-variable
+    #WFLAGS         += -Werror=unused-but-set-variable
+    #WFLAGS         += -Werror=unused-dummy-argument
+    #WFLAGS         += -Werror=unused-variable
 else ifeq ($(DEBUG), no)
 	CFLAGS += -O2 -g
 endif

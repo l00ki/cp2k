@@ -91,7 +91,7 @@ contains
                                       routineP = moduleN//":"//routineN
 
       character(len=default_string_length)   :: iter, name                    
-      integer                                :: handle, iatom, iproc, jatom, imo, isubset, itimes, &
+      integer                                :: i, handle, iatom, iproc, jatom, imo, isubset, itimes, &
                                                 natoms, &
                                                 file_unit, &
                                                 nao, nmo, nmolkinds, nmoments, &
@@ -110,9 +110,10 @@ contains
       type(cell_type), pointer               :: cell
       type(cp_logger_type), pointer          :: logger
       type(cp_para_env_type), pointer        :: para_env
-      type(dbcsr_p_type), pointer            :: densmat(:), matrix_s(:), dbop(:)
+      type(dbcsr_p_type), pointer            :: densmat(:), matrix_s(:), dbop(:), pop(:)
       type(dft_control_type), pointer        :: dft_control
       type(molecule_type), pointer           :: molecules(:)
+      type(neighbor_list_set_p_type), pointer :: sab_orb(:)
       type(particle_type), pointer           :: particles(:)
       !type(persistent_states_type), pointer  :: persistent_states(:, :)
       type(qs_kind_type), pointer            :: qs_kinds(:)
@@ -139,7 +140,8 @@ contains
            para_env=para_env, &
            particle_set=particles, &
            qs_kind_set=qs_kinds, &
-           rho=rho)
+           rho=rho, &
+           sab_orb=sab_orb)
       ! charge(3), eldip(3), elqup(6), mdip(3), mom(3), elqupvel(6), mdipnl(3), momnl(3), elqupvelnl(6)
       nmoments = 36
       natoms = size(particles)
@@ -209,15 +211,27 @@ contains
          deallocate(wcs_to_atoms)
       end if
 
-      call calculate_loc_moments(qs_env, rcc, mo_local, tag="ref")
-      call calculate_loc_moments(qs_env, rcc0, mo_local, tag="ref0")
+      call dbcsr_allocate_matrix_set(pop, 3)
+      do i = 1, 3
+         call dbcsr_init_p(pop(i)%matrix)
+         call dbcsr_create(pop(i)%matrix, template=matrix_s(1)%matrix, &
+              matrix_type=dbcsr_type_antisymmetric)
+         call cp_dbcsr_alloc_block_from_nbl(pop(i)%matrix, sab_orb)
+         call dbcsr_set(pop(i)%matrix, 0._dp)
+      end do
+      call build_lin_mom_matrix(qs_env, pop) ! since it's not thread-safe
+
+      call calculate_loc_moments(qs_env, rcc, mo_local, tag="ref", pop=pop)
+      call calculate_loc_moments(qs_env, rcc0, mo_local, tag="ref0", pop=pop)
 
       ! subsystems
+      !$omp parallel do
       do isubset = 1, nsubsets
          states => persistent_states(isubset, 1)%states
          name = molecules(isubset)%molecule_kind%name
-         call calculate_loc_moments(qs_env, rccs(isubset, :), mo_local, states, trim(name)) 
+         call calculate_loc_moments(qs_env, rccs(isubset, :), mo_local, states, trim(name), pop=pop)
       end do
+      !$omp end parallel do
       
       deallocate(first_atoms, first_basis, last_atoms, last_basis, moments, nbasis, nelectrons, &
            rccs, ref_point)
@@ -227,13 +241,14 @@ contains
    end subroutine calculate_localized_moments
 
 ! **************************************************************************************************
-   subroutine calculate_loc_moments(qs_env, rcc, mos, statelist, tag)
+   subroutine calculate_loc_moments(qs_env, rcc, mos, statelist, tag, pop)
 
      type(qs_environment_type), pointer  :: qs_env
      real(dp)                            :: rcc(3)
      type(cp_fm_p_type), pointer         :: mos(:)
      integer, pointer, optional          :: statelist(:)
      character(*), optional              :: tag
+     type(dbcsr_p_type), pointer, optional        :: pop(:)
 
      character(*), parameter :: routinen = "calculate"
 
@@ -247,7 +262,7 @@ contains
      type(cp_cfm_type), pointer :: o, ov, v, vov
      type(cp_fm_struct_type), pointer :: v_struct, o_struct, vov_struct
      type(cp_fm_type), pointer :: or, vr, vi
-     type(dbcsr_p_type), pointer :: matrix_s(:), rop(:), ropder(:, :), mop(:), pop(:)
+     type(dbcsr_p_type), pointer :: matrix_s(:), rop(:), ropder(:, :), mop(:)
      type(neighbor_list_set_p_type), pointer :: sab_all(:), sab_orb(:)
 
      call timeset(routinen, handle)
@@ -323,12 +338,14 @@ contains
         end do
      end do
 
+     !call build_local_moment_matrix(qs_env, rop, 2, rcc)
      call build_local_moments_der_matrix(qs_env, rop, ropder, 2, 1, rcc)
 
      allocate(ro(9))
      do i = 1, nm
         call cp_cfm_create(ro(i)%matrix, o_struct)
         call copy_dbcsr_to_fm(rop(i)%matrix, or)
+        print *, "dbg| rop(i) chks ", i, dbcsr_checksum(rop(i)%matrix)
         call dbcsr_release(rop(i)%matrix)
         deallocate(rop(i)%matrix)
         call cp_fm_to_cfm(or, mtarget=ro(i)%matrix)
@@ -368,7 +385,6 @@ contains
         deallocate(pop(i)%matrix)
         call cp_fm_to_cfm(or, mtarget=po(i)%matrix)
      end do
-     deallocate(pop)
 
      ! m
      nullify(mop)
@@ -526,7 +542,10 @@ contains
 
      ! nl terms
      allocate(rv(3), rrv(6), rxrv(3))
-     call calculate_commutator_nl_terms(qs_env, rv, rxrv, rrv, rcc)
+     rv = 0._dp
+     rrv = 0._dp
+     rxrv = 0._dp
+     !call calculate_commutator_nl_terms(qs_env, rv, rxrv, rrv, rcc)
 
      call open_file("rv_"//tag//".csv", unit_number=file_unit, file_action="write", &
           file_position="append", file_status="unknown")
