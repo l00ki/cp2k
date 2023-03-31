@@ -66,9 +66,10 @@ module localized_moments
         "mdipnl x, mdipnl y, mdipnl z, momnl x, momnl y, momnl z, " // &
         "elqupvelnl xx, elqupvelnl xy, elqupvelnl xz, elqupvelnl yx, elqupvelnl yy, elqupvelnl zz, " // &
         "ref x, ref y, refz"
-   integer, private            :: iteration = 0
-   integer, parameter, private :: nm = 9
-   type(persistent_states_type), pointer, private :: persistent_states(:, :)
+   integer :: iteration = 0
+   integer, parameter :: nm = 9
+   type(persistent_states_type), pointer :: persistent_states(:,:)
+   type(cp_cfm_p_type), pointer :: ro(:,:), roder(:,:,:), po(:,:), mo(:,:)
 
 ! *** public subroutines ***
 
@@ -104,8 +105,8 @@ contains
       logical                                :: do_kg, do_perd, do_periodic
       real(dp)                               :: dist, r_min, rcc(3), rcc0(3), ra(3), rb(3), rpoint(3), r(3), &
            mtot, mass_low, center(3), mass, qupprefactor
-      real(dp), allocatable                  :: moments(:), rccs(:, :)
-      real(dp), pointer                      :: ref_point(:)
+      real(dp), allocatable                  :: moments(:)
+      real(dp), pointer                      :: ref_point(:), rccs(:,:)
       type(atomic_kind_type), pointer        :: akind
       type(cell_type), pointer               :: cell
       type(cp_logger_type), pointer          :: logger
@@ -211,27 +212,19 @@ contains
          deallocate(wcs_to_atoms)
       end if
 
-      call dbcsr_allocate_matrix_set(pop, 3)
-      do i = 1, 3
-         call dbcsr_init_p(pop(i)%matrix)
-         call dbcsr_create(pop(i)%matrix, template=matrix_s(1)%matrix, &
-              matrix_type=dbcsr_type_antisymmetric)
-         call cp_dbcsr_alloc_block_from_nbl(pop(i)%matrix, sab_orb)
-         call dbcsr_set(pop(i)%matrix, 0._dp)
-      end do
-      call build_lin_mom_matrix(qs_env, pop) ! since it's not thread-safe
+      ! create operators
+      call create_operators(qs_env, rcc, rcc0, rccs, mo_local)
 
-      call calculate_loc_moments(qs_env, rcc, mo_local, tag="ref", pop=pop)
-      call calculate_loc_moments(qs_env, rcc0, mo_local, tag="ref0", pop=pop)
+      call calculate_loc_moments(qs_env, rcc, mo_local, opcode=-1, tag="ref")
+      call calculate_loc_moments(qs_env, rcc0, mo_local, opcode=0, tag="ref0")
 
       ! subsystems
-      !$omp parallel do
       do isubset = 1, nsubsets
          states => persistent_states(isubset, 1)%states
          name = molecules(isubset)%molecule_kind%name
-         call calculate_loc_moments(qs_env, rccs(isubset, :), mo_local, states, trim(name), pop=pop)
+         call calculate_loc_moments(qs_env, rccs(isubset, :), mo_local, isubset, states, &
+              trim(name))
       end do
-      !$omp end parallel do
       
       deallocate(first_atoms, first_basis, last_atoms, last_basis, moments, nbasis, nelectrons, &
            rccs, ref_point)
@@ -239,18 +232,148 @@ contains
       call timestop(handle)
      
    end subroutine calculate_localized_moments
+! **************************************************************************************************
 
 ! **************************************************************************************************
-   subroutine calculate_loc_moments(qs_env, rcc, mos, statelist, tag, pop)
+   subroutine create_operators(qs_env, rcc, rcc0, rccs, mos)
+
+     type(qs_environment_type), pointer :: qs_env
+     real(dp)                           :: rcc(3), rcc0(3)
+     real(dp), pointer                  :: rccs(:,:)
+     type(cp_fm_p_type), pointer        :: mos(:)
+
+     character(*), parameter :: routinen = "create_operators"
+
+     integer :: file_unit, handle, i, isubset, j, nao, nmo, nmm, nsubsets
+     real(dp), pointer :: myrcc(:)
+     type(cp_fm_struct_type), pointer :: o_struct
+     type(cp_fm_type), pointer :: or
+     type(dbcsr_p_type), pointer :: matrix_s(:), rop(:), ropder(:,:), mop(:), pop(:)
+     type(neighbor_list_set_p_type), pointer :: sab_all(:), sab_orb(:)
+
+     call timeset(routinen, handle)
+
+     call get_qs_env(qs_env, matrix_s=matrix_s, sab_all=sab_all, sab_orb=sab_orb)
+     call cp_fm_get_info(mos(1)%matrix, nrow_global=nao, ncol_global=nmo)
+
+     nsubsets = size(rccs, 1)
+
+     allocate( &
+          ro(-1:size(rccs, 1), 9), &
+          roder(-1:size(rccs, 1), 3, 3), &
+          po(-1:size(rccs, 1), 3), &
+          mo(-1:size(rccs, 1), 3))
+
+     call cp_fm_struct_create(o_struct, nrow_global=nao, ncol_global=nao, &
+          template_fmstruct=mos(1)%matrix%matrix_struct)
+     call cp_fm_create(or, o_struct)  ! tmp
+
+     do isubset = -1, nsubsets
+
+        if (isubset == -1) then
+           allocate(myrcc(3))
+           myrcc(:) = rcc(:)
+        else if (isubset == 0) then
+           allocate(myrcc(3))
+           myrcc(:) = rcc0(:)
+        else
+           myrcc => rccs(isubset, :)
+        end if
+
+        ! r and derivatives
+        nullify(rop)
+        call dbcsr_allocate_matrix_set(rop, nm)
+        do i = 1, nm
+           allocate(rop(i)%matrix)
+           call dbcsr_create(rop(i)%matrix, template=matrix_s(1)%matrix, &
+                matrix_type=dbcsr_type_no_symmetry)
+           call cp_dbcsr_alloc_block_from_nbl(rop(i)%matrix, sab_all)
+           call dbcsr_set(rop(i)%matrix, 0._dp)
+        end do
+        nullify(ropder)
+        call dbcsr_allocate_matrix_set(ropder, 3, 3)
+        do i = 1, 3
+           do j = 1, 3
+              call dbcsr_init_p(ropder(i,j)%matrix)
+              call dbcsr_create(ropder(i,j)%matrix, template=matrix_s(1)%matrix, &
+                   matrix_type=dbcsr_type_no_symmetry)
+              call cp_dbcsr_alloc_block_from_nbl(ropder(i,j)%matrix, sab_all)
+              call dbcsr_set(ropder(i,j)%matrix, 0._dp)
+           end do
+        end do
+        call build_local_moments_der_matrix(qs_env, rop, ropder, 2, 1, rcc)
+        do i = 1, nm
+           call cp_cfm_create(ro(isubset, i)%matrix, o_struct)
+           call copy_dbcsr_to_fm(rop(i)%matrix, or)
+           call dbcsr_release(rop(i)%matrix)
+           deallocate(rop(i)%matrix)
+           call cp_fm_to_cfm(or, mtarget=ro(isubset, i)%matrix)
+        end do
+        deallocate(rop)
+        do i = 1, 3
+           do j = 1, 3
+              call cp_cfm_create(roder(isubset,i,j)%matrix, o_struct)
+              call copy_dbcsr_to_fm(ropder(i,j)%matrix, or)
+              call dbcsr_release(ropder(i,j)%matrix)
+              deallocate(ropder(i,j)%matrix)
+              call cp_fm_to_cfm(or, mtarget=roder(isubset,i,j)%matrix)
+           end do
+        end do
+        deallocate(ropder)
+
+        ! m
+        nullify(mop)
+        call build_local_magmom_matrix(qs_env, mop, 1, rcc)
+        nmm = size(mop)
+        do i = 1, nmm
+           call cp_cfm_create(mo(isubset,i)%matrix, o_struct)
+           call copy_dbcsr_to_fm(mop(i)%matrix, or)
+           call dbcsr_release(mop(i)%matrix)
+           deallocate(mop(i)%matrix)
+           call cp_fm_to_cfm(or, mtarget=mo(isubset,i)%matrix)
+        end do
+        deallocate(mop)
+
+        ! p
+        nullify(pop)
+        call dbcsr_allocate_matrix_set(pop, 3)
+        do i = 1, 3
+           call dbcsr_init_p(pop(i)%matrix)
+           call dbcsr_create(pop(i)%matrix, template=matrix_s(1)%matrix, &
+                matrix_type=dbcsr_type_antisymmetric)
+           call cp_dbcsr_alloc_block_from_nbl(pop(i)%matrix, sab_orb)
+           call dbcsr_set(pop(i)%matrix, 0._dp)
+        end do
+        call build_lin_mom_matrix(qs_env, pop)
+        do i = 1, 3
+           call cp_cfm_create(po(isubset,i)%matrix, o_struct)
+           call copy_dbcsr_to_fm(pop(i)%matrix, or)
+           call dbcsr_release(pop(i)%matrix)
+           deallocate(pop(i)%matrix)
+           call cp_fm_to_cfm(or, mtarget=po(isubset,i)%matrix)
+        end do
+     end do
+     
+     call cp_fm_release(or)  ! tmp
+     call cp_fm_struct_release(o_struct)
+     
+     call timestop(handle)
+
+   end subroutine create_operators
+! **************************************************************************************************
+
+
+! **************************************************************************************************
+   subroutine calculate_loc_moments(qs_env, rcc, mos, opcode, statelist, tag)
 
      type(qs_environment_type), pointer  :: qs_env
      real(dp)                            :: rcc(3)
      type(cp_fm_p_type), pointer         :: mos(:)
+     integer                             :: opcode
      integer, pointer, optional          :: statelist(:)
      character(*), optional              :: tag
-     type(dbcsr_p_type), pointer, optional        :: pop(:)
 
-     character(*), parameter :: routinen = "calculate"
+     character(*), parameter :: routinen = "calculate_loc_moments"
 
      complex(dp) :: di
      integer :: file_unit, handle, i, j, k, nao, nmm, nmo, ns
@@ -258,11 +381,11 @@ contains
      logical :: do_rtp
      real(dp) :: d, mu(3), muv(3), m(3), th(6), thder(9), thv(6), q, zwfc
      real(dp), allocatable :: rv(:), rrv(:), rxrv(:)
-     type(cp_cfm_p_type), pointer :: mo(:), po(:), ro(:), roder(:,:)
+     !type(cp_cfm_p_type), pointer :: mo(:), po(:), ro(:), roder(:,:)
      type(cp_cfm_type), pointer :: o, ov, v, vov
      type(cp_fm_struct_type), pointer :: v_struct, o_struct, vov_struct
      type(cp_fm_type), pointer :: or, vr, vi
-     type(dbcsr_p_type), pointer :: matrix_s(:), rop(:), ropder(:, :), mop(:)
+     type(dbcsr_p_type), pointer :: matrix_s(:)!, rop(:), ropder(:, :), mop(:), pop(:)
      type(neighbor_list_set_p_type), pointer :: sab_all(:), sab_orb(:)
 
      call timeset(routinen, handle)
@@ -312,98 +435,6 @@ contains
      call cp_fm_release(vr)
      call cp_fm_release(vi)
      
-     ! operators
-     call cp_fm_create(or, o_struct)  ! tmp
-
-     ! r
-     nullify(rop)
-     call dbcsr_allocate_matrix_set(rop, nm)
-     do i = 1, nm
-        allocate(rop(i)%matrix)
-        call dbcsr_create(rop(i)%matrix, template=matrix_s(1)%matrix, &
-             matrix_type=dbcsr_type_no_symmetry)
-        call cp_dbcsr_alloc_block_from_nbl(rop(i)%matrix, sab_all)
-        call dbcsr_set(rop(i)%matrix, 0._dp)
-     end do
-
-     nullify(ropder)
-     call dbcsr_allocate_matrix_set(ropder, 3, 3)
-     do i = 1, 3
-        do j = 1, 3
-           call dbcsr_init_p(ropder(i,j)%matrix)
-           call dbcsr_create(ropder(i,j)%matrix, template=matrix_s(1)%matrix, &
-                matrix_type=dbcsr_type_no_symmetry)
-           call cp_dbcsr_alloc_block_from_nbl(ropder(i,j)%matrix, sab_all)
-           call dbcsr_set(ropder(i,j)%matrix, 0._dp)
-        end do
-     end do
-
-     !call build_local_moment_matrix(qs_env, rop, 2, rcc)
-     call build_local_moments_der_matrix(qs_env, rop, ropder, 2, 1, rcc)
-
-     allocate(ro(9))
-     do i = 1, nm
-        call cp_cfm_create(ro(i)%matrix, o_struct)
-        call copy_dbcsr_to_fm(rop(i)%matrix, or)
-        print *, "dbg| rop(i) chks ", i, dbcsr_checksum(rop(i)%matrix)
-        call dbcsr_release(rop(i)%matrix)
-        deallocate(rop(i)%matrix)
-        call cp_fm_to_cfm(or, mtarget=ro(i)%matrix)
-     end do
-     deallocate(rop)
-
-     allocate(roder(3, 3))
-     do i = 1, 3
-        do j = 1, 3
-           call cp_cfm_create(roder(i,j)%matrix, o_struct)
-           call copy_dbcsr_to_fm(ropder(i,j)%matrix, or)
-           call dbcsr_release(ropder(i,j)%matrix)
-           deallocate(ropder(i,j)%matrix)
-           call cp_fm_to_cfm(or, mtarget=roder(i,j)%matrix)
-        end do
-     end do
-     deallocate(ropder)
-
-     ! p
-     nullify(pop)
-     call dbcsr_allocate_matrix_set(pop, 3)
-     do i = 1, 3
-        call dbcsr_init_p(pop(i)%matrix)
-        call dbcsr_create(pop(i)%matrix, template=matrix_s(1)%matrix, &
-             matrix_type=dbcsr_type_antisymmetric)
-        call cp_dbcsr_alloc_block_from_nbl(pop(i)%matrix, sab_orb)
-        call dbcsr_set(pop(i)%matrix, 0._dp)
-     end do
-
-     call build_lin_mom_matrix(qs_env, pop)
-
-     allocate(po(size(pop)))
-     do i = 1, 3
-        call cp_cfm_create(po(i)%matrix, o_struct)
-        call copy_dbcsr_to_fm(pop(i)%matrix, or)
-        call dbcsr_release(pop(i)%matrix)
-        deallocate(pop(i)%matrix)
-        call cp_fm_to_cfm(or, mtarget=po(i)%matrix)
-     end do
-
-     ! m
-     nullify(mop)
-     call build_local_magmom_matrix(qs_env, mop, 1, rcc)
-     nmm = size(mop)
-
-     allocate(mo(nmm))
-     do i = 1, nmm
-        call cp_cfm_create(mo(i)%matrix, o_struct)
-        call copy_dbcsr_to_fm(mop(i)%matrix, or)
-        call dbcsr_release(mop(i)%matrix)
-        deallocate(mop(i)%matrix)
-        call cp_fm_to_cfm(or, mtarget=mo(i)%matrix)
-     end do
-     deallocate(mop)
-
-     call cp_fm_release(or)  ! tmp
-     call cp_fm_struct_release(o_struct)
-
      ! charge
      q = -ns * zwfc
      call open_file("q_"//tag//".csv", unit_number=file_unit, file_action="write", &
@@ -416,10 +447,9 @@ contains
      ! mu
      mu = 0._dp
      do i = 1, 3
-        o => ro(i)%matrix
+        o => ro(opcode, i)%matrix
         call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
         call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
-        call cp_cfm_release(o)
         d = 0._dp
         do j = 1, ns
            call cp_cfm_get_element(vov, j, j, di)
@@ -437,10 +467,9 @@ contains
      ! muv
      muv = 0._dp
      do i = 1, 3
-        o => po(i)%matrix
+        o => po(opcode, i)%matrix
         call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
         call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
-        call cp_cfm_release(o)
         d = 0._dp
         do j = 1, ns
            call cp_cfm_get_element(vov, j, j, di)
@@ -448,7 +477,6 @@ contains
         end do
         muv(i) = -zwfc * d
      end do
-     deallocate(po)
      call open_file("muv_"//tag//".csv", unit_number=file_unit, file_action="write", &
           file_position="append", file_status="unknown")
      if (file_unit > 0) then
@@ -459,10 +487,9 @@ contains
      ! m
      m = 0._dp
      do i = 1, 3
-        o => mo(i)%matrix
+        o => mo(opcode, i)%matrix
         call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
         call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
-        call cp_cfm_release(o)
         d = 0._dp
         do j = 1, ns
            call cp_cfm_get_element(vov, j, j, di)
@@ -470,7 +497,6 @@ contains
         end do
         m(i) = - zwfc * d
      end do
-     deallocate(mo)
      call open_file("m_"//tag//".csv", unit_number=file_unit, file_action="write", &
           file_position="append", file_status="unknown")
      if (file_unit > 0) then
@@ -481,10 +507,9 @@ contains
      ! th
      th = 0._dp
      do i = 1, 6
-        o => ro(i+3)%matrix
+        o => ro(opcode, i+3)%matrix
         call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
         call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
-        call cp_cfm_release(o)
         d = 0._dp
         do j = 1, ns
            call cp_cfm_get_element(vov, j, j, di)
@@ -492,7 +517,6 @@ contains
         end do
         th(i) = -d
      end do
-     deallocate(ro)
      call open_file("th_"//tag//".csv", unit_number=file_unit, file_action="write", &
           file_position="append", file_status="unknown")
      if (file_unit > 0) then
@@ -504,10 +528,9 @@ contains
      thv = 0._dp
      do i = 1, 3
         do j = 1, 3
-           o => roder(i, j)%matrix
+           o => roder(opcode, i, j)%matrix
            call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o, v, (0._dp, 0._dp), ov)
            call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), v, ov, (0._dp, 0._dp), vov)
-           call cp_cfm_release(o)
            d = 0._dp
            do k = 1, ns
               call cp_cfm_get_element(vov, k, k, di)
@@ -519,7 +542,6 @@ contains
            thder((i-1)*3+j) = zwfc * d
         end do
      end do
-     deallocate(roder)
      thv(1) = -2 * thder(1) - q
      thv(2) = -thder(2) - thder(4)
      thv(3) = -thder(3) - thder(7)

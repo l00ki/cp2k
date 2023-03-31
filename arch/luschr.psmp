@@ -7,7 +7,7 @@
 	module add cray-fftw; \
 	module add Libint-CP2K; \
 	module add ELPA; \
-  	module add libxc/5.1.7-CrayGNU-21.09; \
+	module add libxc/5.1.7-CrayGNU-21.09; \
 	return
 
 # options
@@ -17,25 +17,25 @@ DEBUG          := no
 GCC_MASTER     := no
 HIP            := no
 OPENCL         := no
-CRAY           := yes
+CRAY           := no
 LIBXSMM_MASTER := no
-MPI_MODE       := mpich
-MATH_MODE      := cray
-LIBINT_LMAX    := 5
+MPI_MODE       := openmpi
+MATH_MODE      := openblas
+LIBINT_LMAX    := 4
 MAX_CONTR      := 4
 # libraries
 USE_COSMA     := no
 USE_ELPA      := no
 ELPA_VERSION  := no
-USE_ACML      := no
-USE_FFTW      := no
-USE_GCC       := no
-USE_INTEL     := no
-USE_INTELMPI  := no
+USE_ACML      := yes
+USE_FFTW      := yes
+USE_GCC       := yes
+USE_INTEL     := yes
+USE_INTELMPI  := yes
 USE_LIBINT    := no
 USE_LIBPEXSI  := no
 USE_LIBVORI   := no
-USE_LIBXC     := yes
+USE_LIBXC     := $(HOME)/opt/libxc-v6.0.0
 USE_LIBXSMM   := no
 USE_MPICH     := no
 USE_OPENBLAS  := no
