@@ -210,10 +210,10 @@ contains
                  persistent_states(isubset, 1)%states
          end do
          deallocate(wcs_to_atoms)
-      end if
 
-      ! create operators
-      call create_operators(qs_env, rcc, rcc0, rccs, mo_local)
+         ! create operators
+         call create_operators(qs_env, rcc, rcc0, rccs, mo_local)
+      end if
 
       call calculate_loc_moments(qs_env, rcc, mo_local, opcode=-1, tag="ref")
       call calculate_loc_moments(qs_env, rcc0, mo_local, opcode=0, tag="ref0")
@@ -269,6 +269,8 @@ contains
      call cp_fm_create(or, o_struct)  ! tmp
 
      do isubset = -1, nsubsets
+
+        print *, "create operator", isubset
 
         if (isubset == -1) then
            allocate(myrcc(3))
@@ -352,6 +354,13 @@ contains
            deallocate(pop(i)%matrix)
            call cp_fm_to_cfm(or, mtarget=po(isubset,i)%matrix)
         end do
+        deallocate(pop)
+
+        if (isubset == -1) then
+           deallocate(myrcc)
+        else if (isubset == 0) then
+           deallocate(myrcc)
+        end if
      end do
      
      call cp_fm_release(or)  ! tmp
@@ -408,8 +417,6 @@ contains
 
      ! matrices
      call cp_fm_struct_create(v_struct, nrow_global=nao, ncol_global=ns, &
-          template_fmstruct=mos(1)%matrix%matrix_struct)
-     call cp_fm_struct_create(o_struct, nrow_global=nao, ncol_global=nao, &
           template_fmstruct=mos(1)%matrix%matrix_struct)
      call cp_fm_struct_create(vov_struct, nrow_global=ns, ncol_global=ns, &
           template_fmstruct=mos(1)%matrix%matrix_struct)
