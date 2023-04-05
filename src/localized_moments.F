@@ -574,7 +574,7 @@ contains
      rv = 0._dp
      rrv = 0._dp
      rxrv = 0._dp
-     !call calculate_commutator_nl_terms(qs_env, rv, rxrv, rrv, rcc)
+     call calculate_commutator_nl_terms(qs_env, rv, rxrv, rrv, rcc)
 
      call open_file("rv_"//tag//".csv", unit_number=file_unit, file_action="write", &
           file_position="append", file_status="unknown")
