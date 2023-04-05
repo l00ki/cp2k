@@ -303,7 +303,7 @@ contains
               call dbcsr_set(ropder(i,j)%matrix, 0._dp)
            end do
         end do
-        call build_local_moments_der_matrix(qs_env, rop, ropder, 2, 1, rcc)
+        call build_local_moments_der_matrix(qs_env, rop, ropder, 2, 1, myrcc)
         do i = 1, nm
            call cp_cfm_create(ro(isubset, i)%matrix, o_struct)
            call copy_dbcsr_to_fm(rop(i)%matrix, or)
@@ -325,7 +325,7 @@ contains
 
         ! m
         nullify(mop)
-        call build_local_magmom_matrix(qs_env, mop, 1, rcc)
+        call build_local_magmom_matrix(qs_env, mop, 1, myrcc)
         nmm = size(mop)
         do i = 1, nmm
            call cp_cfm_create(mo(isubset,i)%matrix, o_struct)
