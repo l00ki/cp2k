@@ -26,6 +26,8 @@ MODULE qs_loc_utils
    USE cp_dbcsr_operations,             ONLY: cp_dbcsr_sm_fm_multiply
    USE cp_files,                        ONLY: close_file,&
                                               open_file
+   USE cp_cfm_types,                    ONLY: cp_cfm_p_type,&
+                                              cp_cfm_type
    USE cp_fm_basic_linalg,              ONLY: cp_fm_column_scale
    USE cp_fm_diag,                      ONLY: choose_eigv_solver
    USE cp_fm_struct,                    ONLY: cp_fm_struct_create,&
@@ -292,6 +294,7 @@ CONTAINS
       CALL cp_fm_release(rmat)
 
    END SUBROUTINE jacobi_rotation_pipek
+
 
 ! **************************************************************************************************
 !> \brief ...
@@ -634,6 +637,7 @@ CONTAINS
 
          ELSEIF (localized_wfn_control%operator_type == op_loc_pipek) THEN
             natoms = SIZE(qs_loc_env%particle_set, 1)
+            !print *, "DBG| natoms", natoms
             ALLOCATE (qs_loc_env%op_fm_set(natoms, 1))
             CALL set_qs_loc_env(qs_loc_env=qs_loc_env, dim_op=natoms)
             DO ispin = 1, SIZE(qs_loc_env%op_fm_set, 2)

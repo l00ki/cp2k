@@ -24,12 +24,14 @@ MODULE qs_loc_methods
                                               set_atomic_kind
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
+   USE cp_cfm_basic_linalg,             ONLY: cp_cfm_gemm
    USE cp_cfm_types,                    ONLY: cp_cfm_create,&
                                               cp_cfm_get_element,&
                                               cp_cfm_get_info,&
                                               cp_cfm_p_type,&
                                               cp_cfm_release,&
                                               cp_cfm_set_all,&
+                                              cp_cfm_set_element,&
                                               cp_cfm_to_cfm,&
                                               cp_cfm_to_fm,&
                                               cp_cfm_type,&
@@ -37,6 +39,8 @@ MODULE qs_loc_methods
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
    USE cp_dbcsr_operations,             ONLY: copy_dbcsr_to_fm
+   USE cp_files,                        ONLY: open_file, &
+                                              close_file
    USE cp_fm_pool_types,                ONLY: cp_fm_pool_p_type,&
                                               fm_pool_create_fm
    USE cp_fm_struct,                    ONLY: cp_fm_struct_create,&
@@ -104,6 +108,7 @@ MODULE qs_loc_methods
    USE qs_loc_utils,                    ONLY: jacobi_rotation_pipek
    USE qs_localization_methods,         ONLY: approx_l1_norm_sd,&
                                               cardoso_souloumiac,&
+                                              cardoso_souloumiac_pipek,&
                                               crazy_rotations,&
                                               direct_mini,&
                                               jacobi_rotations,&
@@ -178,7 +183,7 @@ CONTAINS
 
       TYPE(cp_cfm_p_type), DIMENSION(:, :), POINTER      :: my_zij_cfm_set
       INTEGER                                            :: handle, max_iter, nao, nmoloc, out_each, &
-                                                            output_unit, sweeps
+                                                            output_unit, sweeps, file_unit
       LOGICAL                                            :: converged, crazy_use_diag, &
                                                             do_jacobi_refinement, &
                                                             vectors_are_complex
@@ -248,10 +253,20 @@ CONTAINS
       END IF
       SELECT CASE (method)
       CASE (do_loc_jacobi)
+
+         !call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !call cp_fm_write_formatted(vectors, file_unit)
+         !call close_file(file_unit)
+
          CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                eps_localization=eps_localization, sweeps=sweeps, &
                                out_each=out_each, target_time=target_time, start_time=start_time, &
                                vectors=vectors)
+
+         !call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !call cp_fm_write_formatted(vectors, file_unit)
+         !call close_file(file_unit)
+
       CASE (do_loc_scdm)
          ! Decomposition
          CALL scdm_qrfact(vectors)
@@ -298,8 +313,18 @@ CONTAINS
             CALL zij_matrix(op_sm_set, zij_fm_set, vectors)
          END IF
       CASE (do_loc_cardoso)
+
+         !call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         !call cp_cfm_write_formatted(complex_vectors, file_unit)
+         !call close_file(file_unit)
+
          CALL cardoso_souloumiac(weights, my_zij_cfm_set, para_env, max_iter, eps_localization, &
                                  sweeps, out_each, target_time, start_time, complex_vectors)
+
+         !call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         !call cp_cfm_write_formatted(complex_vectors, file_unit)
+         !call close_file(file_unit)
+
       CASE (do_loc_none)
          IF (output_unit > 0) THEN
             WRITE (output_unit, '(T4,A,I6,A)') " No MOS localization applied "
@@ -345,20 +370,28 @@ CONTAINS
 !> \author MI
 ! **************************************************************************************************
    SUBROUTINE optimize_loc_pipek(qs_env, method, qs_loc_env, vectors, zij_fm_set, &
-                                 ispin, print_loc_section)
+                                 para_env, ispin, print_loc_section, im_vectors)
       TYPE(qs_environment_type), POINTER                 :: qs_env
       INTEGER, INTENT(IN)                                :: method
       TYPE(qs_loc_env_new_type), POINTER                 :: qs_loc_env
       TYPE(cp_fm_type), POINTER                          :: vectors
       TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: zij_fm_set
+      TYPE(cp_para_env_type), POINTER                    :: para_env
       INTEGER, INTENT(IN)                                :: ispin
       TYPE(section_vals_type), POINTER                   :: print_loc_section
+      TYPE(cp_fm_type), OPTIONAL, POINTER                :: im_vectors
 
       CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_pipek'
 
+      COMPLEX(dp)                                        :: q, ca, cb
       INTEGER                                            :: handle, iatom, isgf, ldz, nao, natom, &
-                                                            ncol, nmoloc, output_unit, sweeps
+           ncol, nmoloc, output_unit, sweeps, max_iter, out_each, file_unit, i, j, k
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: first_sgf, last_sgf, nsgf
+      LOGICAL                                            :: do_complex
+      REAL(dp)                                           :: start_time, target_time, eps
+      REAL(dp), allocatable                              :: weights(:)
+      TYPE(cp_cfm_p_type), DIMENSION(:, :), POINTER      :: c_zij
+      TYPE(cp_cfm_type), POINTER                         :: c_vec, c_opvec, c_ov
       TYPE(cp_fm_pool_p_type), DIMENSION(:), POINTER     :: ao_ao_fm_pools
       TYPE(cp_fm_type), POINTER                          :: opvec, ov_fm
       TYPE(cp_logger_type), POINTER                      :: logger
@@ -382,6 +415,11 @@ CONTAINS
       CALL get_qs_env(qs_env=qs_env, matrix_s=matrix_s, &
                       particle_set=particle_set, qs_kind_set=qs_kind_set)
 
+      ! localization options
+      max_iter = qs_loc_env%localized_wfn_control%max_iter
+      eps = qs_loc_env%localized_wfn_control%eps_localization
+      out_each = qs_loc_env%localized_wfn_control%out_each
+
       natom = SIZE(particle_set, 1)
       ALLOCATE (first_sgf(natom))
       ALLOCATE (last_sgf(natom))
@@ -396,29 +434,141 @@ CONTAINS
       CALL fm_pool_create_fm(ao_ao_fm_pools(1)%pool, ov_fm, name=" ")
       CALL copy_dbcsr_to_fm(matrix_s(1)%matrix, ov_fm)
 
+      ! handle complex input (RTP case)
+      if (present(im_vectors)) then
+         do_complex = .true.
+      else
+         do_complex = .false.
+      end if
+
+      !call open_file("s.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+      !call cp_fm_write_formatted(ov_fm, file_unit)
+      !call close_file(file_unit)
+
       !   Compute zij here
-      DO iatom = 1, natom
-         CALL cp_fm_set_all(zij_fm_set(iatom, 1)%matrix, 0.0_dp)
-         CALL cp_fm_get_info(zij_fm_set(iatom, 1)%matrix, ncol_global=ldz)
-         isgf = first_sgf(iatom)
-         ncol = nsgf(iatom)
+      if (.not. do_complex .and. .not. method == do_loc_cardoso) then
+         !call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !call cp_fm_write_formatted(vectors, file_unit)
+         !call close_file(file_unit)
 
-         ! multiply fmxfm, using only part of the ao : Ct x S
-         CALL cp_gemm('N', 'N', nao, nmoloc, nao, 1.0_dp, ov_fm, vectors, 0.0_dp, opvec, &
-                      a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+         call cp_gemm('N', 'N', nao, nmoloc, nao, 1.0_dp, ov_fm, vectors, 0.0_dp, opvec)
 
-         CALL cp_gemm('T', 'N', nmoloc, nmoloc, ncol, 0.5_dp, vectors, opvec, &
-                      0.0_dp, zij_fm_set(iatom, 1)%matrix, &
-                      a_first_col=1, a_first_row=isgf, b_first_col=1, b_first_row=isgf)
+         !call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !call cp_fm_write_formatted(opvec, file_unit)
+         !call close_file(file_unit)
 
-         CALL cp_gemm('N', 'N', nao, nmoloc, ncol, 1.0_dp, ov_fm, vectors, 0.0_dp, opvec, &
-                      a_first_col=isgf, a_first_row=1, b_first_col=1, b_first_row=isgf)
+         !call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !call close_file(file_unit)
 
-         CALL cp_gemm('T', 'N', nmoloc, nmoloc, nao, 0.5_dp, vectors, opvec, &
-                      1.0_dp, zij_fm_set(iatom, 1)%matrix, &
-                      a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+         DO iatom = 1, natom
+            CALL cp_fm_set_all(zij_fm_set(iatom, 1)%matrix, 0.0_dp)
+            CALL cp_fm_get_info(zij_fm_set(iatom, 1)%matrix, ncol_global=ldz)
+            isgf = first_sgf(iatom)
+            ncol = nsgf(iatom)
 
-      END DO ! iatom
+            ! multiply fmxfm, using only part of the ao : Ct x S
+            CALL cp_gemm('N', 'N', nao, nmoloc, nao, 1.0_dp, ov_fm, vectors, 0.0_dp, opvec, &
+                 a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+
+            CALL cp_gemm('T', 'N', nmoloc, nmoloc, ncol, 0.5_dp, vectors, opvec, &
+                 0.0_dp, zij_fm_set(iatom, 1)%matrix, &
+                 a_first_col=1, a_first_row=isgf, b_first_col=1, b_first_row=isgf)
+
+            CALL cp_gemm('N', 'N', nao, nmoloc, ncol, 1.0_dp, ov_fm, vectors, 0.0_dp, opvec, &
+                 a_first_col=isgf, a_first_row=1, b_first_col=1, b_first_row=isgf)
+
+            CALL cp_gemm('T', 'N', nmoloc, nmoloc, nao, 0.5_dp, vectors, opvec, &
+                 1.0_dp, zij_fm_set(iatom, 1)%matrix, &
+                 a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+
+            !call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+            !call cp_fm_write_formatted(zij_fm_set(iatom, 1)%matrix, file_unit)
+            !call close_file(file_unit)
+
+         END DO ! iatom
+      else
+         call cp_cfm_create(c_vec, vectors%matrix_struct)
+         if (present(im_vectors)) then
+            call cp_fm_to_cfm(vectors, im_vectors, c_vec)
+         else
+            call cp_fm_to_cfm(vectors, mtarget=c_vec)
+         end if
+
+         allocate(c_zij(natom, 1))
+         call cp_cfm_create(c_opvec, opvec%matrix_struct)
+         call cp_cfm_set_all(c_opvec, (0.0_dp, 0.0_dp))
+         call cp_cfm_create(c_ov, ov_fm%matrix_struct)
+         call cp_fm_to_cfm(ov_fm, mtarget=c_ov)
+
+         !if (do_complex) then
+         !   call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         !else
+         !   call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !end if
+         !call cp_cfm_write_formatted(c_vec, file_unit)
+         !call close_file(file_unit)
+
+         call cp_cfm_gemm('N', 'N', nao, nmoloc, nao, (1.0_dp, 0.0_dp), c_ov, c_vec, (0.0_dp, 0.0_dp), c_opvec)
+
+         !if (do_complex) then
+         !   call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         !else
+         !   call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !end if
+         !call cp_cfm_write_formatted(c_opvec, file_unit)
+         !call close_file(file_unit)
+
+         !if (do_complex) then
+         !   call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         !else
+         !   call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !end if
+
+         do iatom = 1, natom
+            call cp_cfm_create(c_zij(iatom, 1)%matrix, zij_fm_set(iatom, 1)%matrix%matrix_struct)
+            call cp_cfm_set_all(c_zij(iatom, 1)%matrix, (0.0_dp, 0.0_dp))
+            call cp_cfm_get_info(c_zij(iatom, 1)%matrix, ncol_global=ldz)
+            isgf = first_sgf(iatom)
+            ncol = nsgf(iatom)
+
+            do i = 1, ldz
+               do j = 1, ldz
+                  call cp_cfm_get_element(c_zij(iatom, 1)%matrix, i, j, q)
+                  do k = isgf, isgf + ncol - 1
+                     call cp_cfm_get_element(c_vec, k, i, ca)
+                     call cp_cfm_get_element(c_opvec, k, j, cb)
+                     q = q + 0.5_dp * conjg(ca) * cb
+                     call cp_cfm_get_element(c_vec, k, j, ca)
+                     call cp_cfm_get_element(c_opvec, k, i, cb)
+                     q = q + 0.5_dp * conjg(ca) * cb
+                  end do
+                  call cp_cfm_set_element(c_zij(iatom, 1)%matrix, i, j, q)
+               end do
+            end do
+            
+            !! multiply fmxfm, using only part of the ao : Ct x S
+            !CALL cp_cfm_gemm('N', 'N', nao, nmoloc, nao, (1.0_dp, 0.0_dp), c_ov, c_vec, &
+            !     (0.0_dp, 0.0_dp), c_opvec, &
+            !     a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+
+            !CALL cp_cfm_gemm('C', 'N', nmoloc, nmoloc, ncol, (0.5_dp, 0.0_dp), c_vec, c_opvec, &
+            !     (0.0_dp, 0.0_dp), c_zij(iatom, 1)%matrix, &
+            !     a_first_col=1, a_first_row=isgf, b_first_col=1, b_first_row=isgf)
+
+            !CALL cp_cfm_gemm('N', 'N', nao, nmoloc, ncol, (1.0_dp, 0.0_dp), c_ov, c_vec, &
+            !     (0.0_dp, 0.0_dp), c_opvec, &
+            !     a_first_col=isgf, a_first_row=1, b_first_col=1, b_first_row=isgf)
+
+            !CALL cp_cfm_gemm('C', 'N', nmoloc, nmoloc, nao, (0.5_dp, 0.0_dp), c_vec, c_opvec, &
+            !     (1.0_dp, 0.0_dp), c_zij(iatom, 1)%matrix, &
+            !     a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+         
+            !call cp_cfm_write_formatted(c_zij(iatom, 1)%matrix, file_unit)
+         end do
+
+         !call close_file(file_unit)
+      end if
+         
 
       !   And now perform the optimization and rotate the orbitals
       SELECT CASE (method)
@@ -430,6 +580,31 @@ CONTAINS
          CPABORT("L1 norm and Pipek not implemented.")
       CASE (do_loc_direct)
          CPABORT("Direct and Pipek not implemented.")
+      CASE (do_loc_cardoso)
+         CALL cardoso_souloumiac_pipek(c_zij, c_vec, sweeps, max_iter, eps, out_each)
+
+         !if (do_complex) then
+         !   call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         !else
+         !   call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !end if
+         !call cp_cfm_write_formatted(c_vec, file_unit)
+         !call close_file(file_unit)
+
+         !if (do_complex) then
+         !   call open_file("zij_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         !else
+         !   call open_file("zij_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !end if
+
+         do iatom = 1, natom
+            call cp_cfm_to_fm(c_zij(iatom, 1)%matrix, mtargetr=zij_fm_set(iatom, 1)%matrix)
+            !call cp_cfm_write_formatted(c_zij(iatom, 1)%matrix, file_unit)
+         end do
+         !call close_file(file_unit)
+
+         call cp_cfm_to_fm(c_vec, vectors, im_vectors)
+
       CASE (do_loc_none)
          IF (output_unit > 0) WRITE (output_unit, '(A,I6,A)') " No MOS localization applied "
       CASE DEFAULT
@@ -755,11 +930,9 @@ CONTAINS
       IF (PRESENT(ext_mo_coeff)) THEN
          CPASSERT(.NOT. PRESENT(complex_mo_coeff))
          mos_are_complex = .FALSE.
-         ALLOCATE (op_fm_set(2, dim_op))
       ELSE
          CPASSERT(.NOT. PRESENT(ext_mo_coeff))
          mos_are_complex = .TRUE.
-         ALLOCATE (op_cfm_set(2, dim_op))
       END IF
 
       DO ispin = s_spin, l_spin
@@ -767,9 +940,122 @@ CONTAINS
          CALL get_mo_set(mo_set=mos(ispin)%mo_set, nao=nao, nmo=nmo)
          loc_method = localized_wfn_control%localization_method
 
+         ! Write cube files if required
+         IF (localized_wfn_control%print_cubes) THEN
+            list_cubes_setup = .FALSE.
+            NULLIFY (bounds, list, list_cubes)
+
+            ! Provides boundaries of MOs
+            CALL section_vals_val_get(print_loc_section, "WANNIER_CUBES%CUBES_LU_BOUNDS", &
+                                      i_vals=bounds)
+            ncubes = bounds(2) - bounds(1) + 1
+            IF (ncubes > 0) THEN
+               list_cubes_setup = .TRUE.
+               ALLOCATE (list_cubes(ncubes))
+               DO ir = 1, ncubes
+                  list_cubes(ir) = bounds(1) + (ir - 1)
+               END DO
+            END IF
+
+            ! Provides the list of MOs
+            CALL section_vals_val_get(print_loc_section, "WANNIER_CUBES%CUBES_LIST", &
+                                      n_rep_val=n_rep)
+            IF (.NOT. list_cubes_setup) THEN
+               ncubes = 0
+               DO ir = 1, n_rep
+                  CALL section_vals_val_get(print_loc_section, "WANNIER_CUBES%CUBES_LIST", &
+                                            i_rep_val=ir, i_vals=list)
+                  IF (ASSOCIATED(list)) THEN
+                     CALL reallocate(list_cubes, 1, ncubes + SIZE(list))
+                     DO i = 1, SIZE(list)
+                        list_cubes(i + ncubes) = list(i)
+                     END DO
+                     ncubes = ncubes + SIZE(list)
+                  END IF
+               END DO
+               IF (ncubes > 0) list_cubes_setup = .TRUE.
+            END IF
+
+            ! Full list of Mos
+            IF (.NOT. list_cubes_setup) THEN
+               list_cubes_setup = .TRUE.
+               ncubes = localized_wfn_control%nloc_states(1)
+               IF (ncubes > 0) THEN
+                  ALLOCATE (list_cubes(ncubes))
+               END IF
+               DO i = 1, ncubes
+                  list_cubes(i) = i
+               END DO
+            END IF
+
+            ncubes = SIZE(list_cubes)
+            ncubes = MIN(ncubes, nmo)
+            ALLOCATE (centers(6, ncubes))
+            DO i = 1, ncubes
+               istate = list_cubes(i)
+               DO j = 1, localized_wfn_control%nloc_states(ispin)
+                  jstate = localized_wfn_control%loc_states(j, ispin)
+                  IF (istate == jstate) THEN
+                     centers(1:6, i) = localized_wfn_control%centers_set(ispin)%array(1:6, j)
+                     EXIT
+                  ENDIF
+               END DO
+            END DO ! ncubes
+
+            ! Real call for dumping the cube files
+            print_key => section_vals_get_subs_vals(print_loc_section, "WANNIER_CUBES")
+            append_cube = section_get_lval(print_loc_section, "WANNIER_CUBES%APPEND")
+            do_density_cube = section_get_lval(print_loc_section, "WANNIER_CUBES%DENSITY")
+            my_pos = "REWIND"
+            IF (append_cube) THEN
+               my_pos = "APPEND"
+            END IF
+
+            IF (.NOT. mos_are_complex) THEN
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, centers, &
+                                   print_key, "deloc"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                   mo_coeff=moloc_coeff(ispin)%matrix, &
+                                   ispin=ispin, file_position=my_pos)
+               IF (do_density_cube) THEN
+                  CALL qs_print_density_cubes(qs_env, ncubes, list_cubes, centers, &
+                                              print_key, "delocdens"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                              mo_coeff=moloc_coeff(ispin)%matrix, &
+                                              ispin=ispin, file_position=my_pos)
+               END IF
+            ELSE
+               ! real part
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, centers, &
+                                   print_key, "delocreal"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                   mo_coeff=moloc_coeff(2*ispin-1)%matrix, &
+                                   ispin=ispin, file_position=my_pos)
+               ! imaginary part
+               CALL qs_print_cubes(qs_env, ncubes, list_cubes, centers, &
+                                   print_key, "delocimag"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                   mo_coeff=moloc_coeff(2*ispin)%matrix, &
+                                   ispin=ispin, file_position=my_pos)
+               IF (do_density_cube) THEN
+                  CALL qs_print_density_cubes(qs_env, ncubes, list_cubes, centers, &
+                                              print_key, "delocdens"//TRIM(ADJUSTL(qs_loc_env%tag_mo)), &
+                                              complex_mo_coeff=complex_moloc_coeff(ispin)%matrix, &
+                                              ispin=ispin, file_position=my_pos)
+               END IF
+            END IF 
+
+            DEALLOCATE (centers)
+            DEALLOCATE (list_cubes)
+         END IF
+
          SELECT CASE (localized_wfn_control%operator_type)
 
          CASE (op_loc_berry)
+
+            ! real and complex cases are mutually exclusive
+            IF (mos_are_complex) THEN
+               ALLOCATE (op_cfm_set(2, dim_op))
+            ELSE
+               ALLOCATE (op_fm_set(2, dim_op))
+            END IF
+
             ! Here we allocate op_fm_set with the RIGHT size for uks
             NULLIFY (tmp_fm_struct, mo_coeff)
             nmosub = localized_wfn_control%nloc_states(ispin)
@@ -818,6 +1104,9 @@ CONTAINS
                                        para_env, cell, weights, ispin, print_loc_section, &
                                        zij_cfm_set=op_cfm_set, &
                                        complex_vectors=complex_mo_coeff)
+
+               call cp_cfm_to_fm(complex_mo_coeff, moloc_coeff(2*ispin-1)%matrix, &
+                    moloc_coeff(2*ispin)%matrix)
             END IF
 
             ! Here we dealloctate op_fm_set
@@ -843,9 +1132,14 @@ CONTAINS
 
          CASE (op_loc_pipek)
 
-            CPASSERT(.NOT. PRESENT(complex_mo_coeff))
-            CALL optimize_loc_pipek(qs_env, loc_method, qs_loc_env, moloc_coeff(ispin)%matrix, &
-                                    op_fm_set, ispin, print_loc_section)
+            if (.not. mos_are_complex) then
+               CALL optimize_loc_pipek(qs_env, loc_method, qs_loc_env, moloc_coeff(ispin)%matrix, &
+                    op_fm_set, para_env, ispin, print_loc_section)
+            else
+               CALL optimize_loc_pipek(qs_env, loc_method, qs_loc_env,&
+                    moloc_coeff(2*ispin-1)%matrix, op_fm_set, para_env, ispin, print_loc_section, &
+                    im_vectors=moloc_coeff(2*ispin)%matrix)
+            end if
 
          END SELECT
 

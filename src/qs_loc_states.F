@@ -20,6 +20,8 @@ MODULE qs_loc_states
                                               cp_cfm_write_formatted,&
                                               cp_fm_to_cfm
    USE cp_control_types,                ONLY: dft_control_type
+   USE cp_files,                        ONLY: close_file,&
+                                              open_file
    USE cp_fm_types,                     ONLY: cp_fm_p_type,&
                                               cp_fm_write_formatted
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
@@ -28,7 +30,8 @@ MODULE qs_loc_states
                                               cp_to_string
    USE cp_output_handling,              ONLY: cp_p_file,&
                                               cp_print_key_should_output
-   USE dbcsr_api,                       ONLY: dbcsr_p_type
+   USE dbcsr_api,                       ONLY: dbcsr_p_type,&
+                                              dbcsr_print
    USE input_section_types,             ONLY: section_vals_get_subs_vals,&
                                               section_vals_type
    USE kinds,                           ONLY: dp
@@ -91,7 +94,8 @@ CONTAINS
 
       CHARACTER(len=*), PARAMETER :: routineN = 'get_localization_info'
 
-      INTEGER                                            :: handle, ispin, mystate, ns, output_unit
+      INTEGER                                            :: handle, ispin, mystate, ns, &
+           file_unit, output_unit
       INTEGER, DIMENSION(:), POINTER                     :: lstates, marked_states_spin
       LOGICAL                                            :: do_homo, mos_are_complex, my_do_once
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: scenter
@@ -110,6 +114,11 @@ CONTAINS
            matrix_s, scenter, wc, tmp_complex_coeffs)
       CALL get_qs_env(qs_env, mos=mos, matrix_ks=ks_rmpv, molecule_set=molecule_set, &
                       dft_control=dft_control, matrix_s=matrix_s, cell=cell)
+
+      !call open_file("s.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+      !call dbcsr_print(matrix_s(1)%matrix, matlab_format=.true., unit_nr=file_unit)
+      !call close_file(file_unit)
+
       logger => cp_get_default_logger()
       output_unit = cp_logger_get_default_io_unit(logger)
       loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
@@ -158,10 +167,8 @@ CONTAINS
                  "LOCALIZATION| indirect propagation of Wannier functions"
             IF (.NOT. mos_are_complex) THEN
                ! purely real coefficients, e.g. from SCF runs
-               !CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, "before")
                CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                   myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
-               !CALL cp_fm_write_formatted(mo_local(ispin)%matrix, output_unit, "after")
             ELSE
                ! complex coefficients, e.g. from RTP runs
                CALL cp_cfm_create(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix%matrix_struct)
@@ -169,8 +176,6 @@ CONTAINS
                                  tmp_complex_coeffs)
                CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                   myspin=ispin, complex_mo_coeff=tmp_complex_coeffs)
-               CALL cp_cfm_to_fm(tmp_complex_coeffs, mo_local(2*ispin-1)%matrix, &
-                                 mo_local(2*ispin)%matrix)
             END IF
 
             ! maps wfc to molecules, and compute the molecular dipoles if required
@@ -257,7 +262,7 @@ CONTAINS
          !CALL calculate_wc_moments(qs_env, qs_loc_env, loc_print_section, molecule_set)
       END IF
 
-      CALL calculate_localized_moments(qs_env, mo_local)
+      !CALL calculate_localized_moments(qs_env, mo_local)
       
       CALL cp_cfm_release(tmp_complex_coeffs)
       

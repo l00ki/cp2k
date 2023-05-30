@@ -78,7 +78,7 @@ MODULE qs_localization_methods
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
-   PUBLIC :: initialize_weights, crazy_rotations, cardoso_souloumiac, &
+   PUBLIC :: initialize_weights, crazy_rotations, cardoso_souloumiac, cardoso_souloumiac_pipek, &
              direct_mini, rotate_orbitals, approx_l1_norm_sd, jacobi_rotations, scdm_qrfact, zij_matrix
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'qs_localization_methods'
@@ -2213,7 +2213,7 @@ CONTAINS
 
       CALL timeset(routineN, handle)
 
-      print *, "cardoso_souloumiac"
+      !print *, "cardoso_souloumiac"
 
       IF (para_env%num_pe >= 1) THEN
          CALL cardoso_souloumiac_serial(weights, zij, max_iter, eps_localization, sweeps, out_each, &
@@ -2255,12 +2255,11 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'cardoso_souloumiac_serial', &
          routineP = moduleN//':'//routineN
 
-      REAL(KIND=dp)                                      :: c, old_spread, spread
-      COMPLEX(KIND=dp)                                   :: s
+      COMPLEX(KIND=dp)                                   :: s, c_spread
       COMPLEX(KIND=dp), POINTER                          :: mii(:), mij(:), mji(:), mjj(:)
       INTEGER                                            :: dim1, dim2, handle, idim, jdim, &
                                                             istate, jstate, nstate, unit_nr
-      REAL(KIND=dp)                                      :: t1, t2, tolerance
+      REAL(KIND=dp)                                      :: t1, t2, tolerance, c, old_spread, spread
       TYPE(cp_cfm_p_type), DIMENSION(:), POINTER         :: c_zij
       TYPE(cp_cfm_type), POINTER                         :: c_rmat
 
@@ -2312,9 +2311,22 @@ CONTAINS
             END DO
          END DO
          CALL check_tolerance(c_zij, weights, spread, para_env)
+         CALL check_tolerance(c_zij, weights, tolerance, para_env)
          CALL mp_max(spread, para_env%group)
          tolerance = ABS(spread - old_spread)
          old_spread = spread
+
+         !c_spread = (0.0_dp, 0.0_dp)
+         !do istate = 1, nstate
+         !   do idim = 1, dim1*dim2
+         !      call cp_cfm_get_element(c_zij(idim)%matrix, istate, istate, s)
+         !      c_spread = c_spread + s * s
+         !   end do
+         !end do
+         !spread = real(c_spread)
+
+         !tolerance = abs(spread - old_spread)
+         !old_spread = spread
          t2 = m_walltime()
          IF (unit_nr > 0 .AND. MODULO(sweeps, out_each) == 0) THEN
             WRITE (unit_nr, "(T4,A,I7,A,E12.4,A,E12.4,A,F8.3)") &
@@ -2943,6 +2955,104 @@ CONTAINS
       
 
 ! **************************************************************************************************
+! **************************************************************************************************
+   SUBROUTINE cardoso_souloumiac_pipek(zij, vec, sweeps, max_iter, eps, out_each)
+
+     type(cp_cfm_p_type), pointer :: zij(:,:)
+     type(cp_cfm_type), pointer   :: vec
+     integer                      :: sweeps, max_iter, out_each
+     real(dp)                     :: eps
+
+     character(*), parameter :: routineN = 'cardoso_souloumiac_pipek', &
+                                routineP = moduleN//':'//routineN
+
+     complex(dp)                  :: s, c_spread, q, qi, vl, vr
+     complex(dp), pointer         :: qii(:), qij(:), qji(:), qjj(:)
+     integer                      :: handle, output_unit, n_dim, i, j, k, n_states, l, m
+     real(dp)                     :: t1, t2, tol, spread, old_spread, c
+     type(cp_cfm_p_type), pointer :: c_zij(:)
+     type(cp_cfm_type), pointer   :: rmat
+
+     call timeset(routineN, handle)
+
+     n_dim = size(zij)
+     call cp_cfm_create(rmat, zij(1, 1)%matrix%matrix_struct)
+     call cp_cfm_set_all(rmat, (0.0_dp, 0.0_dp), (1.0_dp, 0.0_dp))
+     allocate(c_zij(n_dim), qii(n_dim), qij(n_dim), qji(n_dim), qjj(n_dim))
+
+     call cp_cfm_get_info(rmat, nrow_global=n_states)
+
+     ! build Qij matrix
+     do k = 1, n_dim
+        c_zij(k)%matrix => zij(k, 1)%matrix
+     end do
+
+     tol = 1.0e10_dp
+     c_spread = (0.0_dp, 0.0_dp)
+     do k = 1, n_dim
+        do i = 1, n_states
+           call cp_cfm_get_element(c_zij(k)%matrix, i, i, s)
+           c_spread = c_spread + s * s
+        end do
+     end do
+     spread = real(c_spread)
+     old_spread = spread
+
+     sweeps = 0
+     output_unit = cp_logger_get_default_unit_nr()
+     write (output_unit, "(T4,A )") " Localization by iterative Jacobi rotation using "// &
+          "Cardoso-Souloumiac angles"
+     write (output_unit, "(T4,A )") " and Pipek-Mezey spread functional"
+
+     if (output_unit > 0 .and. modulo(sweeps, out_each) == 0) then
+        write (output_unit, "(T4,A,I7,A,E12.4,A,E12.4,A,F8.3)") &
+             "Iteration:", sweeps, " Functional", spread, " Tolerance:", tol, " Time:", 0.0_dp
+     end if
+
+     do while (tol >= eps .and. sweeps < max_iter)
+        t1 = m_walltime()
+        sweeps = sweeps + 1
+
+        do i = 1, n_states
+           do j = i + 1, n_states
+              do k = 1, n_dim
+                 call cp_cfm_get_element(c_zij(k)%matrix, i, i, qii(k))
+                 call cp_cfm_get_element(c_zij(k)%matrix, i, j, qij(k))
+                 call cp_cfm_get_element(c_zij(k)%matrix, j, i, qji(k))
+                 call cp_cfm_get_element(c_zij(k)%matrix, j, j, qjj(k))
+              end do
+              call get_cardoso_angles(qii, qij, qji, qjj, c, s, vec%matrix_struct)
+              call rotate_cardoso_zij(i, j, c, s, c_zij)
+              call rotate_cardoso_rmat(i, j, c, s, rmat)
+           end do
+        end do
+
+        c_spread = (0.0_dp, 0.0_dp)
+        do i = 1, n_states
+           do k = 1, n_dim
+              call cp_cfm_get_element(c_zij(k)%matrix, i, i, s)
+              c_spread = c_spread + s * s
+           end do
+        end do
+        spread = real(c_spread)
+        
+        tol = abs(spread - old_spread)
+        old_spread = spread
+        t2 = m_walltime()
+        if (output_unit > 0 .and. modulo(sweeps, out_each) == 0) then
+           write (output_unit, "(T4,A,I7,A,E12.4,A,E12.4,A,F8.3)") &
+                "Iteration:", sweeps, " Functional", spread, " Tolerance:", tol, " Time:", t2 - t1
+        end if
+     end do
+
+     call rotate_complex_orbitals(rmat, vec)
+
+     call timestop(handle)
+
+   END SUBROUTINE cardoso_souloumiac_pipek
+
+
+! **************************************************************************************************
 !> \brief calculates the Jacobi angles needed in serial Cardoso-Souloumiac diagonalisation
 !> \param mii ...
 !> \param mij ...
@@ -2969,7 +3079,6 @@ CONTAINS
       TYPE(cp_fm_struct_type), POINTER                   :: G_fm_struct, h_fm_struct
       TYPE(cp_fm_type), POINTER                          :: evects, Gmat
 
-      CALL timeset("get_cardoso_angles", handle)
       dim_m = SIZE(mii)
 
       CALL cp_fm_struct_create(h_fm_struct, nrow_global=1, ncol_global=3, &
@@ -2983,18 +3092,15 @@ CONTAINS
       CALL cp_fm_create(evects, G_fm_struct)
 
       DO i = 1, dim_m
-         CALL cp_cfm_set_all(hmat, (0.0_dp, 0.0_dp), (0.0_dp, 0.0_dp))
          CALL cp_cfm_set_element(hmat, 1, 1, (mii(i) - mjj(i)))
          CALL cp_cfm_set_element(hmat, 1, 2, (mij(i) + mji(i)))
          CALL cp_cfm_set_element(hmat, 1, 3, (0.0_dp, 1.0_dp)*(mji(i) - mij(i)))
          CALL cp_cfm_gemm("C", "N", 3, 3, 1, (1.0_dp, 0.0_dp), hmat, hmat, (1.0_dp, 0.0_dp), c_Gmat)
       END DO
-
       CALL cp_cfm_to_fm(c_Gmat, Gmat)
 
-      CALL choose_eigv_solver(Gmat, evects, evals)
-
       ! find eigenvector with highest eigenvalue
+      CALL choose_eigv_solver(Gmat, evects, evals)
       i_max = MAXLOC(evals, 1)
       CALL cp_fm_get_element(evects, 1, i_max, x)
       CALL cp_fm_get_element(evects, 2, i_max, y)
@@ -3006,9 +3112,9 @@ CONTAINS
       END IF
 
       ! calculate the angles
-      r = SQRT(x**2 + y**2 + z**2)  ! this will always be 1
-      c = SQRT((x + r) / (2 * r))  ! this will always be real
-      s = CMPLX(y / SQRT(2 * r * (x + r)), -1.0 * z / SQRT(2 * r * (x + r)), KIND=dp)  ! angle 
+      r = SQRT(x**2 + y**2 + z**2)  ! always 1
+      c = SQRT((x + r) / (2 * r))  ! always real
+      s = (y - gaussi * z) / SQRT(2 * r * (x + r)) ! always complex
 
       CALL cp_fm_struct_release(h_fm_struct)
       CALL cp_fm_struct_release(G_fm_struct)
@@ -3016,8 +3122,6 @@ CONTAINS
       CALL cp_cfm_release(c_Gmat)
       CALL cp_fm_release(Gmat)
       CALL cp_fm_release(evects)
-
-      CALL timestop(handle)
 
    END SUBROUTINE get_cardoso_angles
 
