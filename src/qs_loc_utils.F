@@ -633,11 +633,10 @@ CONTAINS
                                   name="qs_loc_env%op_sm_"//TRIM(ADJUSTL(cp_to_string(j)))//"-"//TRIM(ADJUSTL(cp_to_string(i))))
                   CALL dbcsr_set(qs_loc_env%op_sm_set(j, i)%matrix, 0.0_dp)
                ENDDO
-            END DO
+            ENDDO
 
          ELSEIF (localized_wfn_control%operator_type == op_loc_pipek) THEN
             natoms = SIZE(qs_loc_env%particle_set, 1)
-            !print *, "DBG| natoms", natoms
             ALLOCATE (qs_loc_env%op_fm_set(natoms, 1))
             CALL set_qs_loc_env(qs_loc_env=qs_loc_env, dim_op=natoms)
             DO ispin = 1, SIZE(qs_loc_env%op_fm_set, 2)
@@ -1520,6 +1519,10 @@ CONTAINS
                                    l_val=localized_wfn_control%loc_restart)
          CALL section_vals_val_get(loc_section, "USE_HISTORY", &
                                    l_val=localized_wfn_control%use_history)
+         CALL section_vals_val_get(loc_section, "FRAGMENT", &
+                                   l_val=localized_wfn_control%fragment)
+         CALL section_vals_val_get(loc_section, "SEQUENTIAL", &
+                                   l_val=localized_wfn_control%sequential)
 
          IF (localized_wfn_control%do_homo) THEN
             ! List of States HOMO

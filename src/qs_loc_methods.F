@@ -21,6 +21,7 @@
 MODULE qs_loc_methods
    USE atomic_kind_types,               ONLY: atomic_kind_type,&
                                               deallocate_atomic_kind_set,&
+                                              get_atomic_kind,&
                                               set_atomic_kind
    USE cell_types,                      ONLY: cell_type,&
                                               pbc
@@ -80,6 +81,11 @@ MODULE qs_loc_methods
    USE machine,                         ONLY: m_flush
    USE mathconstants,                   ONLY: twopi
    USE memory_utilities,                ONLY: reallocate
+   USE molecule_types,                  ONLY: get_molecule,&
+                                              molecule_type
+   USE molecule_kind_types,             ONLY: atom_type,&
+                                              get_molecule_kind,&
+                                              molecule_kind_type
    USE motion_utils,                    ONLY: get_output_format
    USE particle_list_types,             ONLY: particle_list_type
    USE particle_methods,                ONLY: get_particle_set,&
@@ -385,17 +391,22 @@ CONTAINS
 
       COMPLEX(dp)                                        :: q, ca, cb
       INTEGER                                            :: handle, iatom, isgf, ldz, nao, natom, &
-           ncol, nmoloc, output_unit, sweeps, max_iter, out_each, file_unit, i, j, k
-      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: first_sgf, last_sgf, nsgf
-      LOGICAL                                            :: do_complex
-      REAL(dp)                                           :: start_time, target_time, eps
-      REAL(dp), allocatable                              :: weights(:)
+           ncol, nmoloc, output_unit, sweeps, max_iter, out_each, file_unit, i, j, k, first_atom, &
+           last_atom, n_states, n_atom_frag
+      INTEGER, ALLOCATABLE, DIMENSION(:)                 :: first_sgf, last_sgf, nsgf, states, &
+           frag_weights, sorted_indices(:)
+      LOGICAL                                            :: do_complex, do_fragment, do_sequential
+      REAL(dp)                                           :: start_time, target_time, eps, qr
+      REAL(dp), allocatable                              :: weights(:), locality(:)
+      TYPE(atom_type), dimension(:), pointer             :: atoms
       TYPE(cp_cfm_p_type), DIMENSION(:, :), POINTER      :: c_zij
       TYPE(cp_cfm_type), POINTER                         :: c_vec, c_opvec, c_ov
       TYPE(cp_fm_pool_p_type), DIMENSION(:), POINTER     :: ao_ao_fm_pools
       TYPE(cp_fm_type), POINTER                          :: opvec, ov_fm
       TYPE(cp_logger_type), POINTER                      :: logger
       TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: matrix_s
+      TYPE(molecule_type), DIMENSION(:), POINTER         :: mols
+      TYPE(molecule_kind_type), POINTER                  :: molkind
       TYPE(particle_type), DIMENSION(:), POINTER         :: particle_set
       TYPE(qs_kind_type), DIMENSION(:), POINTER          :: qs_kind_set
 
@@ -413,12 +424,14 @@ CONTAINS
       CALL cp_fm_set_all(opvec, 0.0_dp)
 
       CALL get_qs_env(qs_env=qs_env, matrix_s=matrix_s, &
-                      particle_set=particle_set, qs_kind_set=qs_kind_set)
+                      particle_set=particle_set, qs_kind_set=qs_kind_set, molecule_set=mols)
 
       ! localization options
       max_iter = qs_loc_env%localized_wfn_control%max_iter
       eps = qs_loc_env%localized_wfn_control%eps_localization
       out_each = qs_loc_env%localized_wfn_control%out_each
+      do_fragment = qs_loc_env%localized_wfn_control%fragment
+      do_sequential = qs_loc_env%localized_wfn_control%sequential
 
       natom = SIZE(particle_set, 1)
       ALLOCATE (first_sgf(natom))
@@ -441,9 +454,11 @@ CONTAINS
          do_complex = .false.
       end if
 
-      !call open_file("s.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-      !call cp_fm_write_formatted(ov_fm, file_unit)
-      !call close_file(file_unit)
+      if (.not. do_complex) then
+         !call open_file("s.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         !call cp_fm_write_formatted(ov_fm, file_unit)
+         !call close_file(file_unit)
+      end if
 
       !   Compute zij here
       if (.not. do_complex .and. .not. method == do_loc_cardoso) then
@@ -568,7 +583,44 @@ CONTAINS
 
          !call close_file(file_unit)
       end if
-         
+
+      if (do_fragment) then
+          call get_molecule(mols(1), molecule_kind=molkind)
+          call get_molecule_kind(molkind, nelectron=i, atom_list=atoms)
+          n_atom_frag = size(atoms)
+          n_states = i / 2
+          allocate(locality(nmoloc), frag_weights(n_atom_frag), states(n_states), sorted_indices(nmoloc))
+          print *, "dbg| n_atom_frag", n_atom_frag
+          ! prepare atomic weights
+          do i = 1, n_atom_frag
+             call get_atomic_kind(atoms(i)%atomic_kind, z=frag_weights(i))
+          end do
+          frag_weights = frag_weights - 2
+          print *, "dbg| weights", frag_weights
+          do i = 1, nmoloc
+             locality(i) = 0
+             do iatom = 1, n_atom_frag
+                if (do_complex .or. method == do_loc_cardoso) then
+                   call cp_cfm_get_element(c_zij(iatom, 1)%matrix, i, i, q)
+                   locality(i) = locality(i) + real(frag_weights(iatom), dp) * real(q**2, dp)
+                else
+                   call cp_fm_get_element(zij_fm_set(iatom, 1)%matrix, i, i, qr)
+                   locality(i) = locality(i) + real(frag_weights(iatom), dp) * qr**2
+                end if
+             end do
+          end do
+          print *, "dbg| locality ", locality
+          !
+          do i = 1, n_states
+             states(i) = sorted_indices(i)
+          end do
+      else
+         allocate(states(nmoloc))
+         do i = 1, nmoloc
+            states(i) = i
+         end do
+      end if
+      print *, "dbg| states ", states
 
       !   And now perform the optimization and rotate the orbitals
       SELECT CASE (method)
@@ -581,7 +633,7 @@ CONTAINS
       CASE (do_loc_direct)
          CPABORT("Direct and Pipek not implemented.")
       CASE (do_loc_cardoso)
-         CALL cardoso_souloumiac_pipek(c_zij, c_vec, sweeps, max_iter, eps, out_each)
+         CALL cardoso_souloumiac_pipek(c_zij, c_vec, sweeps, max_iter, eps, out_each, states)
 
          !if (do_complex) then
          !   call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")

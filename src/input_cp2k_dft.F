@@ -826,6 +826,20 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
+      CALL keyword_create(keyword, __LOCATION__, name="FRAGMENT", &
+                          description="Use the F-PMWF approach", &
+                          usage="FRAGMENT {Logical}", default_l_val=.FALSE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="SEQUENTIAL", &
+                          description="Use the sF-PMWF approach", &
+                          usage="SEQUENTIAL {Logical}", default_l_val=.FALSE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
       CALL keyword_create(keyword, __LOCATION__, name="EACH", &
            description="localize each n steps", &
            default_i_val=1)

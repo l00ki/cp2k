@@ -153,6 +153,7 @@ MODULE qs_loc_types
       LOGICAL                              :: use_history
       INTEGER, POINTER, DIMENSION(:, :)       :: loc_states
       TYPE(cp_2d_r_p_type), DIMENSION(2)   :: centers_set
+      LOGICAL                              :: fragment, sequential
    END TYPE localized_wfn_control_type
 
 ! *** Public ***
@@ -334,6 +335,8 @@ CONTAINS
       NULLIFY (localized_wfn_control%loc_states)
       NULLIFY (localized_wfn_control%centers_set(1)%array)
       NULLIFY (localized_wfn_control%centers_set(2)%array)
+      localized_wfn_control%fragment = .FALSE.
+      localized_wfn_control%sequential = .FALSE.
    END SUBROUTINE localized_wfn_control_create
 
 ! **************************************************************************************************
