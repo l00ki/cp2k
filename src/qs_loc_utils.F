@@ -35,7 +35,8 @@ MODULE qs_loc_utils
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_get_default_io_unit,&
                                               cp_logger_type,&
-                                              cp_to_string
+                                              cp_to_string,&
+                                              cp_logger_get_default_unit_nr
    USE cp_output_handling,              ONLY: cp_p_file,&
                                               cp_print_key_finished_output,&
                                               cp_print_key_generate_filename,&
@@ -58,6 +59,8 @@ MODULE qs_loc_utils
    USE kinds,                           ONLY: default_path_length,&
                                               default_string_length,&
                                               dp
+   USE machine,                         ONLY: m_flush,&
+                                              m_walltime
    USE mathconstants,                   ONLY: pi,&
                                               twopi
    USE memory_utilities,                ONLY: reallocate
@@ -219,42 +222,53 @@ CONTAINS
 ! **************************************************************************************************
 !> \brief 2by2 rotation for the pipek operator
 !>       in this case the z_ij numbers are reals
-!> \param zij_fm_set ...
+!> \param zij ...
 !> \param vectors ...
-!> \param sweeps ...
+!> \param max_iter ...
 !> \par History
 !>       05-2005 created
 !> \author MI
 ! **************************************************************************************************
-   SUBROUTINE jacobi_rotation_pipek(zij_fm_set, vectors, sweeps)
+   SUBROUTINE jacobi_rotation_pipek(zij, vectors, max_iter, eps_localization, sweeps, out_each)
 
-      TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: zij_fm_set
+      TYPE(cp_fm_p_type), DIMENSION(:, :), POINTER       :: zij
       TYPE(cp_fm_type), INTENT(IN)                       :: vectors
-      INTEGER                                            :: sweeps
+      INTEGER                                            :: max_iter, sweeps, out_each
+      REAL(dp)                                           :: eps_localization
 
-      INTEGER                                            :: iatom, istate, jstate, natom, nstate
+      INTEGER                                            :: iatom, istate, jstate, natom, nstate, &
+           output_unit
       REAL(KIND=dp)                                      :: aij, bij, ct, mii, mij, mjj, ratio, st, &
-                                                            theta, tolerance
+                                                            theta, tolerance, t1, t2
       TYPE(cp_fm_type)                                   :: rmat
 
-      CALL cp_fm_create(rmat, zij_fm_set(1, 1)%matrix%matrix_struct)
+      CALL cp_fm_create(rmat, zij(1, 1)%matrix%matrix_struct)
       CALL cp_fm_set_all(rmat, 0.0_dp, 1.0_dp)
 
       CALL cp_fm_get_info(rmat, nrow_global=nstate)
       tolerance = 1.0e10_dp
+
       sweeps = 0
-      natom = SIZE(zij_fm_set, 1)
+      natom = SIZE(zij, 1)
+      output_unit = -1
+      IF (rmat%matrix_struct%para_env%mepos .EQ. rmat%matrix_struct%para_env%source) THEN
+         output_unit = cp_logger_get_default_unit_nr()
+         WRITE (output_unit, '(T4,A )') " Localization by iterative Jacobi rotation"
+      END IF
+
       ! do jacobi sweeps until converged
-      DO WHILE (tolerance >= 1.0e-4_dp)
+      DO WHILE (tolerance >= eps_localization .AND. sweeps < max_iter)
+         t1 = m_walltime()
          sweeps = sweeps + 1
+         
          DO istate = 1, nstate
             DO jstate = istate + 1, nstate
                aij = 0.0_dp
                bij = 0.0_dp
                DO iatom = 1, natom
-                  CALL cp_fm_get_element(zij_fm_set(iatom, 1)%matrix, istate, istate, mii)
-                  CALL cp_fm_get_element(zij_fm_set(iatom, 1)%matrix, istate, jstate, mij)
-                  CALL cp_fm_get_element(zij_fm_set(iatom, 1)%matrix, jstate, jstate, mjj)
+                  CALL cp_fm_get_element(zij(iatom, 1)%matrix, istate, istate, mii)
+                  CALL cp_fm_get_element(zij(iatom, 1)%matrix, istate, jstate, mij)
+                  CALL cp_fm_get_element(zij(iatom, 1)%matrix, jstate, jstate, mjj)
                   aij = aij + mij*(mii - mjj)
                   bij = bij + mij*mij - 0.25_dp*(mii - mjj)*(mii - mjj)
 
@@ -279,10 +293,17 @@ CONTAINS
 
                CALL rotate_rmat_real(istate, jstate, st, ct, rmat)
 
-               CALL rotate_zij_real(istate, jstate, st, ct, zij_fm_set)
+               CALL rotate_zij_real(istate, jstate, st, ct, zij)
             END DO
          END DO
-         CALL check_tolerance_real(zij_fm_set, tolerance)
+         CALL check_tolerance_real(zij, tolerance)
+
+         t2 = m_walltime()
+         IF (output_unit > 0 .AND. MODULO(sweeps, out_each) == 0) THEN
+            WRITE (output_unit, '(T4,A,I7,T30,A,E12.4,T60,A,F8.3)') &
+               "Iteration:", sweeps, "Tolerance:", tolerance, "Time:", t2 - t1
+            CALL m_flush(output_unit)
+         END IF
       END DO
 
       CALL rotate_orbitals(rmat, vectors)

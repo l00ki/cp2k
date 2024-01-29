@@ -11,13 +11,16 @@
 MODULE qs_loc_states
    USE cp_array_utils,                  ONLY: cp_1d_r_p_type
    USE cp_control_types,                ONLY: dft_control_type
-   USE cp_fm_types,                     ONLY: cp_fm_p_type
+   USE cp_files,                        ONLY: close_file,&
+                                              open_file
+   USE cp_fm_types,                     ONLY: cp_fm_p_type,&
+        cp_fm_write_formatted
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_get_default_io_unit,&
                                               cp_logger_type
    USE cp_output_handling,              ONLY: cp_p_file,&
                                               cp_print_key_should_output
-   USE dbcsr_api,                       ONLY: dbcsr_p_type
+   USE dbcsr_api,                       ONLY: dbcsr_p_type, dbcsr_print
    USE input_section_types,             ONLY: section_get_lval,&
                                               section_vals_get_subs_vals,&
                                               section_vals_type
@@ -37,6 +40,7 @@ MODULE qs_loc_states
    USE qs_loc_molecules,                ONLY: wfc_to_molecule
    USE qs_loc_types,                    ONLY: qs_loc_env_type
    USE qs_mo_types,                     ONLY: mo_set_type
+   USE qs_rho_types,                    ONLY: qs_rho_type, qs_rho_get
    USE wannier_states,                  ONLY: construct_wannier_states
    USE wannier_states_types,            ONLY: wannier_centres_type
 #include "./base/base_uses.f90"
@@ -81,15 +85,16 @@ CONTAINS
 
       CHARACTER(len=*), PARAMETER :: routineN = 'get_localization_info'
 
-      INTEGER                                            :: handle, ispin, mystate, ns, output_unit
+      INTEGER                                            :: handle, ispin, mystate, ns, output_unit, file_unit
       INTEGER, DIMENSION(:), POINTER                     :: lstates, marked_states_spin
       LOGICAL                                            :: do_homo, do_mixed
       REAL(KIND=dp), DIMENSION(:, :), POINTER            :: scenter
       TYPE(cp_logger_type), POINTER                      :: logger
-      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: ks_rmpv, matrix_s
+      TYPE(dbcsr_p_type), DIMENSION(:), POINTER          :: ks_rmpv, matrix_s, rho_ao
       TYPE(dft_control_type), POINTER                    :: dft_control
       TYPE(mo_set_type), DIMENSION(:), POINTER           :: mos
       TYPE(molecule_type), DIMENSION(:), POINTER         :: molecule_set
+      TYPE(qs_rho_type), POINTER                         :: rho
       TYPE(section_vals_type), POINTER                   :: loc_print_section
       TYPE(wannier_centres_type), DIMENSION(:), POINTER  :: wc
 
@@ -97,7 +102,8 @@ CONTAINS
       NULLIFY (mos, ks_rmpv, dft_control, loc_print_section, marked_states_spin, &
                matrix_s, scenter, wc)
       CALL get_qs_env(qs_env, mos=mos, matrix_ks=ks_rmpv, molecule_set=molecule_set, &
-                      dft_control=dft_control, matrix_s=matrix_s)
+                      dft_control=dft_control, matrix_s=matrix_s, rho=rho)
+      call qs_rho_get(rho, rho_ao=rho_ao)
       logger => cp_get_default_logger()
       output_unit = cp_logger_get_default_io_unit(logger)
       loc_print_section => section_vals_get_subs_vals(loc_section, "PRINT")
@@ -134,8 +140,21 @@ CONTAINS
 
             scenter => qs_loc_env%localized_wfn_control%centers_set(ispin)%array
 
+            call open_file("mo.dat", unit_number=file_unit, file_action="write", file_status="replace")
+            call cp_fm_write_formatted(mo_local(ispin)%matrix, file_unit)
+            call close_file(file_unit)
+
+            call open_file("P.dat", unit_number=file_unit, file_action="write", file_status="replace")
+            call dbcsr_print(rho_ao(1)%matrix, matlab_format=.true., unit_nr=file_unit)
+            call close_file(file_unit)
+
+
             CALL qs_loc_driver(qs_env, qs_loc_env, loc_print_section, &
                                myspin=ispin, ext_mo_coeff=mo_local(ispin)%matrix)
+
+            call open_file("mo_loc.dat", unit_number=file_unit, file_action="write", file_status="replace")
+            call cp_fm_write_formatted(mo_local(ispin)%matrix, file_unit)
+            call close_file(file_unit)
 
             ! maps wfc to molecules, and compute the molecular dipoles if required
             IF ((BTEST(cp_print_key_should_output(logger%iter_info, loc_print_section, &

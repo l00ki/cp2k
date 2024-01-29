@@ -30,7 +30,8 @@ MODULE qs_loc_methods
                                               cp_dbcsr_sm_fm_multiply,&
                                               dbcsr_allocate_matrix_set,&
                                               dbcsr_deallocate_matrix_set
-   USE cp_fm_basic_linalg,              ONLY: cp_fm_schur_product
+   USE cp_fm_basic_linalg,              ONLY: cp_fm_gemm,&
+                                              cp_fm_schur_product
    USE cp_fm_pool_types,                ONLY: cp_fm_pool_p_type,&
                                               fm_pool_create_fm
    USE cp_fm_struct,                    ONLY: cp_fm_struct_create,&
@@ -38,7 +39,8 @@ MODULE qs_loc_methods
                                               cp_fm_struct_type
    USE cp_fm_types,                     ONLY: &
         cp_fm_create, cp_fm_get_element, cp_fm_get_info, cp_fm_get_submatrix, cp_fm_init_random, &
-        cp_fm_p_type, cp_fm_release, cp_fm_set_all, cp_fm_set_submatrix, cp_fm_to_fm, cp_fm_type
+        cp_fm_p_type, cp_fm_release, cp_fm_set_all, cp_fm_set_submatrix, cp_fm_to_fm, cp_fm_type, &
+        cp_fm_write_formatted, cp_fm_set_element
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_type,&
                                               cp_to_string
@@ -334,8 +336,9 @@ CONTAINS
       CHARACTER(len=*), PARAMETER :: routineN = 'optimize_loc_pipek'
 
       INTEGER                                            :: handle, iatom, isgf, ldz, nao, natom, &
-                                                            ncol, nmoloc, output_unit, sweeps
+           ncol, nmoloc, output_unit, sweeps, i, j, i_ao
       INTEGER, ALLOCATABLE, DIMENSION(:)                 :: first_sgf, last_sgf, nsgf
+      REAL(dp)                                           :: c_a, c_b, sc_a, sc_b, q, qi
       TYPE(cp_fm_pool_p_type), DIMENSION(:), POINTER     :: ao_ao_fm_pools
       TYPE(cp_fm_type)                                   :: opvec
       TYPE(cp_fm_type), POINTER                          :: ov_fm
@@ -375,6 +378,12 @@ CONTAINS
       CALL fm_pool_create_fm(ao_ao_fm_pools(1)%pool, ov_fm, name=" ")
       CALL copy_dbcsr_to_fm(matrix_s(1)%matrix, ov_fm)
 
+      CALL cp_fm_gemm('N', 'N', nao, nmoloc, nao, 1.0_dp, ov_fm, vectors, 0.0_dp, opvec)
+
+      call cp_fm_write_formatted(vectors, unit=200)
+      call cp_fm_write_formatted(ov_fm, unit=201)
+      call cp_fm_write_formatted(opvec, unit=202)
+
       !   Compute zij here
       DO iatom = 1, natom
          CALL cp_fm_set_all(zij_fm_set(iatom, 1)%matrix, 0.0_dp)
@@ -397,6 +406,8 @@ CONTAINS
                             1.0_dp, zij_fm_set(iatom, 1)%matrix, &
                             a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
 
+         CALL cp_fm_write_formatted(zij_fm_set(iatom, 1)%matrix, unit=100+iatom)
+
       END DO ! iatom
 
       !   And now perform the optimization and rotate the orbitals
@@ -413,6 +424,8 @@ CONTAINS
          CPABORT("Direct and Pipek not implemented.")
       CASE (do_loc_none)
          IF (output_unit > 0) WRITE (output_unit, '(A,I6,A)') " No MOS localization applied "
+      !CASE (do_loc_cardoso)
+      !   CALL jacobi_rotations(zij_fm_set, vectors, sweeps)
       CASE DEFAULT
          CPABORT("Unknown localization method")
       END SELECT
@@ -589,7 +602,7 @@ CONTAINS
       unit_out_s = cp_print_key_unit_nr(logger, print_loc_section, "WANNIER_SPREADS", &
                                         middle_name=file_tmp, extension=".data", log_filename=.FALSE.)
       iter = cp_iter_string(logger%iter_info)
-      IF (unit_out_s > 0) WRITE (unit_out_s, '(i6,/,A)') TRIM(iter)
+      IF (unit_out_s > 0) WRITE (unit_out_s, '(i6,/,A)') 1, TRIM(iter)
 
       ALLOCATE (atom_of_state(nstate))
       atom_of_state = 0
@@ -604,7 +617,7 @@ CONTAINS
       END DO
 
       ALLOCATE (Qii(nstate), ziimax(nstate))
-      ziimax = 0.0_dp
+      ziimax = 1.0e-3_dp
       Qii = 0.0_dp
 
       DO iatom = 1, natom

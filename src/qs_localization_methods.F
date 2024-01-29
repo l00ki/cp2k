@@ -382,7 +382,7 @@ CONTAINS
          t1 = m_walltime()
 
          DO istate = 1, nstate
-            DO jstate = istate + 1, nstate
+            DO jstate = istate + 1,  nstate
                DO idim = 1, dim2
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, istate, mii(idim))
                   CALL cp_cfm_get_element(c_zij(idim)%matrix, istate, jstate, mij(idim))
