@@ -13,6 +13,7 @@ MODULE embed_main
    USE cp_files,                        ONLY: open_file
    USE cp_log_handling,                 ONLY: cp_get_default_logger,&
                                               cp_logger_create,&
+                                              cp_logger_get_default_io_unit,&
                                               cp_logger_set,&
                                               cp_logger_type,&
                                               cp_to_string
@@ -137,6 +138,7 @@ CONTAINS
          CALL open_file(file_name=output_file_path, file_status="UNKNOWN", &
                         file_action="WRITE", file_position="APPEND", &
                         unit_number=unit_nr)
+         unit_nr = cp_logger_get_default_io_unit()
       ELSE
          unit_nr = -1
       END IF

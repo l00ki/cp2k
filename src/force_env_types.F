@@ -29,6 +29,9 @@ MODULE force_env_types
    USE embed_types,                     ONLY: embed_env_release,&
                                               embed_env_type,&
                                               get_embed_env
+   USE extern_types,                    ONLY: extern_env_release,&
+                                              extern_env_type, &
+                                              get_extern_env
    USE fist_energy_types,               ONLY: fist_energy_type
    USE fist_environment_types,          ONLY: fist_env_get,&
                                               fist_env_release,&
@@ -84,9 +87,10 @@ MODULE force_env_types
                                  use_mixed_force = 506, &
                                  use_embed = 507, &
                                  use_pwdft_force = 508, &
-                                 use_nnp_force = 509
+                                 use_nnp_force = 509, &
+                                 use_extern = 510
 
-   CHARACTER(LEN=10), DIMENSION(501:509), PARAMETER, PUBLIC :: &
+   CHARACTER(LEN=10), DIMENSION(501:510), PARAMETER, PUBLIC :: &
       use_prog_name = (/ &
       "FIST  ", &
       "QS    ", &
@@ -96,7 +100,8 @@ MODULE force_env_types
       "MIXED ", &
       "EMBED ", &
       "SIRIUS", &
-      "NNP   "/)
+      "NNP   ", &
+      "EXTERN" /)
 
    PUBLIC :: force_env_type, &
              force_env_p_type
@@ -153,6 +158,7 @@ MODULE force_env_types
       TYPE(mixed_environment_type), POINTER            :: mixed_env => NULL()
       TYPE(nnp_type), POINTER                          :: nnp_env => NULL()
       TYPE(embed_env_type), POINTER                    :: embed_env => NULL()
+      TYPE(extern_env_type), POINTER                   :: extern_env => NULL()
       TYPE(section_vals_type), POINTER                 :: force_env_section => NULL()
       TYPE(section_vals_type), POINTER                 :: root_section => NULL()
    END TYPE force_env_type
@@ -253,6 +259,9 @@ CONTAINS
             CASE (use_embed)
                CALL embed_env_release(force_env%embed_env)
                DEALLOCATE (force_env%embed_env)
+            CASE (use_extern)
+               CALL extern_env_release(force_env%extern_env)
+               DEALLOCATE (force_env%extern_env)
             END SELECT
             CALL globenv_release(force_env%globenv)
             CALL mp_para_env_release(force_env%para_env)
@@ -325,7 +334,7 @@ CONTAINS
                                       meta_env, fp_env, subsys, para_env, potential_energy, additional_potential, &
                                       kinetic_energy, harmonic_shell, kinetic_shell, cell, sub_force_env, &
                                       qmmm_env, qmmmx_env, eip_env, pwdft_env, globenv, input, force_env_section, &
-                                      method_name_id, root_section, mixed_env, nnp_env, embed_env)
+                                      method_name_id, root_section, mixed_env, nnp_env, embed_env, extern_env)
       TYPE(force_env_type), INTENT(IN)                   :: force_env
       INTEGER, INTENT(out), OPTIONAL                     :: in_use
       TYPE(fist_environment_type), OPTIONAL, POINTER     :: fist_env
@@ -351,6 +360,7 @@ CONTAINS
       TYPE(mixed_environment_type), OPTIONAL, POINTER    :: mixed_env
       TYPE(nnp_type), OPTIONAL, POINTER                  :: nnp_env
       TYPE(embed_env_type), OPTIONAL, POINTER            :: embed_env
+      TYPE(extern_env_type), OPTIONAL, POINTER           :: extern_env
 
       REAL(KIND=dp)                                      :: eip_kinetic_energy, eip_potential_energy
       TYPE(cp_subsys_type), POINTER                      :: subsys_tmp
@@ -437,6 +447,11 @@ CONTAINS
                           nnp_potential_energy=potential_energy, &
                           subsys=subsys)
          CPASSERT(.NOT. PRESENT(kinetic_energy))
+      CASE (use_extern)
+         CPASSERT(ASSOCIATED(force_env%extern_env))
+         CALL get_extern_env(force_env%extern_env, &
+              extern_energy=potential_energy, &
+              subsys=subsys)
       CASE DEFAULT
          CPABORT("unknown in_use flag value ")
       END SELECT
@@ -495,6 +510,7 @@ CONTAINS
       IF (PRESENT(qmmmx_env)) qmmmx_env => force_env%qmmmx_env
       IF (PRESENT(mixed_env)) mixed_env => force_env%mixed_env
       IF (PRESENT(embed_env)) embed_env => force_env%embed_env
+      IF (PRESENT(extern_env)) extern_env => force_env%extern_env
       IF (PRESENT(globenv)) globenv => force_env%globenv
       IF (PRESENT(root_section)) root_section => force_env%root_section
 

@@ -68,7 +68,7 @@ MODULE input_cp2k_dft
       ehrenfest, embed_diff, embed_fa, embed_grid_angstrom, embed_grid_bohr, embed_level_shift, &
       embed_none, embed_quasi_newton, embed_resp, embed_steep_desc, eri_method_full_gpw, &
       eri_method_gpw_ht, eri_operator_coulomb, eri_operator_erf, eri_operator_erfc, &
-      eri_operator_gaussian, eri_operator_yukawa, gapw_1c_large, gapw_1c_medium, gapw_1c_orb, &
+      eri_operator_gaussian, eri_operator_yukawa, fat, gapw_1c_large, gapw_1c_medium, gapw_1c_orb, &
       gapw_1c_small, gapw_1c_very_large, gaussian, general_roks, gto_cartesian, gto_spherical, &
       hf_model, high_spin_roks, history_guess, jacobian_fd1, jacobian_fd1_backward, &
       jacobian_fd1_central, jacobian_fd2, jacobian_fd2_backward, kg_color_dsatur, &
@@ -5989,6 +5989,7 @@ CONTAINS
       TYPE(section_type), POINTER                        :: section
 
       TYPE(keyword_type), POINTER                        :: keyword
+      TYPE(section_type), POINTER                        :: subsection
 
       CPASSERT(.NOT. ASSOCIATED(section))
       CALL section_create(section, __LOCATION__, name="OPT_EMBED", &
@@ -6152,6 +6153,11 @@ CONTAINS
                           type_of_var=lchar_t)
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
+
+      NULLIFY(subsection)
+      CALL create_xc_section(subsection)
+      CALL section_add_subsection(section, subsection)
+      CALL section_release(subsection)
 
       CALL create_print_embed_diff(section)
 

@@ -53,7 +53,8 @@ MODULE input_constants
                                                do_mixed = 6, &
                                                do_embed = 7, &
                                                do_sirius = 8, &
-                                               do_nnp = 9
+                                               do_nnp = 9, &
+                                               do_extern = 10
 
    ! QMMM
    REAL(KIND=dp), PARAMETER, PUBLIC         :: RADIUS_QMMM_DEFAULT = 0.80_dp, & ! Angstrom
@@ -1243,7 +1244,8 @@ MODULE input_constants
                                                negfrun_fermilevel = 1
    ! Type of embedding
    INTEGER, PARAMETER, PUBLIC               :: dfet = 0, &
-                                               dmfet = 1
+                                               dmfet = 1, &
+                                               fat = 2
 
    ! DFT embedding: optimization of potential
    INTEGER, PARAMETER, PUBLIC               :: embed_steep_desc = 0, &

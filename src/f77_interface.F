@@ -56,6 +56,8 @@ MODULE f77_interface
                                               cp2k_init,&
                                               cp2k_read,&
                                               cp2k_setup
+   USE extern_methods,                  ONLY: extern_init
+   USE extern_types,                    ONLY: extern_env_type
    USE fist_main,                       ONLY: fist_create_force_env
    USE force_env_methods,               ONLY: force_env_calc_energy_force,&
                                               force_env_create
@@ -73,7 +75,7 @@ MODULE f77_interface
    USE grid_api,                        ONLY: grid_library_finalize,&
                                               grid_library_init
    USE input_constants,                 ONLY: &
-        do_eip, do_embed, do_fist, do_mixed, do_nnp, do_qmmm, do_qmmmx, do_qs, do_sirius
+        do_eip, do_embed, do_fist, do_mixed, do_nnp, do_qmmm, do_qmmmx, do_qs, do_sirius, do_extern
    USE input_cp2k_check,                ONLY: check_cp2k_input
    USE input_cp2k_force_eval,           ONLY: create_force_eval_section
    USE input_cp2k_read,                 ONLY: empty_initial_variables,&
@@ -590,6 +592,7 @@ CONTAINS
       TYPE(eip_environment_type), POINTER                :: eip_env
       TYPE(embed_env_type), POINTER                      :: embed_env
       TYPE(enumeration_type), POINTER                    :: enum
+      TYPE(extern_env_type), POINTER                     :: extern_env
       TYPE(f_env_p_type), DIMENSION(:), POINTER          :: f_envs_old
       TYPE(force_env_type), POINTER                      :: force_env, my_force_env
       TYPE(fp_type), POINTER                             :: fp_env
@@ -611,7 +614,7 @@ CONTAINS
 
       CPASSERT(ASSOCIATED(input_declaration))
       NULLIFY (para_env, force_env, timer_env, mp_perf_env, globenv, meta_env, &
-               fp_env, eip_env, pwdft_env, mixed_env, qs_env, qmmm_env, embed_env)
+               fp_env, eip_env, pwdft_env, mixed_env, qs_env, qmmm_env, embed_env, extern_env)
       new_env_id = -1
       IF (PRESENT(mpi_comm)) THEN
          ALLOCATE (para_env)
@@ -867,6 +870,12 @@ CONTAINS
                           subsys_section=subsys_section, use_motion_section=use_motion_section)
             CALL force_env_create(my_force_env, root_section, nnp_env=nnp_env, para_env=my_para_env, &
                                   globenv=globenv, force_env_section=force_env_section)
+
+         CASE (do_extern)
+            CALL extern_init( &
+                 extern_env, root_section, my_para_env, force_env_section, use_motion_section)
+            CALL force_env_create(my_force_env, root_section, extern_env=extern_env, &
+                 para_env=my_para_env, globenv=globenv, force_env_section=force_env_section)
 
          CASE default
             CALL create_force_eval_section(section)

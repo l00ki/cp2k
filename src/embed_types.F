@@ -91,7 +91,7 @@ MODULE embed_types
                                                    open_shell_embed = .FALSE., &
                                                    grid_opt = .FALSE., leeuwen = .FALSE., fab = .FALSE., &
                                                    coulomb_guess = .FALSE., fermi_amaldi = .FALSE., &
-                                                   diff_guess = .FALSE.
+                                                   diff_guess = .FALSE., fat = .FALSE.
       INTEGER, ALLOCATABLE, DIMENSION(:)        :: all_nspins
       TYPE(lri_kind_type), DIMENSION(:), POINTER :: lri => NULL() ! Needed to store integrals
 

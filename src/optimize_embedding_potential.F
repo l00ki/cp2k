@@ -41,7 +41,8 @@ MODULE optimize_embedding_potential
                                               cp_pw_to_simple_volumetric
    USE dbcsr_api,                       ONLY: dbcsr_p_type
    USE embed_types,                     ONLY: opt_embed_pot_type
-   USE force_env_types,                 ONLY: force_env_type
+   USE force_env_types,                 ONLY: force_env_p_type,&
+                                              force_env_type
    USE input_constants,                 ONLY: &
         embed_diff, embed_fa, embed_grid_angstrom, embed_grid_bohr, embed_level_shift, embed_none, &
         embed_quasi_newton, embed_resp, embed_steep_desc
@@ -82,6 +83,7 @@ MODULE optimize_embedding_potential
    USE qs_kind_types,                   ONLY: get_qs_kind,&
                                               qs_kind_type
    USE qs_kinetic,                      ONLY: build_kinetic_matrix
+   USE qs_ks_methods,                   ONLY: calc_rho_tot_gspace
    USE qs_ks_types,                     ONLY: qs_ks_env_type
    USE qs_mo_types,                     ONLY: get_mo_set,&
                                               mo_set_type
@@ -90,6 +92,7 @@ MODULE optimize_embedding_potential
                                               qs_rho_type
    USE qs_subsys_types,                 ONLY: qs_subsys_get,&
                                               qs_subsys_type
+   USE qs_vxc,                          ONLY: qs_vxc_create
    USE xc,                              ONLY: smooth_cutoff
    USE xc_rho_cflags_types,             ONLY: xc_rho_cflags_setall,&
                                               xc_rho_cflags_type
@@ -109,7 +112,8 @@ MODULE optimize_embedding_potential
              opt_embed_step, print_rho_diff, step_control, max_dens_diff, print_emb_opt_info, &
              conv_check_embed, make_subsys_embed_pot, print_embed_restart, find_aux_dimen, &
              read_embed_pot, understand_spin_states, given_embed_pot, print_rho_spin_diff, &
-             print_pot_simple_grid, get_prev_density, get_max_subsys_diff, Coulomb_guess
+             print_pot_simple_grid, get_prev_density, get_max_subsys_diff, Coulomb_guess, &
+             make_frozen_embed_pot
 
 CONTAINS
 
@@ -1091,6 +1095,107 @@ CONTAINS
       END IF
 
    END SUBROUTINE make_subsys_embed_pot
+
+! **************************************************************************************************
+!> \brief Calculate the embedding potential in the FDE approach
+!> \param force_envs all force environments, including the reference
+!> \param ref_subsys_number the index of the reference system
+!> \param subsys_number the index of the subsystem for which the potential is calculated
+!> \param embed_pot the embedding potential
+!> \author Lukas Schreder
+! **************************************************************************************************
+   SUBROUTINE make_frozen_embed_pot( &
+        force_envs, i_ref, i_sub, embed_pot, spin_embed_pot, open_shell_embed, change_spin_sign)
+     TYPE(force_env_p_type), POINTER :: force_envs(:)
+     INTEGER                         :: i_ref, i_sub
+     TYPE(pw_type), POINTER          :: embed_pot, spin_embed_pot
+     LOGICAL                         :: open_shell_embed, change_spin_sign
+
+     CHARACTER(*), PARAMETER :: routineN = "make_frozen_embed_pot"
+
+     INTEGER                          :: handle, i
+     REAL(dp)                         :: eha_sub, ekin_ref, ekin_sub, exc_ref, exc_sub
+     TYPE(pw_env_type), POINTER       :: pw_env
+     TYPE(pw_poisson_type), POINTER   :: poisson_env
+     TYPE(pw_pool_type), POINTER      :: auxbas_pw_pool, auxbas_pw_pool_sub
+     TYPE(pw_type)                    :: rho_tot_g, vha, vha_g
+     TYPE(pw_type), POINTER           :: &
+          vkin_rho_ref(:), vkin_rho_sub(:), vkin_tau_ref(:), vkin_tau_sub(:), &
+          vxc_rho_ref(:), vxc_rho_sub(:), vxc_tau_ref(:), vxc_tau_sub(:)
+     TYPE(qs_ks_env_type), POINTER    :: ks_env_ref, ks_env_sub
+     TYPE(qs_rho_type), POINTER       :: rho_ref, rho_sub
+     TYPE(section_vals_type), POINTER :: input, kin_section, xc_section
+
+     CALL timeset(routineN, handle)
+
+     ! create embedding potential
+     ALLOCATE(embed_pot)
+     CALL get_qs_env(force_envs(i_sub)%force_env%qs_env, pw_env=pw_env)
+     CALL pw_env_get(pw_env, auxbas_pw_pool=auxbas_pw_pool, poisson_env=poisson_env)
+     CALL auxbas_pw_pool%create_pw(embed_pot, use_data=REALDATA3D, in_space=REALSPACE)
+     CALL pw_zero(embed_pot)
+
+     ! reference
+     CALL get_qs_env( &
+          force_envs(i_ref)%force_env%qs_env, &
+          input=input, &
+          ks_env=ks_env_ref, &
+          rho=rho_ref)
+
+     ! subsystem
+     CALL get_qs_env(force_envs(i_sub)%force_env%qs_env, ks_env=ks_env_sub, rho=rho_sub)
+
+     ! non-additive kinetic term
+     kin_section => section_vals_get_subs_vals(input, "DFT%QS%OPT_EMBED%XC")
+
+     NULLIFY(vkin_rho_ref)
+     CALL qs_vxc_create(ks_env_ref, rho_ref, kin_section, vkin_rho_ref, vkin_tau_ref, ekin_ref)
+     PRINT *, "EMBED| ekin_ref", ekin_ref
+     CALL pw_axpy(vkin_rho_ref(1), embed_pot, 1.0_dp, 1.0_dp, .TRUE.)
+
+     NULLIFY(vkin_rho_sub)
+     CALL qs_vxc_create(ks_env_sub, rho_sub, kin_section, vkin_rho_sub, vkin_tau_sub, ekin_sub)
+     print *, "EMBED| ekin_sub", ekin_sub
+     CALL pw_axpy(vkin_rho_sub(1), embed_pot, -1.0_dp, 1.0_dp, .TRUE.)
+
+     ! non-additive XC term
+     xc_section => section_vals_get_subs_vals(input, "DFT%XC")
+
+     NULLIFY(vxc_rho_ref)
+     CALL qs_vxc_create(ks_env_ref, rho_ref, xc_section, vxc_rho_ref, vxc_tau_ref, exc_ref)
+     PRINT *, "EMBED| exc_ref", exc_ref
+     CALL pw_axpy(vxc_rho_ref(1), embed_pot, 1.0_dp, 1.0_dp, .TRUE.)
+
+     NULLIFY(vxc_rho_sub)
+     CALL qs_vxc_create(ks_env_sub, rho_sub, xc_section, vxc_rho_sub, vxc_tau_sub, exc_sub)
+     PRINT *, "EMBED| exc_sub", exc_sub
+     CALL pw_axpy(vxc_rho_sub(1), embed_pot, -1.0_dp, 1.0_dp, .TRUE.)
+
+     ! Hartree term
+     DO i = 1, SIZE(force_envs)
+        IF (i >= i_ref .OR. i == i_sub) CYCLE
+        CALL get_qs_env(force_envs(i)%force_env%qs_env, pw_env=pw_env)
+        CALL pw_env_get(pw_env, auxbas_pw_pool=auxbas_pw_pool_sub, poisson_env=poisson_env)
+        CALL auxbas_pw_pool_sub%create_pw(rho_tot_g, use_data=COMPLEXDATA1D, in_space=RECIPROCALSPACE)
+        CALL auxbas_pw_pool_sub%create_pw(vha_g, use_data=COMPLEXDATA1D, in_space=RECIPROCALSPACE)
+        CALL auxbas_pw_pool_sub%create_pw(vha, use_data=REALDATA3D, in_space=REALSPACE)
+        CALL get_qs_env(force_envs(i)%force_env%qs_env, rho=rho_sub)
+        CALL calc_rho_tot_gspace(rho_tot_g, force_envs(i)%force_env%qs_env, rho_sub)
+        CALL pw_poisson_solve(poisson_env, rho_tot_g, eha_sub, vha_g)
+        CALL pw_transfer(vha_g, vha)
+        CALL pw_axpy(vha, embed_pot, 1.0_dp, 1.0_dp, .TRUE.)
+        CALL auxbas_pw_pool_sub%give_back_pw(rho_tot_g)
+        CALL auxbas_pw_pool_sub%give_back_pw(vha_g)
+        CALL auxbas_pw_pool_sub%give_back_pw(vha)
+        PRINT *, "EMBED| eha_sub", eha_sub
+     END DO
+     CALL pw_zero(embed_pot)
+
+     ! external term
+
+     CALL timestop(handle)
+
+   END SUBROUTINE make_frozen_embed_pot
 
 ! **************************************************************************************************
 !> \brief Calculates the derivative of the embedding potential wrt to the expansion coefficients
