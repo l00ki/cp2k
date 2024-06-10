@@ -17,6 +17,7 @@ MODULE realspace_grid_cube
         file_amode_rdonly, file_offset, mp_comm_type, mp_file_descriptor_type, mp_file_type, &
         mp_file_type_free, mp_file_type_hindexed_make_chv, mp_file_type_set_view_chv, &
         mpi_character_size
+   USE physcon,                         ONLY: angstrom
    USE pw_grid_types,                   ONLY: PW_MODE_LOCAL
    USE pw_types,                        ONLY: pw_type
 #include "../base/base_uses.f90"
@@ -193,7 +194,7 @@ CONTAINS
                         IF (buf(I3) < 1.E-7_dp) buf(I3) = 0.0_dp
                      END DO
                   END IF
-                  WRITE (unit_nr, '(6E13.5)') (buf(I3), I3=L3, U3, my_stride(3))
+                  WRITE (unit_nr, '(5(E13.5,/),E13.5)') (buf(I3), I3=L3, U3, my_stride(3))
                END IF
 
                ! this double loop generates so many messages that it can overload
@@ -948,17 +949,17 @@ CONTAINS
             ELSE
 
                DO I3 = L3, U3, my_stride(3)
-                  x = pw%pw_grid%dh(1, 1)*I1 + &
-                      pw%pw_grid%dh(2, 1)*I2 + &
-                      pw%pw_grid%dh(3, 1)*I3
+                  x = pw%pw_grid%dh(1, 1)*(I1+U1) + &
+                      pw%pw_grid%dh(2, 1)*(I2+U2) + &
+                      pw%pw_grid%dh(3, 1)*(I3+U3)
 
-                  y = pw%pw_grid%dh(1, 2)*I1 + &
-                      pw%pw_grid%dh(2, 2)*I2 + &
-                      pw%pw_grid%dh(3, 2)*I3
+                  y = pw%pw_grid%dh(1, 2)*(I1+U1) + &
+                      pw%pw_grid%dh(2, 2)*(I2+U2) + &
+                      pw%pw_grid%dh(3, 2)*(I3+U3)
 
-                  z = pw%pw_grid%dh(1, 3)*I1 + &
-                      pw%pw_grid%dh(2, 3)*I2 + &
-                      pw%pw_grid%dh(3, 3)*I3
+                  z = pw%pw_grid%dh(1, 3)*(I1+U1) + &
+                      pw%pw_grid%dh(2, 3)*(I2+U2) + &
+                      pw%pw_grid%dh(3, 3)*(I3+U3)
 
                   IF (unit_nr > 0) THEN
                      WRITE (unit_nr, '(6E13.5, 6E13.5, 6E13.5, 6E13.5)') x, y, z, buf(I3), buf2(I3)

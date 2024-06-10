@@ -2195,7 +2195,7 @@ CONTAINS
          CPWARN("FAT not converged")
       end if
 
-      call fat_results(fat_env, .true.)
+      call fat_results(fat_env, do_forces=.true.)
       call fat_finalize(fat_env)
       call fat_env_release(fat_env)
 
