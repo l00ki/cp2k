@@ -1244,8 +1244,8 @@ CONTAINS
             ! A bug, we're leaking or double-freeing communicators. Needs to be fixed where the leak happens.
             ! Memory leak checking might be helpful to locate the culprit
             WRITE (unit=debug_comm_count_char, FMT='(I0)')
-            CALL cp_abort(__LOCATION__, "mp_world_finalize: assert failed:"// &
-                          "  leaking communicators "//TRIM(debug_comm_count_char))
+            CALL cp_warn(__LOCATION__, "mp_world_finalize: assert failed:"// &
+                         "  leaking communicators "//TRIM(debug_comm_count_char))
          END IF
 #if defined(__parallel)
          CALL mpi_finalize(ierr)

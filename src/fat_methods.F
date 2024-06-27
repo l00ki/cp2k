@@ -141,6 +141,7 @@ contains
     end if
 
     call fat_env%pw_pool_sub(i_frag)%pool%give_back_pw(pw)
+    deallocate(pw)
 
     if (is_debug) then
        print *, "DBG| released"
@@ -162,6 +163,7 @@ contains
     end if
 
     call fat_env%pw_pool_ref%give_back_pw(pw)
+    deallocate(pw)
 
     if (is_debug) then
        print *, "DBG| released"
@@ -169,6 +171,16 @@ contains
 
   end subroutine fat_pw_release_ref
 
+! **************************************************************************************************
+!> \brief Print a plane wave to a cube file
+! **************************************************************************************************
+  subroutine fat_pw_print(fat_env, v, label)
+    type(fat_env_type), pointer :: fat_env
+    type(pw_type), pointer :: v
+    character(len=*) :: label
+
+  end subroutine fat_pw_print
+  
 ! **************************************************************************************************
 !> \brief Creates an array of pws for one fragment in the freeze-and-thaw environment
 ! **************************************************************************************************
@@ -219,6 +231,7 @@ contains
        call fat_pw_create_ref(fat_env, pw_tmp(i)%pw, rspace)
        pws(i) = pw_tmp(i)%pw
     end do
+    deallocate(pw_tmp)
     
   end subroutine fat_pws_create_ref
 
@@ -273,6 +286,7 @@ contains
        pw_tmp(i)%pw => pws(i)
        call fat_pw_release_ref(fat_env, pw_tmp(i)%pw)
     end do
+    deallocate(pw_tmp)
     
     if (is_debug) then
        print *, "DBG| released"
@@ -482,8 +496,6 @@ contains
     section => section_vals_get_subs_vals(input, "DFT%QS%OPT_EMBED%XC")
     pw_pool => fat_env%pw_pool_ref
 
-    nullify(rho_g)
-    nullify(rho_r)
     call fat_pws_create_ref(fat_env, rho_r, 1)
     call fat_rho_ref(fat_env, rho_r)
     nullify(v, v_tau)
@@ -589,10 +601,6 @@ contains
     call fat_env%pw_pool_sub(i_frag)%pool%create_pw(v_g(1), use_data=complexdata1d, in_space=reciprocalspace)
     call pw_zero(v_g(1))
 
-    allocate(v)
-    call fat_env%pw_pool_sub(i_frag)%pool%create_pw(v, use_data=realdata3d, in_space=realspace)
-    call pw_zero(v)
-
     qs_env => fat_env%force_env_sub(i_frag)%force_env%qs_env
     call get_qs_env(qs_env, pw_env=pw_env)
     call pw_env_get(pw_env, poisson_env=poisson_env)
@@ -603,6 +611,8 @@ contains
     end if
 
     call pw_transfer(v_g(1), v)
+    call fat_env%pw_pool_sub(i_frag)%pool%give_back_pw(v_g(1))
+    deallocate(v_g)
 
   end subroutine fat_v_e_frag
 
@@ -636,10 +646,6 @@ contains
     call fat_env%pw_pool_sub(i_frag)%pool%create_pw(v_g(1), use_data=complexdata1d, in_space=reciprocalspace)
     call pw_zero(v_g(1))
 
-    allocate(v)
-    call fat_env%pw_pool_sub(i_frag)%pool%create_pw(v, use_data=realdata3d, in_space=realspace)
-    call pw_zero(v)
-
     qs_env => fat_env%force_env_sub(i_frag)%force_env%qs_env
     call get_qs_env(qs_env, pw_env=pw_env)
     call pw_env_get(pw_env, poisson_env=poisson_env)
@@ -650,6 +656,9 @@ contains
     end if
 
     call pw_transfer(v_g(1), v)
+    call fat_env%pw_pool_sub(i_frag)%pool%give_back_pw(v_g(1))
+    deallocate(rho_g)
+    deallocate(v_g)
 
   end subroutine fat_v_n_frag
 
@@ -752,9 +761,11 @@ contains
     do i = 1, fat_env%n_frag
        if (i == i_frag) cycle
 
+       call fat_pw_create_frag(fat_env, v, i)
        call fat_v_e_frag(fat_env, v, i)
        call pw_axpy(v, v_sum, allow_noncompatible_grids=.true.)
        call fat_env%pw_pool_sub(i)%pool%give_back_pw(v)
+       call fat_pw_release_frag(fat_env, v, i)
     end do
 
     call pw_transfer(v_sum, vemb)
@@ -762,16 +773,6 @@ contains
 
   end subroutine fat_vemb_e_frag
 
-! **************************************************************************************************
-!> \brief Print a plane wave to a cube file
-! **************************************************************************************************
-  subroutine fat_pw_print(fat_env, v, label)
-    type(fat_env_type), pointer :: fat_env
-    type(pw_type), pointer :: v
-    character(len=*) :: label
-
-  end subroutine fat_pw_print
-  
 ! **************************************************************************************************
 !> \brief Calculate nuclear embedding potential for one fragment in the freeze-and-thaw environment
 ! **************************************************************************************************
@@ -803,9 +804,10 @@ contains
     do i = 1, fat_env%n_frag
        if (i == i_frag) cycle
 
+       call fat_pw_create_frag(fat_env, v, i)
        call fat_v_n_frag(fat_env, v, i)
        call pw_axpy(v, v_sum, allow_noncompatible_grids=.true.)
-       call fat_env%pw_pool_sub(i)%pool%give_back_pw(v)
+       call fat_pw_release_frag(fat_env, v, i)
     end do
 
     call pw_transfer(v_sum, vemb)
@@ -870,6 +872,7 @@ contains
        allocate(stride(3))
        stride = [1, 1, 1]
        call cp_pw_to_cube(vemb, output_unit, "vemb_"//trim(label), particle_list, stride=stride)
+       deallocate(stride)
 
        call open_file( &
             "vemb_"//trim(label)//".dat", file_status="REPLACE", &
@@ -877,6 +880,7 @@ contains
        call fat_pw_create_frag(fat_env, weights, i_frag)
        call pw_set(weights, 0.0_dp) !vemb%pw_grid%dr(1) * vemb%pw_grid%dr(2) * vemb%pw_grid%dr(3))
        call pw_to_simple_volumetric(weights, output_unit, [1, 1, 1], vemb)
+       call fat_pw_release_frag(fat_env, weights, i_frag)
     end if
 
   end subroutine fat_vemb_frag
@@ -967,12 +971,15 @@ contains
        print *, "DBG| ", modulen//"::"//routinen
     end if
 
+    call fat_pw_create_frag(fat_env, v, i)
     call fat_v_e_frag(fat_env, v, i)
-
     call fat_pw_create_frag(fat_env, rho, i)
     call fat_rho_frag(fat_env, rho_tmp, j)
+
     call pw_transfer(rho_tmp(1), rho)
     e = pw_integral_ab(v, rho)
+
+    call fat_pw_release_frag(fat_env, v, i)
     call fat_pw_release_frag(fat_env, rho, i)
     
     if (is_debug) then
@@ -997,12 +1004,16 @@ contains
        print *, "DBG| ", modulen//"::"//routinen
     end if
 
+    call fat_pw_create_frag(fat_env, v, i)
     call fat_v_n_frag(fat_env, v, i)
 
     call fat_pw_create_frag(fat_env, rho, i)
     call fat_rho_frag(fat_env, rho_tmp, j)
+
     call pw_transfer(rho_tmp(1), rho)
     e = pw_integral_ab(v, rho)
+
+    call fat_pw_release_frag(fat_env, v, i)
     call fat_pw_release_frag(fat_env, rho, i)
 
     if (is_debug) then
@@ -1027,14 +1038,21 @@ contains
        print *, "DBG| ", modulen//"::"//routinen
     end if
 
+    call fat_pw_create_frag(fat_env, v, i)
     call fat_v_n_frag(fat_env, v, i)
 
     call fat_pw_create_frag(fat_env, rho, i)
     call fat_rhon_frag(fat_env, rho_tmp, j)
-    call pw_transfer(rho_tmp, rho)
 
+    call pw_transfer(rho_tmp, rho)
     e = pw_integral_ab(v, rho)
+
+    call fat_pw_release_frag(fat_env, v, i)
     call fat_pw_release_frag(fat_env, rho, i)
+
+    if (is_debug) then
+       print *, "DBG| ", i, j, e
+    end if
 
   end function fat_eint_nn
 
@@ -1344,6 +1362,7 @@ contains
              call fat_pw_create_frag(fat_env, drho, i)
              call fat_drho_frag(fat_env, drho, i, j, a)
              forces(k, a) = pw_integral_ab(v, drho)
+             call fat_pw_release_frag(fat_env, drho, i)
           end do
        end do
        call fat_pw_release_frag(fat_env, v, i)
@@ -1381,6 +1400,7 @@ contains
              call fat_pw_create_frag(fat_env, drho, i)
              call fat_drho_frag(fat_env, drho, i, j, a)
              forces(k, a) = pw_integral_ab(v, drho)
+             call fat_pw_release_frag(fat_env, drho, i)
           end do
        end do
        call fat_pw_release_frag(fat_env, v, i)
@@ -1418,6 +1438,7 @@ contains
              call fat_pw_create_frag(fat_env, drho, i)
              call fat_drho_frag(fat_env, drho, i, j, a)
              forces(k, a) = pw_integral_ab(v, drho)
+             call fat_pw_release_frag(fat_env, drho, i)
           end do
        end do
        call fat_pw_release_frag(fat_env, v, i)
@@ -1455,6 +1476,7 @@ contains
              call fat_pw_create_frag(fat_env, drho, i)
              call fat_drho_frag(fat_env, drho, i, j, a)
              forces(k, a) = pw_integral_ab(v, drho)
+             call fat_pw_release_frag(fat_env, drho, i)
           end do
        end do
        call fat_pw_release_frag(fat_env, v, i)
@@ -1542,6 +1564,7 @@ contains
              call fat_pw_create_frag(fat_env, drho, i)
              call fat_drhon_frag(fat_env, drho, i, j, a)
              forces(k, a) = pw_integral_ab(v, drho)
+             call fat_pw_release_frag(fat_env, drho, i)
           end do
        end do
        call fat_pw_release_frag(fat_env, v, i)
@@ -1693,7 +1716,7 @@ contains
     call fat_force_print(fat_env, forces_ne, "force_ne")
     do i = 1, size(forces, 1)
        do j = 1, 3
-          forces(i, j) = forces(i, j) + forces_ne(i, j)
+          forces(i, j) = forces(i, j) + 2*forces_ne(i, j)
        end do
     end do
     deallocate(forces_ne)

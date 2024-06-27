@@ -72,6 +72,9 @@ contains
   subroutine fat_env_release(fat_env)
     type(fat_env_type), pointer :: fat_env
 
+    if (associated(fat_env%pw_pool_sub)) deallocate(fat_env%pw_pool_sub)
+    if (associated(fat_env%force_env_sub)) deallocate(fat_env%force_env_sub)
+
     deallocate(fat_env)
 
   end subroutine fat_env_release
