@@ -39,15 +39,21 @@ contains
 
 ! **************************************************************************************************
 ! **************************************************************************************************
-  subroutine fat_env_get(fat_env)
+  subroutine fat_env_get(fat_env, is_converged)
     type(fat_env_type), pointer :: fat_env
+    logical, optional :: is_converged
+
+    if (present(is_converged)) is_converged = fat_env%is_converged
 
   end subroutine fat_env_get
   
 ! **************************************************************************************************
 ! **************************************************************************************************
-  subroutine fat_env_set(fat_env)
+  subroutine fat_env_set(fat_env, is_converged)
     type(fat_env_type), pointer :: fat_env
+    logical, optional :: is_converged
+
+    if (present(is_converged)) fat_env%is_converged = is_converged
 
   end subroutine fat_env_set
   

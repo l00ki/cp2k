@@ -115,6 +115,8 @@ contains
   subroutine extern_env_release(extern_env)
     type(extern_env_type), pointer :: extern_env
 
+    deallocate(extern_env)
+
   end subroutine extern_env_release
 
 end module extern_types

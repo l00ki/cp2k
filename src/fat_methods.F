@@ -11,6 +11,7 @@ module fat_methods
   use kinds
   use particle_list_types
   use particle_types
+  use physcon
   use pw_env_types
   use pw_poisson_methods
   use pw_poisson_types
@@ -41,7 +42,7 @@ module fat_methods
        fat_iterate, &
        fat_results
 
-  logical, private, parameter :: is_debug = .false.
+  logical, private, parameter :: is_debug = .true.
 
   character(len=*), private, parameter :: &
        modulen = "fat_methods", &
@@ -760,6 +761,16 @@ contains
     call fat_pw_release_frag(fat_env, v_sum, i_frag)
 
   end subroutine fat_vemb_e_frag
+
+! **************************************************************************************************
+!> \brief Print a plane wave to a cube file
+! **************************************************************************************************
+  subroutine fat_pw_print(fat_env, v, label)
+    type(fat_env_type), pointer :: fat_env
+    type(pw_type), pointer :: v
+    character(len=*) :: label
+
+  end subroutine fat_pw_print
   
 ! **************************************************************************************************
 !> \brief Calculate nuclear embedding potential for one fragment in the freeze-and-thaw environment
@@ -817,13 +828,15 @@ contains
     integer :: i, output_unit
     integer, pointer :: stride(:)
     type(particle_list_type), pointer :: particle_list
-    type(pw_type), pointer :: vemb_tsna, vemb_xcna, vemb_ee, vemb_ne, weights
+    type(pw_type), pointer :: rho(:), vemb_tsna, vemb_xcna, vemb_ee, vemb_ne, weights
     type(qs_environment_type), pointer :: qs_env
     type(qs_subsys_type), pointer :: subsys
 
     if (is_debug) then
        print *, "DBG| ", modulen//"::"//routinen
     end if
+
+    call fat_rho_frag(fat_env, rho, i_frag)
 
     call fat_pw_create_frag(fat_env, vemb_tsna, i_frag)
     call fat_vemb_tsna_frag(fat_env, vemb_tsna, i_frag)
@@ -859,10 +872,10 @@ contains
        call cp_pw_to_cube(vemb, output_unit, "vemb_"//trim(label), particle_list, stride=stride)
 
        call open_file( &
-            "vemb_"//trim(label)//".dat", file_status="REPLACE",&
-            & file_action="WRITE", unit_number=output_unit)
+            "vemb_"//trim(label)//".dat", file_status="REPLACE", &
+            file_action="WRITE", unit_number=output_unit)
        call fat_pw_create_frag(fat_env, weights, i_frag)
-       call pw_set(weights, vemb%pw_grid%dr(1) * vemb%pw_grid%dr(2) * vemb%pw_grid%dr(3))
+       call pw_set(weights, 0.0_dp) !vemb%pw_grid%dr(1) * vemb%pw_grid%dr(2) * vemb%pw_grid%dr(3))
        call pw_to_simple_volumetric(weights, output_unit, [1, 1, 1], vemb)
     end if
 
@@ -1048,7 +1061,7 @@ contains
     end do
 
     do i = 1, fat_env%n_frag
-       !e = e - fat_env%e_emb(i)
+       e = e - fat_env%e_emb(i)
     end do
 
     e = e + fat_e_ts_ref(fat_env)
@@ -1064,10 +1077,11 @@ contains
     if (fat_env%i_iter > 0) then
        fat_env%eee = 0.0
        do i = 1, fat_env%n_frag
-          do j = i + 1, fat_env%n_frag
+          do j = 1, fat_env%n_frag
+             if (i == j) cycle
              e_tmp = fat_eint_ee(fat_env, i, j)
-             e = e + e_tmp
-             fat_env%eee = fat_env%eee + e_tmp
+             e = e + .5*e_tmp
+             fat_env%eee = fat_env%eee + .5*e_tmp
           end do
        end do
 
@@ -1083,10 +1097,11 @@ contains
 
        fat_env%enn = 0.0
        do i = 1, fat_env%n_frag
-          do j = i + 1, fat_env%n_frag
+          do j = 1, fat_env%n_frag
+             if (i == j) cycle
              e_tmp = fat_eint_nn(fat_env, i, j)
-             e = e + e_tmp
-             fat_env%enn = fat_env%enn + e_tmp
+             e = e + .5*e_tmp
+             fat_env%enn = fat_env%enn + .5*e_tmp
           end do
        end do
     end if
@@ -1095,7 +1110,7 @@ contains
 
   end function fat_e_tot
 
-! **************************************************************************************************
+! ************************************************************************************************
 !> \brief Print the intermediate results of a freeze-and-thaw iteration
 ! **************************************************************************************************
   subroutine fat_status(fat_env, i_frag)
@@ -1204,17 +1219,20 @@ contains
 
     character(len=*), parameter :: routinen = "fat_is_converged"
 
+    real(dp) :: diff
+
     if (is_debug) then
        print *, "DBG| ", modulen//"::"//routinen
     end if
 
-    is_converged = abs(fat_env%e_tot - fat_env%e_old) .le. fat_env%eps
+    diff = fat_env%e_tot - fat_env%e_old
+    is_converged = abs(diff) .le. fat_env%eps
     fat_env%is_converged = is_converged
     
     if (is_debug) then
        print *, "DBG| ", is_converged
        print *, "DBG| ", fat_env%e_tot, fat_env%e_old
-       print *, "DBG| ", abs(fat_env%e_tot - fat_env%e_old)
+       print *, "DBG| diff", diff
     end if
 
     fat_env%e_old = fat_env%e_tot
@@ -1453,10 +1471,10 @@ contains
 
     character(len=*), parameter :: routinen = "fat_force_ee"
 
-    integer :: a, i, j, k, n
+    integer :: a, i, j, k, l, n
     type(particle_type), pointer :: particles(:)
     type(qs_environment_type), pointer :: qs_env
-    type(pw_type), pointer :: v, drho
+    type(pw_type), pointer :: ve, vn, drho, drhon
 
     if (is_debug) then
        print *, "DBG| ", modulen//"::"//routinen
@@ -1464,25 +1482,38 @@ contains
 
     k = 0
     do i = 1, fat_env%n_frag  ! fragments
-       call fat_pw_create_frag(fat_env, v, i)
-       call fat_vemb_n_frag(fat_env, v, i)
+       call fat_pw_create_frag(fat_env, ve, i)
+       call fat_vemb_e_frag(fat_env, ve, i)
+
+       call fat_pw_create_frag(fat_env, vn, i)
+       call fat_vemb_n_frag(fat_env, vn, i)
+
        qs_env => fat_env%force_env_sub(i)%force_env%qs_env
+
        call get_qs_env(qs_env, particle_set=particles)
        do j = 1, size(particles)  ! atoms in the fragment
           k = k + 1
           do a = 1, 3  ! xyz
              call fat_pw_create_frag(fat_env, drho, i)
              call fat_drho_frag(fat_env, drho, i, j, a)
-             forces(k, a) = 2 * pw_integral_ab(v, drho)
+             forces(k, a) = pw_integral_ab(vn, drho)
+             call fat_pw_release_frag(fat_env, drho, i)
+
+             call fat_pw_create_frag(fat_env, drhon, i)
+             call fat_drhon_frag(fat_env, drhon, i, j, a)
+             forces(k, a) = pw_integral_ab(ve, drhon)
+             call fat_pw_release_frag(fat_env, drhon, i)
           end do
        end do
-       call fat_pw_release_frag(fat_env, v, i)
+
+       call fat_pw_release_frag(fat_env, ve, i)
+       call fat_pw_release_frag(fat_env, vn, i)
     end do
 
   end subroutine fat_force_ne
 
 ! **************************************************************************************************
-!> \brief Calculate the nn for a freeze-and-thaw optimization
+!> \brief Calculate the nn force for a freeze-and-thaw optimization
 ! **************************************************************************************************
   subroutine fat_force_nn(fat_env, forces)
     type(fat_env_type), pointer :: fat_env
@@ -1517,6 +1548,38 @@ contains
     end do
 
   end subroutine fat_force_nn
+
+! ************************************************************************************************
+!> \brief Calculate the overlap force for a freeze-and-thaw optimization
+! **************************************************************************************************
+  subroutine fat_force_overlap(fat_env, forces)
+    type(fat_env_type), pointer :: fat_env
+    real(dp), allocatable :: forces(:, :)
+
+    character(len=*), parameter :: routinen = "fat_force_overlap"
+
+    integer :: i, iatom, ikind, natom
+    integer, allocatable :: atom_of_kind(:), kind_of(:)
+    type(atomic_kind_type), pointer :: atomic_kinds(:)
+    type(qs_environment_type), pointer :: qs_env
+    type(qs_force_type), pointer :: force(:)
+
+    if (is_debug) then
+       print *, "DBG| ", modulen//"::"//routinen
+    end if
+
+    qs_env => fat_env%force_env_ref%qs_env
+    call get_qs_env(qs_env, atomic_kind_set=atomic_kinds, force=force)
+    call get_atomic_kind_set( &
+         atomic_kinds, atom_of_kind=atom_of_kind, kind_of=kind_of, natom=natom)
+
+    do iatom = 1, natom
+       ikind = kind_of(iatom)
+       i = atom_of_kind(iatom)
+       forces(iatom, :) = force(ikind)%overlap(1:3, i)
+    end do
+
+  end subroutine fat_force_overlap
 
 ! **************************************************************************************************
 !> \brief Print the forces for a freeze-and-thaw optimization
@@ -1567,7 +1630,7 @@ contains
     real(dp), allocatable :: &
          & forces(:, :), forces_self(:, :), forces_emb(:, :),&
          & forces_tsna(:, :), forces_xcna(:, :), forces_ee(:, :),&
-         & forces_ne(:, :), forces_nn(:, :)
+         & forces_ne(:, :), forces_nn(:, :), forces_overlap(:, :)
 
     if (is_debug) then
        print *, "DBG| ", modulen//"::"//routinen
@@ -1645,7 +1708,18 @@ contains
     end do
     deallocate(forces_nn)
 
+    call fat_force_create(fat_env, forces_overlap)
+    call fat_force_overlap(fat_env, forces_overlap)
+    call fat_force_print(fat_env, forces_overlap, "force_overlap")
+    do i = 1, size(forces, 1)
+       do j = 1, 3
+          forces(i, j) = forces(i, j) + forces_overlap(i, j)
+       end do
+    end do
+    deallocate(forces_overlap)
+
     call fat_force_print(fat_env, forces, "force")
+
     deallocate(forces)
 
   end subroutine fat_force
@@ -1727,10 +1801,6 @@ contains
     write (fat_env%output_unit, '(/,T2,"ENERGY| Total FORCE_EVAL ( ",A," ) energy [a.u.]: ",T55,F26.15)') &
        "FAT", fat_env%e_tot
 
-    !call fat_force_print(fat_env, forces, "force")
-
-    call fat_run_molcas(fat_env)
-
     if (my_do_forces) then
        call fat_force(fat_env)
     end if
@@ -1772,9 +1842,10 @@ contains
 
     character(len=*), parameter :: routinen = "fat_init"
 
-    integer :: handle, i, i_frag, j, n_iter, n_frag
+    integer :: handle, i, i_frag, j, n_iter, n_frag, cluster_subsys_num
     real(dp) :: eps
     type(cp_logger_type), pointer :: logger
+    type(dft_control_type), pointer :: dft_control
     type(force_env_type), pointer :: force_env_tmp
     type(pw_env_type), pointer :: pw_env_tmp
     type(pw_pool_type), pointer :: pw_pool_tmp
@@ -1795,8 +1866,19 @@ contains
     ! this is a limitation of the EMBED method
     CPASSERT(ref_subsys_number == 1)
 
+    ! check for the high-level calculation
+    if (size(force_env%sub_force_env) == 5) then
+       cluster_subsys_num = 4
+    else
+       cluster_subsys_num = 0
+    end if
+
     fat_env%force_env_ref => force_env%sub_force_env(ref_subsys_number)%force_env
-    fat_env%n_frag = size(force_env%sub_force_env) - 1
+    if (cluster_subsys_num == 0) then
+       fat_env%n_frag = size(force_env%sub_force_env) - 1
+    else
+       fat_env%n_frag = size(force_env%sub_force_env) - 2
+    end if
     fat_env%i_iter = 0
 
     fat_env%output_unit = cp_logger_get_default_io_unit()
@@ -1805,7 +1887,7 @@ contains
     allocate(fat_env%force_env_sub(fat_env%n_frag))
     j = 1
     do i = 1, size(force_env%sub_force_env)
-       if (i == ref_subsys_number) cycle
+       if (i == ref_subsys_number .or. i == cluster_subsys_num) cycle
        fat_env%force_env_sub(j)%force_env => force_env%sub_force_env(i)%force_env
        j = j + 1
     end do

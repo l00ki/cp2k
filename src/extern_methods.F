@@ -41,16 +41,23 @@ contains
 ! **************************************************************************************************
   subroutine extern_calc_energy_force(force_env, calc_force)
     type(force_env_type), pointer :: force_env
-    logical :: calc_force
+    logical, optional :: calc_force
 
     character(len=*), parameter :: routineN = "extern_calc_energy_force"
     
     character :: cmdmsg(100)
     integer :: cmdstat, exitstat, handle, output_unit
+    logical :: my_calc_force
 
     call timeset(routineN, handle)
 
-    call execute_command_line("pymolcas -i molcas.inp", .true., exitstat, cmdstat, cmdmsg)
+    if (present(calc_force)) then
+       my_calc_force = calc_force
+    else
+       my_calc_force = .false.
+    end if
+
+    call execute_command_line("pymolcas -i extern.inp", .true., exitstat, cmdstat, cmdmsg)
     if (cmdstat /= 0) CPABORT("External command did not execute")
 
     output_unit = cp_logger_get_default_io_unit()
