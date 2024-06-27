@@ -54,7 +54,7 @@ MODULE qs_moments
         dbcsr_copy, dbcsr_create, dbcsr_deallocate_matrix, dbcsr_desymmetrize, &
         dbcsr_distribution_type, dbcsr_dot, dbcsr_get_block_p, dbcsr_init_p, dbcsr_multiply, &
         dbcsr_p_type, dbcsr_set, dbcsr_trace, dbcsr_type, dbcsr_type_antisymmetric, &
-        dbcsr_type_no_symmetry, dbcsr_type_symmetric
+        dbcsr_type_no_symmetry, dbcsr_type_symmetric, dbcsr_print
    USE distribution_1d_types,           ONLY: distribution_1d_type
    USE kinds,                           ONLY: default_string_length,&
                                               dp
@@ -91,6 +91,8 @@ MODULE qs_moments
                                               qs_rho_type
    USE rt_propagation_types,            ONLY: get_rtp,&
                                               rt_prop_type
+   use string_utilities, only: integer_to_string
+   use cp_files, only: open_file, close_file
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
@@ -1797,10 +1799,10 @@ CONTAINS
       CHARACTER(LEN=*), PARAMETER                        :: routineN = 'qs_moment_locop'
 
       CHARACTER(LEN=8), ALLOCATABLE, DIMENSION(:)        :: rlab
-      CHARACTER(LEN=default_string_length)               :: description
+      CHARACTER(LEN=default_string_length)               :: description, tag
       INTEGER                                            :: akind, handle, i, ia, iatom, idir, &
                                                             ikind, ispin, ix, iy, iz, l, nm, nmm, &
-                                                            nmom, order
+                                                            nmom, order, file_unit
       LOGICAL                                            :: my_com_nl, my_velreprs
       REAL(dp)                                           :: charge, dd, strace, trace
       REAL(dp), ALLOCATABLE, DIMENSION(:)                :: mmom, nlcom_rrv, nlcom_rv, nlcom_rxrv, &
@@ -1899,6 +1901,18 @@ CONTAINS
          CALL build_local_moment_matrix(qs_env, moments, nmom, ref_point=rcc)
       ENDIF
 
+      i = 1
+      call integer_to_string(i, tag)
+      call open_file("r_"//trim(tag)//".dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE") 
+      call dbcsr_print(moments(i)%matrix, matlab_format=.true., unit_nr=file_unit)
+      call close_file(file_unit)
+      do i = 2, nm
+         call integer_to_string(i, tag)
+         call open_file("r_"//trim(tag)//".dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE") 
+         call dbcsr_print(moments(i)%matrix, matlab_format=.true., unit_nr=file_unit)
+         call close_file(file_unit)
+      end do
+
       CALL qs_rho_get(rho, rho_ao=rho_ao)
 
       ALLOCATE (rmom(nm + 1, 3))
@@ -1994,8 +2008,16 @@ CONTAINS
             mmom(i) = strace
          END DO
 
+         do i = 1, 3
+            call integer_to_string(i, tag)
+            call open_file("m_"//trim(tag)//".dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE") 
+            call dbcsr_print(magmom(i)%matrix, matlab_format=.true., unit_nr=file_unit)
+            call close_file(file_unit)
+         end do
+
          CALL dbcsr_deallocate_matrix_set(magmom)
       END IF
+
 
       ! velocity representations
       IF (my_velreprs) THEN
@@ -2035,6 +2057,13 @@ CONTAINS
                      rmom_vel(idir) = rmom_vel(idir) + strace
                   ENDDO
                ENDIF
+
+               do i = 1, 3
+                  call integer_to_string(i, tag)
+                  call open_file("p_"//trim(tag)//".dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE") 
+                  call dbcsr_print(momentum(i)%matrix, matlab_format=.true., unit_nr=file_unit)
+                  call close_file(file_unit)
+               end do
 
                CALL dbcsr_deallocate_matrix_set(momentum)
 

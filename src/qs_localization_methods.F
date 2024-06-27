@@ -2958,11 +2958,11 @@ CONTAINS
 ! **************************************************************************************************
    SUBROUTINE cardoso_souloumiac_pipek(zij, vec, sweeps, max_iter, eps, out_each, states)
 
-     type(cp_cfm_p_type), pointer :: zij(:,:)
-     type(cp_cfm_type), pointer   :: vec
-     integer                      :: sweeps, max_iter, out_each
-     real(dp)                     :: eps
-     integer, allocatable         :: states(:)
+     type(cp_cfm_p_type), pointer   :: zij(:,:)
+     type(cp_cfm_type), pointer     :: vec
+     integer                        :: sweeps, max_iter, out_each
+     real(dp)                       :: eps
+     integer, allocatable, optional :: states(:)
 
      character(*), parameter :: routineN = 'cardoso_souloumiac_pipek', &
                                 routineP = moduleN//':'//routineN
@@ -2986,13 +2986,13 @@ CONTAINS
         c_zij(k)%matrix => zij(k, 1)%matrix
      end do
 
-     n_states = size(states)
+     call cp_cfm_get_info(c_zij(1)%matrix, ncol_global=n_states)
 
      tol = 1.0e10_dp
      c_spread = (0.0_dp, 0.0_dp)
      do k = 1, n_dim
         do i = 1, n_states
-           call cp_cfm_get_element(c_zij(k)%matrix, states(i), states(i), s)
+           call cp_cfm_get_element(c_zij(k)%matrix, i, i, s)
            c_spread = c_spread + s * s
         end do
      end do
@@ -3017,21 +3017,21 @@ CONTAINS
         do i = 1, n_states
            do j = i + 1, n_states
               do k = 1, n_dim
-                 call cp_cfm_get_element(c_zij(k)%matrix, states(i), states(i), qii(k))
-                 call cp_cfm_get_element(c_zij(k)%matrix, states(i), states(j), qij(k))
-                 call cp_cfm_get_element(c_zij(k)%matrix, states(j), states(i), qji(k))
-                 call cp_cfm_get_element(c_zij(k)%matrix, states(j), states(j), qjj(k))
+                 call cp_cfm_get_element(c_zij(k)%matrix, i, i, qii(k))
+                 call cp_cfm_get_element(c_zij(k)%matrix, i, j, qij(k))
+                 call cp_cfm_get_element(c_zij(k)%matrix, j, i, qji(k))
+                 call cp_cfm_get_element(c_zij(k)%matrix, j, j, qjj(k))
               end do
               call get_cardoso_angles(qii, qij, qji, qjj, c, s, vec%matrix_struct)
-              call rotate_cardoso_zij(states(i), states(j), c, s, c_zij)
-              call rotate_cardoso_rmat(states(i), states(j), c, s, rmat)
+              call rotate_cardoso_zij(i, j, c, s, c_zij)
+              call rotate_cardoso_rmat(i, j, c, s, rmat)
            end do
         end do
 
         c_spread = (0.0_dp, 0.0_dp)
         do i = 1, n_states
            do k = 1, n_dim
-              call cp_cfm_get_element(c_zij(k)%matrix, states(i), states(i), s)
+              call cp_cfm_get_element(c_zij(k)%matrix, i, i, s)
               c_spread = c_spread + s * s
            end do
         end do

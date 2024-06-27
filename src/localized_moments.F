@@ -1265,14 +1265,14 @@ contains
      call cp_fm_struct_release(mom_struct)
 
      ! charge
-     call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, m, (0._dp, 0._dp), mom)
-     d = 0.
-     do i = 1, ns
-        call cp_cfm_get_element(mom, i, i, cd)
-        moments(2) = moments(2) + real(cd)
-     end do
-     moments(2) = -zwfc * ns! moments(2)
-     moments(3) = moments(1) + moments(2)
+     !call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, m, (0._dp, 0._dp), mom)
+     !d = 0.
+     !do i = 1, ns
+     !   call cp_cfm_get_element(mom, i, i, cd)
+     !   moments(2) = moments(2) + real(cd)
+     !end do
+     !moments(2) = -zwfc * ns! moments(2)
+     !moments(3) = moments(1) + moments(2)
 
      ! edip
      do i = 1, 3
@@ -1286,69 +1286,69 @@ contains
         moments(i+3) = moments(i+3) - zwfc * d
      end do
      ! vel
-     do i = 1, 3
-        call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), momo(i)%matrix, m, (0._dp, 0._dp), om)
-        call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
-        d = 0.
-        do j = 1, ns
-           call cp_cfm_get_element(mom, j, j, cd)
-           d = d + aimag(cd)
-        end do
-        moments(i+15) = moments(i+15) - zwfc * d
-     end do
-     ! nl
-     moments(28:30) = moments(16:18) + nlrv
+     !do i = 1, 3
+     !   call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), momo(i)%matrix, m, (0._dp, 0._dp), om)
+     !   call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
+     !   d = 0.
+     !   do j = 1, ns
+     !      call cp_cfm_get_element(mom, j, j, cd)
+     !      d = d + aimag(cd)
+     !   end do
+     !   moments(i+15) = moments(i+15) - zwfc * d
+     !end do
+     !! nl
+     !moments(28:30) = moments(16:18) + nlrv
 
-     ! mdip
-     do i = 1, 3
-        call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), mago(i)%matrix, m, (0._dp, 0._dp), om)
-        call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
-        d = 0.
-        do j = 1, ns
-           call cp_cfm_get_element(mom, j, j, cd)
-           d = d + aimag(cd)
-        end do
-        moments(i+12) = moments(i+12) - zwfc * d
-     end do
-     ! nl
-     moments(25:27) = moments(13:15) + nlrxrv
+     !! mdip
+     !do i = 1, 3
+     !   call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), mago(i)%matrix, m, (0._dp, 0._dp), om)
+     !   call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
+     !   d = 0.
+     !   do j = 1, ns
+     !      call cp_cfm_get_element(mom, j, j, cd)
+     !      d = d + aimag(cd)
+     !   end do
+     !   moments(i+12) = moments(i+12) - zwfc * d
+     !end do
+     !! nl
+     !moments(25:27) = moments(13:15) + nlrxrv
 
-     ! equp
-     do i = 4, 9
-        call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o(i)%matrix, m, (0._dp, 0._dp), om)
-        call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
-        d = 0.
-        do j = 1, ns
-           call cp_cfm_get_element(mom, j, j, cd)
-           d = d + zwfc * real(cd)
-        end do
-        moments(i+3) = moments(i+3) - d
-     end do
-     ! vel
-     qupoleder = 0._dp
-     do i = 1, 3
-        do j = 1, 3
-           call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), oder(i, j)%matrix, m, (0._dp, 0._dp), om)
-           call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
-           d = 0.
-           do k = 1, ns
-              call cp_cfm_get_element(mom, k, k, cd)
-              d = d - aimag(cd)
-              if (i == j) then
-                 d = d + real(cd)
-              end if
-           end do
-           qupoleder((i-1)*3+j) = qupoleder((i-1)*3+j) + zwfc * d
-        end do
-     end do
-     moments(19) = -2*qupoleder(1) - moments(2)
-     moments(20) = -qupoleder(2) - qupoleder(4)
-     moments(21) = -qupoleder(3) - qupoleder(7)
-     moments(22) = -2*qupoleder(5) - moments(2)
-     moments(23) = -qupoleder(6) - qupoleder(8)
-     moments(24) = -2*qupoleder(9) - moments(2)
-     ! nl
-     moments(31:36) = moments(19:24) + nlrrv
+     !! equp
+     !do i = 4, 9
+     !   call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), o(i)%matrix, m, (0._dp, 0._dp), om)
+     !   call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
+     !   d = 0.
+     !   do j = 1, ns
+     !      call cp_cfm_get_element(mom, j, j, cd)
+     !      d = d + zwfc * real(cd)
+     !   end do
+     !   moments(i+3) = moments(i+3) - d
+     !end do
+     !! vel
+     !qupoleder = 0._dp
+     !do i = 1, 3
+     !   do j = 1, 3
+     !      call cp_cfm_gemm("N", "N", nao, ns, nao, (1._dp, 0._dp), oder(i, j)%matrix, m, (0._dp, 0._dp), om)
+     !      call cp_cfm_gemm("C", "N", ns, ns, nao, (1._dp, 0._dp), m, om, (0._dp, 0._dp), mom)
+     !      d = 0.
+     !      do k = 1, ns
+     !         call cp_cfm_get_element(mom, k, k, cd)
+     !         d = d - aimag(cd)
+     !         if (i == j) then
+     !            d = d + real(cd)
+     !         end if
+     !      end do
+     !      qupoleder((i-1)*3+j) = qupoleder((i-1)*3+j) + zwfc * d
+     !   end do
+     !end do
+     !moments(19) = -2*qupoleder(1) - moments(2)
+     !moments(20) = -qupoleder(2) - qupoleder(4)
+     !moments(21) = -qupoleder(3) - qupoleder(7)
+     !moments(22) = -2*qupoleder(5) - moments(2)
+     !moments(23) = -qupoleder(6) - qupoleder(8)
+     !moments(24) = -2*qupoleder(9) - moments(2)
+     !! nl
+     !moments(31:36) = moments(19:24) + nlrrv
 
      ! cleanup
      call cp_cfm_release(m)

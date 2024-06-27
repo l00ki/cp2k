@@ -260,18 +260,18 @@ CONTAINS
       SELECT CASE (method)
       CASE (do_loc_jacobi)
 
-         !call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !call cp_fm_write_formatted(vectors, file_unit)
-         !call close_file(file_unit)
+         call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         call cp_fm_write_formatted(vectors, file_unit)
+         call close_file(file_unit)
 
          CALL jacobi_rotations(weights, zij_fm_set, para_env, max_iter=max_iter, &
                                eps_localization=eps_localization, sweeps=sweeps, &
                                out_each=out_each, target_time=target_time, start_time=start_time, &
                                vectors=vectors)
 
-         !call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !call cp_fm_write_formatted(vectors, file_unit)
-         !call close_file(file_unit)
+         call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         call cp_fm_write_formatted(vectors, file_unit)
+         call close_file(file_unit)
 
       CASE (do_loc_scdm)
          ! Decomposition
@@ -320,16 +320,16 @@ CONTAINS
          END IF
       CASE (do_loc_cardoso)
 
-         !call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-         !call cp_cfm_write_formatted(complex_vectors, file_unit)
-         !call close_file(file_unit)
+         call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         call cp_cfm_write_formatted(complex_vectors, file_unit)
+         call close_file(file_unit)
 
          CALL cardoso_souloumiac(weights, my_zij_cfm_set, para_env, max_iter, eps_localization, &
                                  sweeps, out_each, target_time, start_time, complex_vectors)
 
-         !call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-         !call cp_cfm_write_formatted(complex_vectors, file_unit)
-         !call close_file(file_unit)
+         call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         call cp_cfm_write_formatted(complex_vectors, file_unit)
+         call close_file(file_unit)
 
       CASE (do_loc_none)
          IF (output_unit > 0) THEN
@@ -455,25 +455,25 @@ CONTAINS
       end if
 
       if (.not. do_complex) then
-         !call open_file("s.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !call cp_fm_write_formatted(ov_fm, file_unit)
-         !call close_file(file_unit)
+         call open_file("s.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         call cp_fm_write_formatted(ov_fm, file_unit)
+         call close_file(file_unit)
       end if
 
       !   Compute zij here
       if (.not. do_complex .and. .not. method == do_loc_cardoso) then
-         !call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !call cp_fm_write_formatted(vectors, file_unit)
-         !call close_file(file_unit)
+         call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         call cp_fm_write_formatted(vectors, file_unit)
+         call close_file(file_unit)
 
          call cp_gemm('N', 'N', nao, nmoloc, nao, 1.0_dp, ov_fm, vectors, 0.0_dp, opvec)
 
-         !call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !call cp_fm_write_formatted(opvec, file_unit)
-         !call close_file(file_unit)
+         call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         call cp_fm_write_formatted(opvec, file_unit)
+         call close_file(file_unit)
 
-         !call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !call close_file(file_unit)
+         call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         call close_file(file_unit)
 
          DO iatom = 1, natom
             CALL cp_fm_set_all(zij_fm_set(iatom, 1)%matrix, 0.0_dp)
@@ -496,9 +496,9 @@ CONTAINS
                  1.0_dp, zij_fm_set(iatom, 1)%matrix, &
                  a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
 
-            !call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-            !call cp_fm_write_formatted(zij_fm_set(iatom, 1)%matrix, file_unit)
-            !call close_file(file_unit)
+            call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+            call cp_fm_write_formatted(zij_fm_set(iatom, 1)%matrix, file_unit)
+            call close_file(file_unit)
 
          END DO ! iatom
       else
@@ -515,29 +515,29 @@ CONTAINS
          call cp_cfm_create(c_ov, ov_fm%matrix_struct)
          call cp_fm_to_cfm(ov_fm, mtarget=c_ov)
 
-         !if (do_complex) then
-         !   call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-         !else
-         !   call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !end if
-         !call cp_cfm_write_formatted(c_vec, file_unit)
-         !call close_file(file_unit)
+         if (do_complex) then
+            call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         else
+            call open_file("c.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         end if
+         call cp_cfm_write_formatted(c_vec, file_unit)
+         call close_file(file_unit)
 
          call cp_cfm_gemm('N', 'N', nao, nmoloc, nao, (1.0_dp, 0.0_dp), c_ov, c_vec, (0.0_dp, 0.0_dp), c_opvec)
 
-         !if (do_complex) then
-         !   call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-         !else
-         !   call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !end if
-         !call cp_cfm_write_formatted(c_opvec, file_unit)
-         !call close_file(file_unit)
+         if (do_complex) then
+            call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         else
+            call open_file("sc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         end if
+         call cp_cfm_write_formatted(c_opvec, file_unit)
+         call close_file(file_unit)
 
-         !if (do_complex) then
-         !   call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-         !else
-         !   call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !end if
+         if (do_complex) then
+            call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         else
+            call open_file("zij.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         end if
 
          do iatom = 1, natom
             call cp_cfm_create(c_zij(iatom, 1)%matrix, zij_fm_set(iatom, 1)%matrix%matrix_struct)
@@ -546,46 +546,47 @@ CONTAINS
             isgf = first_sgf(iatom)
             ncol = nsgf(iatom)
 
-            do i = 1, ldz
-               do j = 1, ldz
-                  call cp_cfm_get_element(c_zij(iatom, 1)%matrix, i, j, q)
-                  do k = isgf, isgf + ncol - 1
-                     call cp_cfm_get_element(c_vec, k, i, ca)
-                     call cp_cfm_get_element(c_opvec, k, j, cb)
-                     q = q + 0.5_dp * conjg(ca) * cb
-                     call cp_cfm_get_element(c_vec, k, j, ca)
-                     call cp_cfm_get_element(c_opvec, k, i, cb)
-                     q = q + 0.5_dp * conjg(ca) * cb
-                  end do
-                  call cp_cfm_set_element(c_zij(iatom, 1)%matrix, i, j, q)
-               end do
-            end do
+            !do i = 1, ldz
+            !   do j = 1, ldz
+            !      call cp_cfm_get_element(c_zij(iatom, 1)%matrix, i, j, q)
+            !      do k = isgf, isgf + ncol - 1
+            !         call cp_cfm_get_element(c_vec, k, i, ca)
+            !         call cp_cfm_get_element(c_opvec, k, j, cb)
+            !         q = q + 0.5_dp * conjg(ca) * cb
+            !         call cp_cfm_get_element(c_vec, k, j, ca)
+            !         call cp_cfm_get_element(c_opvec, k, i, cb)
+            !         q = q + 0.5_dp * conjg(ca) * cb
+            !      end do
+            !      call cp_cfm_set_element(c_zij(iatom, 1)%matrix, i, j, q)
+            !   end do
+            !end do
             
-            !! multiply fmxfm, using only part of the ao : Ct x S
-            !CALL cp_cfm_gemm('N', 'N', nao, nmoloc, nao, (1.0_dp, 0.0_dp), c_ov, c_vec, &
-            !     (0.0_dp, 0.0_dp), c_opvec, &
-            !     a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+            ! multiply fmxfm, using only part of the ao : Ct x S
+            CALL cp_cfm_gemm('N', 'N', nao, nmoloc, nao, (1.0_dp, 0.0_dp), c_ov, c_vec, &
+                 (0.0_dp, 0.0_dp), c_opvec, &
+                 a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
 
-            !CALL cp_cfm_gemm('C', 'N', nmoloc, nmoloc, ncol, (0.5_dp, 0.0_dp), c_vec, c_opvec, &
-            !     (0.0_dp, 0.0_dp), c_zij(iatom, 1)%matrix, &
-            !     a_first_col=1, a_first_row=isgf, b_first_col=1, b_first_row=isgf)
+            CALL cp_cfm_gemm('C', 'N', nmoloc, nmoloc, ncol, (0.5_dp, 0.0_dp), c_vec, c_opvec, &
+                 (0.0_dp, 0.0_dp), c_zij(iatom, 1)%matrix, &
+                 a_first_col=1, a_first_row=isgf, b_first_col=1, b_first_row=isgf)
 
-            !CALL cp_cfm_gemm('N', 'N', nao, nmoloc, ncol, (1.0_dp, 0.0_dp), c_ov, c_vec, &
-            !     (0.0_dp, 0.0_dp), c_opvec, &
-            !     a_first_col=isgf, a_first_row=1, b_first_col=1, b_first_row=isgf)
+            CALL cp_cfm_gemm('N', 'N', nao, nmoloc, ncol, (1.0_dp, 0.0_dp), c_ov, c_vec, &
+                 (0.0_dp, 0.0_dp), c_opvec, &
+                 a_first_col=isgf, a_first_row=1, b_first_col=1, b_first_row=isgf)
 
-            !CALL cp_cfm_gemm('C', 'N', nmoloc, nmoloc, nao, (0.5_dp, 0.0_dp), c_vec, c_opvec, &
-            !     (1.0_dp, 0.0_dp), c_zij(iatom, 1)%matrix, &
-            !     a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
+            CALL cp_cfm_gemm('C', 'N', nmoloc, nmoloc, nao, (0.5_dp, 0.0_dp), c_vec, c_opvec, &
+                 (1.0_dp, 0.0_dp), c_zij(iatom, 1)%matrix, &
+                 a_first_col=1, a_first_row=1, b_first_col=1, b_first_row=1)
          
-            !call cp_cfm_write_formatted(c_zij(iatom, 1)%matrix, file_unit)
+            call cp_cfm_write_formatted(c_zij(iatom, 1)%matrix, file_unit)
          end do
 
-         !call close_file(file_unit)
+         call close_file(file_unit)
       end if
 
       if (do_fragment) then
           call get_molecule(mols(1), molecule_kind=molkind)
+          print *, "dbg| lmi", mols(1)%lmi(1)%states
           call get_molecule_kind(molkind, nelectron=i, atom_list=atoms)
           n_atom_frag = size(atoms)
           n_states = i / 2
@@ -633,27 +634,27 @@ CONTAINS
       CASE (do_loc_direct)
          CPABORT("Direct and Pipek not implemented.")
       CASE (do_loc_cardoso)
-         CALL cardoso_souloumiac_pipek(c_zij, c_vec, sweeps, max_iter, eps, out_each, states)
+         CALL cardoso_souloumiac_pipek(c_zij, c_vec, sweeps, max_iter, eps, out_each)
 
-         !if (do_complex) then
-         !   call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-         !else
-         !   call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !end if
-         !call cp_cfm_write_formatted(c_vec, file_unit)
-         !call close_file(file_unit)
+         if (do_complex) then
+            call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         else
+            call open_file("c_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         end if
+         call cp_cfm_write_formatted(c_vec, file_unit)
+         call close_file(file_unit)
 
-         !if (do_complex) then
-         !   call open_file("zij_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
-         !else
-         !   call open_file("zij_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
-         !end if
+         if (do_complex) then
+            call open_file("zij_loc.dat", unit_number=file_unit, file_action="WRITE", file_position="APPEND")
+         else
+            call open_file("zij_loc.dat", unit_number=file_unit, file_action="WRITE", file_status="REPLACE")
+         end if
 
          do iatom = 1, natom
             call cp_cfm_to_fm(c_zij(iatom, 1)%matrix, mtargetr=zij_fm_set(iatom, 1)%matrix)
-            !call cp_cfm_write_formatted(c_zij(iatom, 1)%matrix, file_unit)
+            call cp_cfm_write_formatted(c_zij(iatom, 1)%matrix, file_unit)
          end do
-         !call close_file(file_unit)
+         call close_file(file_unit)
 
          call cp_cfm_to_fm(c_vec, vectors, im_vectors)
 
