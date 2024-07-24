@@ -3236,6 +3236,14 @@ CONTAINS
       CALL section_add_keyword(section, keyword)
       CALL keyword_release(keyword)
 
+      CALL keyword_create( &
+           keyword, __LOCATION__, name="FAT_EXTERN", &
+           description="Use and external solver during f&t runs", &
+           usage="FAT_EXTERN t", &
+           lone_keyword_l_val=.true., default_l_val=.false.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
       ! Integers
       CALL keyword_create(keyword, __LOCATION__, name="STO_NG", &
                           description="Order of Gaussian type expansion of Slater orbital basis sets.", &

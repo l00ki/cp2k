@@ -867,10 +867,11 @@ CONTAINS
       ! Write the header: number of points and number of spins
       ngrids = 1
       IF (DOUBLE) ngrids = 2
-      npoints = ((pw%pw_grid%npts(1) + my_stride(1) - 1)/my_stride(1))* &
-                ((pw%pw_grid%npts(2) + my_stride(2) - 1)/my_stride(1))* &
-                ((pw%pw_grid%npts(3) + my_stride(3) - 1)/my_stride(1))
-      IF (unit_nr > 1) WRITE (unit_nr, '(I7,I5)') npoints, ngrids
+      npoints = ((pw%pw_grid%npts(1))/my_stride(1))* &
+                ((pw%pw_grid%npts(2))/my_stride(2))* &
+                ((pw%pw_grid%npts(3))/my_stride(3))
+      !IF (unit_nr > 1) WRITE (unit_nr, '(I7,I5)') npoints, ngrids
+      IF (unit_nr > 1) WRITE (unit_nr, '(I8)') npoints
 
       ALLOCATE (buf(L3:U3))
       IF (DOUBLE) ALLOCATE (buf2(L3:U3))

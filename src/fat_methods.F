@@ -305,9 +305,10 @@ contains
 
     character(len=*), parameter :: routinen = "fat_rho_frag"
 
+    character(len=default_string_length) :: label
     logical :: my_rspace
     integer :: i, in_space, use_data
-    type(pw_type), pointer :: rho_r(:)
+    type(pw_type), pointer :: rho_r(:), rho_tmp
     type(qs_environment_type), pointer :: qs_env
     type(qs_rho_type), pointer :: qs_rho
 
@@ -335,6 +336,26 @@ contains
        call qs_rho_get(qs_rho, rho_r=rho)
     else
        call qs_rho_get(qs_rho, rho_g=rho)
+    end if
+
+    if (fat_env%extern(i_frag)) then
+       call integer_to_string(i_frag, label)
+       if (my_rspace) then
+          call cp_cube_to_pw(rho(1), "extern_"//trim(label)//".cube", 1.0_dp, .false.)
+       else
+          call fat_pw_create_frag(fat_env, rho_tmp, i_frag)
+          call cp_cube_to_pw(rho_tmp, "extern_"//trim(label)//".cube", 1.0_dp, .false.)
+          call pw_transfer(rho_tmp, rho(1))
+          call fat_pw_release_frag(fat_env, rho_tmp, i_frag)
+       end if
+    end if
+
+    if (is_debug) then
+       if (my_rspace) then
+          print *, "DBG| rho ", i_frag, " sum ", sum(rho(1)%cr3d)
+       else
+          print *, "DBG| rho ", i_frag, " sum ", sum(rho(1)%cc)
+       end if
     end if
 
   end subroutine fat_rho_frag
@@ -691,7 +712,7 @@ contains
     ! fragment
     nullify(v)
     call fat_v_ts_frag(fat_env, v, i_frag)
-    call pw_axpy(v(1), vemb, -1.0_dp, 1.0_dp, allow_noncompatible_grids=.true.)
+    call pw_axpy(v(1), vemb, -1.0_dp, allow_noncompatible_grids=.true.)
     call fat_pws_release_frag(fat_env, v, i_frag)
 
   end subroutine fat_vemb_tsna_frag
@@ -725,7 +746,7 @@ contains
     ! fragment
     nullify(v)
     call fat_v_xc_frag(fat_env, v, i_frag)
-    call pw_axpy(v(1), vemb, -1.0_dp, 1.0_dp, allow_noncompatible_grids=.true.)
+    call pw_axpy(v(1), vemb, -1.0_dp, allow_noncompatible_grids=.true.)
     call fat_pws_release_frag(fat_env, v, i_frag)
 
   end subroutine fat_vemb_xcna_frag
@@ -878,7 +899,7 @@ contains
             "vemb_"//trim(label)//".dat", file_status="REPLACE", &
             file_action="WRITE", unit_number=output_unit)
        call fat_pw_create_frag(fat_env, weights, i_frag)
-       call pw_set(weights, 0.0_dp) !vemb%pw_grid%dr(1) * vemb%pw_grid%dr(2) * vemb%pw_grid%dr(3))
+       call pw_set(weights, vemb%pw_grid%dr(1) * vemb%pw_grid%dr(2) * vemb%pw_grid%dr(3))
        call pw_to_simple_volumetric(weights, output_unit, [1, 1, 1], vemb)
        call fat_pw_release_frag(fat_env, weights, i_frag)
     end if
@@ -1172,36 +1193,61 @@ contains
 
     character(len=*), parameter :: routinen = "fat_iterate_frag"
 
+    character :: cmdmsg(100)
+    character(default_string_length) :: label
+    integer:: cmdstat, exitstat, input_unit, output_unit
     type(dft_control_type), pointer :: dft_control
-    type(pw_type), pointer :: vemb
+    type(force_env_type), pointer :: force_env_tmp
+    type(pw_type), pointer :: rho(:), vemb, weights
     type(qs_energy_type), pointer :: energy
-    type(qs_environment_type), pointer :: qs_env
+    type(qs_environment_type), pointer :: qs_env_tmp
 
     if (is_debug) then
-       print *, "DBG| ", modulen//"::"//routinen
+       print *, "DBG| ", modulen//"::"//routinen, i_frag
     end if
 
-    qs_env => fat_env%force_env_sub(i_frag)%force_env%qs_env
+    force_env_tmp => fat_env%force_env_sub(i_frag)%force_env
+    qs_env_tmp => force_env_tmp%qs_env
 
+    call get_qs_env(qs_env_tmp, dft_control=dft_control)
+    dft_control%apply_embed_pot = .true.
+    call fat_pw_create_frag(fat_env, vemb, i_frag)
     if (fat_env%i_iter > 0) then
-       call get_qs_env(qs_env, dft_control=dft_control)
-       dft_control%apply_embed_pot = .true.
-
-       call get_qs_env(qs_env, embed_pot=vemb)
-       call fat_pw_create_frag(fat_env, vemb, i_frag)
        call fat_vemb_frag(fat_env, vemb, i_frag, .false.)
-       call set_qs_env(qs_env, embed_pot=vemb)
+    end if
+    call set_qs_env(qs_env_tmp, embed_pot=vemb)
 
-       call qs_calc_energy_force(qs_env, .true., .false., .false.)
+    if (fat_env%extern(i_frag)) then
 
-       call fat_pw_release_frag(fat_env, vemb, i_frag)
+       call integer_to_string(i_frag, label)
+       call open_file( &
+            "vemb_"//trim(label)//".dat", file_status="REPLACE", &
+            file_action="WRITE", unit_number=output_unit)
+       call fat_pw_create_frag(fat_env, weights, i_frag)
+       call pw_set(weights, vemb%pw_grid%dr(1) * vemb%pw_grid%dr(2) * vemb%pw_grid%dr(3))
+       call pw_to_simple_volumetric(weights, output_unit, [1, 1, 1], vemb)
+       call fat_pw_release_frag(fat_env, weights, i_frag)
+      
+       call execute_command_line("sh extern_"//trim(label)//".sh", .true., exitstat, cmdstat, cmdmsg)
+       if (cmdstat /= 0) CPABORT("External command did not execute successfully")
+
+       call get_qs_env(qs_env_tmp, energy=energy)
+       call open_file( &
+            "extern_"//trim(label)//".e", file_status="OLD", file_action="READ", unit_number=input_unit)
+       read (input_unit, *) fat_env%e_sub(i_frag)
+
+       call fat_rho_frag(fat_env, rho, i_frag)
+       fat_env%e_emb(i_frag) = pw_integral_ab(vemb, rho(1))
+
     else
-       call qs_calc_energy_force(qs_env, .true., .false., .false.)
+       call qs_calc_energy_force(qs_env_tmp, .true., .false., .false.)
+       call get_qs_env(qs_env_tmp, energy=energy)
+       fat_env%e_sub(i_frag) = energy%total
+       fat_env%e_emb(i_frag) = energy%embed_corr
     end if
 
-    call get_qs_env(qs_env, energy=energy)
-    fat_env%e_sub(i_frag) = energy%total
-    fat_env%e_emb(i_frag) = energy%embed_corr
+
+    call fat_pw_release_frag(fat_env, vemb, i_frag)
 
   end subroutine fat_iterate_frag
 
@@ -1326,6 +1372,9 @@ contains
           i_kind = kind_of(j)
           i_atom = atom_of_kind(j)
           forces(k, :) = qs_force(i_kind)%total(1:3, i_atom)
+          if (is_debug) then
+             print *, "DBG| k, i_kind, i_atom", k, i_kind, i_atom
+          end if
        end do
        deallocate(atom_of_kind, kind_of)
     end do
@@ -1748,14 +1797,6 @@ contains
   end subroutine fat_force
 
 ! **************************************************************************************************
-!> \brief Run the Molcas subsystem
-! **************************************************************************************************
-  subroutine fat_run_molcas(fat_env)
-    type(fat_env_type), pointer :: fat_env
-
-  end subroutine fat_run_molcas
-
-! **************************************************************************************************
 !> \brief Print the end results of a freeze-and-thaw optimization
 ! **************************************************************************************************
   subroutine fat_results(fat_env, do_forces)
@@ -1872,7 +1913,7 @@ contains
     type(force_env_type), pointer :: force_env_tmp
     type(pw_env_type), pointer :: pw_env_tmp
     type(pw_pool_type), pointer :: pw_pool_tmp
-    type(pw_type), pointer :: rho_r_tmp(:)
+    type(pw_type), pointer :: rho_r_tmp(:), vemb
     type(qs_environment_type), pointer :: qs_env_tmp
     type(qs_energy_type), pointer :: energy_tmp
     type(qs_rho_type), pointer :: rho_tmp
@@ -1889,28 +1930,16 @@ contains
     ! this is a limitation of the EMBED method
     CPASSERT(ref_subsys_number == 1)
 
-    ! check for the high-level calculation
-    if (size(force_env%sub_force_env) == 5) then
-       cluster_subsys_num = 4
-    else
-       cluster_subsys_num = 0
-    end if
-
     fat_env%force_env_ref => force_env%sub_force_env(ref_subsys_number)%force_env
-    if (cluster_subsys_num == 0) then
-       fat_env%n_frag = size(force_env%sub_force_env) - 1
-    else
-       fat_env%n_frag = size(force_env%sub_force_env) - 2
-    end if
+    fat_env%n_frag = size(force_env%sub_force_env) - 1
     fat_env%i_iter = 0
-
     fat_env%output_unit = cp_logger_get_default_io_unit()
 
     ! force environments
     allocate(fat_env%force_env_sub(fat_env%n_frag))
     j = 1
     do i = 1, size(force_env%sub_force_env)
-       if (i == ref_subsys_number .or. i == cluster_subsys_num) cycle
+       if (i == ref_subsys_number) cycle
        fat_env%force_env_sub(j)%force_env => force_env%sub_force_env(i)%force_env
        j = j + 1
     end do
@@ -1922,9 +1951,28 @@ contains
     call pw_env_get(pw_env_tmp, auxbas_pw_pool=fat_env%pw_pool_ref)
     allocate(fat_env%pw_pool_sub(fat_env%n_frag))
     do i = 1, fat_env%n_frag
+       force_env_tmp => fat_env%force_env_sub(i)%force_env
        qs_env_tmp => fat_env%force_env_sub(i)%force_env%qs_env
        call get_qs_env(qs_env_tmp, pw_env=pw_env_tmp)
        call pw_env_get(pw_env_tmp, auxbas_pw_pool=fat_env%pw_pool_sub(i)%pool)
+    end do
+
+    ! mark the extern fragments, if specified
+    allocate(fat_env%extern(fat_env%n_frag))
+    do i = 1, fat_env%n_frag
+       force_env_tmp => fat_env%force_env_sub(i)%force_env
+       qs_env_tmp => force_env_tmp%qs_env
+       call get_qs_env(qs_env_tmp, input=input)
+       call section_vals_val_get(input, "DFT%QS%FAT_EXTERN", l_val=fat_env%extern(i))
+       if (is_debug) then
+          print *, "DBG| fat_env%extern(i)", i, fat_env%extern(i)
+       end if
+    end do
+
+    do i = 1, fat_env%n_frag
+       force_env_tmp => fat_env%force_env_sub(i)%force_env
+       qs_env_tmp => force_env_tmp%qs_env
+       call qs_calc_energy_force(qs_env_tmp, .true., .false., .false.)
     end do
 
     ! energies
@@ -1947,10 +1995,7 @@ contains
 
     fat_env%e_old = 0.0
     do i = 1, fat_env%n_frag
-       qs_env_tmp => fat_env%force_env_sub(i)%force_env%qs_env
-       call qs_calc_energy_force(qs_env_tmp, .false., .false., .false.)
-       call get_qs_env(qs_env_tmp, energy=energy_tmp)
-       fat_env%e_sub(i) = energy_tmp%total
+       call fat_iterate_frag(fat_env, i)
     end do
 
     ! read input

@@ -27,6 +27,7 @@ module fat_types
      type(force_env_p_type), pointer :: force_env_sub(:)
      integer                         :: i_iter, n_iter, n_frag
      logical                         :: is_converged
+     logical, allocatable            :: extern(:)
      real(dp)                        :: eps, e_old, ekin_ref, exc_ref, e_tot, eee, ene, enn
      real(dp), allocatable           :: e_emb(:), e_sub(:), ekin_sub(:), exc_sub(:)
      type(pw_type), pointer          :: rho_r_sub(:), vemb(:)
@@ -74,6 +75,12 @@ contains
 
     if (associated(fat_env%pw_pool_sub)) deallocate(fat_env%pw_pool_sub)
     if (associated(fat_env%force_env_sub)) deallocate(fat_env%force_env_sub)
+    if (allocated(fat_env%extern)) deallocate(fat_env%extern)
+    if (allocated(fat_env%e_sub)) deallocate(fat_env%e_sub)
+    if (allocated(fat_env%e_emb)) deallocate(fat_env%e_emb)
+    if (allocated(fat_env%ekin_sub)) deallocate(fat_env%ekin_sub)
+    if (allocated(fat_env%exc_sub)) deallocate(fat_env%exc_sub)
+    if (associated(fat_env%pw_pool_sub)) deallocate(fat_env%pw_pool_sub)
 
     deallocate(fat_env)
 
