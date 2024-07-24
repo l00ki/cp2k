@@ -308,7 +308,7 @@ contains
     character(len=default_string_length) :: label
     logical :: my_rspace
     integer :: i, in_space, use_data
-    type(pw_type), pointer :: rho_r(:), rho_tmp
+    type(pw_type), pointer :: rho_r(:), rho_tmp, rho_tmp_g
     type(qs_environment_type), pointer :: qs_env
     type(qs_rho_type), pointer :: qs_rho
 
@@ -352,9 +352,17 @@ contains
 
     if (is_debug) then
        if (my_rspace) then
-          print *, "DBG| rho ", i_frag, " sum ", sum(rho(1)%cr3d)
+          print *, "DBG| rho ", i_frag, " rspace ", my_rspace
+          print *, "DBG| rho ", i_frag, " in_use ", rho(1)%in_use
+          print *, "DBG| rho ", i_frag, " in_space ", rho(1)%in_space
+          print *, "DBG| rho ", i_frag, " size(cr3d) ", size(rho(1)%cr3d)
+          print *, "DBG| rho ", i_frag, " sum(cr3d) ", sum(rho(1)%cr3d)
        else
-          print *, "DBG| rho ", i_frag, " sum ", sum(rho(1)%cc)
+          print *, "DBG| rho ", i_frag, " rspace ", my_rspace
+          print *, "DBG| rho ", i_frag, " in_use ", rho(1)%in_use
+          print *, "DBG| rho ", i_frag, " in_space ", rho(1)%in_space
+          print *, "DBG| rho ", i_frag, " size(cc) ", size(rho(1)%cc)
+          print *, "DBG| rho ", i_frag, " sum(cc3d) ", sum(rho(1)%cc)
        end if
     end if
 
@@ -628,7 +636,8 @@ contains
     call pw_poisson_solve(poisson_env, rho_g(1), e, v_g(1))
 
     if (is_debug) then
-       print *, "DBG| ", e
+       print *, "DBG| i_frag", i_frag
+       print *, "DBG| e", e
     end if
 
     call pw_transfer(v_g(1), v)
