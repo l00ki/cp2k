@@ -341,11 +341,13 @@ contains
     if (fat_env%extern(i_frag)) then
        call integer_to_string(i_frag, label)
        if (my_rspace) then
-          call cp_cube_to_pw(rho(1), "extern_"//trim(label)//".cube", 1.0_dp, .false.)
-       else
           call fat_pw_create_frag(fat_env, rho_tmp, i_frag)
           call cp_cube_to_pw(rho_tmp, "extern_"//trim(label)//".cube", 1.0_dp, .false.)
           call pw_transfer(rho_tmp, rho(1))
+          call fat_pw_release_frag(fat_env, rho_tmp, i_frag)
+       else
+          call fat_pw_create_frag(fat_env, rho_tmp, i_frag)
+          call cp_cube_to_pw(rho_tmp, "extern_"//trim(label)//".cube", 1.0_dp, .false.)
           call fat_pw_release_frag(fat_env, rho_tmp, i_frag)
        end if
     end if
@@ -1226,6 +1228,11 @@ contains
     end if
     call set_qs_env(qs_env_tmp, embed_pot=vemb)
 
+    call qs_calc_energy_force(qs_env_tmp, .true., .false., .false.)
+    call get_qs_env(qs_env_tmp, energy=energy)
+    fat_env%e_sub(i_frag) = energy%total
+    fat_env%e_emb(i_frag) = energy%embed_corr
+
     if (fat_env%extern(i_frag)) then
 
        call integer_to_string(i_frag, label)
@@ -1245,16 +1252,13 @@ contains
             "extern_"//trim(label)//".e", file_status="OLD", file_action="READ", unit_number=input_unit)
        read (input_unit, *) fat_env%e_sub(i_frag)
 
+       if (is_debug) then
+          print *, "DBG| e_sub", fat_env%e_sub(i_frag)
+       end if
+
        call fat_rho_frag(fat_env, rho, i_frag)
        fat_env%e_emb(i_frag) = pw_integral_ab(vemb, rho(1))
-
-    else
-       call qs_calc_energy_force(qs_env_tmp, .true., .false., .false.)
-       call get_qs_env(qs_env_tmp, energy=energy)
-       fat_env%e_sub(i_frag) = energy%total
-       fat_env%e_emb(i_frag) = energy%embed_corr
     end if
-
 
     call fat_pw_release_frag(fat_env, vemb, i_frag)
 
@@ -1303,8 +1307,8 @@ contains
     fat_env%is_converged = is_converged
     
     if (is_debug) then
-       print *, "DBG| ", is_converged
-       print *, "DBG| ", fat_env%e_tot, fat_env%e_old
+       print *, "DBG| i_converged", is_converged
+       print *, "DBG| e_tot, e_old", fat_env%e_tot, fat_env%e_old
        print *, "DBG| diff", diff
     end if
 
